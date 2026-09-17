@@ -1,0 +1,17 @@
+{
+  "name": "skillman",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm --filter @skillman/core build && pnpm --filter @skillman/desktop build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @skillman/core test && pnpm --filter @skillman/desktop test",
+    "desktop": "pnpm --filter @skillman/core build && pnpm --filter @skillman/desktop dev",
+    "dist": "pnpm --filter @skillman/core build && pnpm --filter @skillman/desktop dist"
+  }
+}
