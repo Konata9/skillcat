@@ -23,6 +23,8 @@ import {
   getGlobalSkillsDir,
   getProjectLockPath,
   getProjectSkillsDir,
+  isGlobalSkillDir,
+  resolveSkillDir,
 } from './paths.js';
 import { parseSkillDir } from './skill.js';
 import { applyAnnotation } from './triggers.js';
@@ -66,10 +68,11 @@ export async function collectAgentDirs(scope: Scope, root?: string): Promise<Age
   if (!base) return [];
   const result: AgentDirInfo[] = [];
   for (const agent of AGENTS) {
-    const relative = scope === 'global' ? agent.globalDir : agent.projectDir;
-    if (!relative) continue;
-    const dir = join(base, relative);
-    if (await isDirectory(dir)) result.push({ agent, dir });
+    const relatives = scope === 'global' ? agent.globalDirs : agent.projectDirs;
+    for (const relative of relatives) {
+      const dir = join(base, relative);
+      if (await isDirectory(dir)) result.push({ agent, dir });
+    }
   }
   return result;
 }
@@ -82,6 +85,8 @@ export interface ScanScopeOptions {
   showInternal: boolean;
   deep?: boolean;
   copyHashCache: Map<string, string>;
+  /** Extra dirs from the config; global entries are used for the global scope only. */
+  customSkillDirs?: string[];
 }
 
 export interface ScanScopeResult {
@@ -97,6 +102,10 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
   const lockPath = options.scope === 'global' ? getGlobalLockPath() : getProjectLockPath(root!);
   const lock = await readLock(lockPath);
   const agentDirs = await collectAgentDirs(options.scope, root);
+  const base = options.scope === 'global' ? homedir() : (root ?? homedir());
+  const customDirs = (options.customSkillDirs ?? [])
+    .filter((entry) => isGlobalSkillDir(entry) === (options.scope === 'global'))
+    .map((entry) => resolveSkillDir(entry, base));
 
   const candidates = new Map<string, { dirName: string; path: string }>();
   const addCandidate = async (dirName: string, path: string) => {
@@ -104,7 +113,7 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
     if (!candidates.has(real)) candidates.set(real, { dirName, path });
   };
 
-  const scanDirs = [canonicalDir, ...agentDirs.map((item) => item.dir)];
+  const scanDirs = [canonicalDir, ...agentDirs.map((item) => item.dir), ...customDirs];
   const seenDirs = new Set<string>();
   for (const dir of scanDirs) {
     const key = resolve(dir);
@@ -230,26 +239,80 @@ async function computeLinks(args: {
   const selfPath = resolve(args.skillPath);
   const seen = new Set<string>();
 
-  for (const { agent, dir } of args.agentDirs) {
-    const expected = join(dir, args.dirName);
-    const key = `${agent.id}:${resolve(expected)}`;
+  const candidatesByAgent = new Map<string, AgentDirInfo[]>();
+  for (const info of args.agentDirs) {
+    const key = `${info.agent.id}:${resolve(info.dir)}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const resolvedExpected = resolve(expected);
+    const list = candidatesByAgent.get(info.agent.id);
+    if (list) list.push(info);
+    else candidatesByAgent.set(info.agent.id, [info]);
+  }
 
-    if (resolvedExpected === canonicalPath || resolvedExpected === selfPath) {
-      links.push({
-        agentId: agent.id,
-        display: agent.display,
-        dir,
-        path: expected,
-        state: 'canonical',
-      });
-      continue;
-    }
+  for (const candidates of candidatesByAgent.values()) {
+    let fallback: AgentDirInfo | null = null;
+    let found = false;
+    for (const { agent, dir } of candidates) {
+      const expected = join(dir, args.dirName);
+      const stats = await lstatSafe(expected);
+      if (!stats) {
+        fallback ??= { agent, dir };
+        continue;
+      }
+      found = true;
 
-    const stats = await lstatSafe(expected);
-    if (!stats) {
+      if (resolve(expected) === canonicalPath || resolve(expected) === selfPath) {
+        links.push({
+          agentId: agent.id,
+          display: agent.display,
+          dir,
+          path: expected,
+          state: 'canonical',
+        });
+        continue;
+      }
+
+      if (stats.isSymbolicLink()) {
+        const real = await safeRealpath(expected);
+        if (real) {
+          links.push({
+            agentId: agent.id,
+            display: agent.display,
+            dir,
+            path: expected,
+            state: 'symlink-ok',
+            target: real,
+          });
+        } else {
+          links.push({
+            agentId: agent.id,
+            display: agent.display,
+            dir,
+            path: expected,
+            state: 'symlink-dangling',
+            target: (await readlinkSafe(expected)) ?? undefined,
+          });
+        }
+        continue;
+      }
+
+      if (stats.isDirectory()) {
+        let copyHash = args.copyHashCache.get(expected);
+        if (!copyHash) {
+          copyHash = await computeSkillFolderHash(expected);
+          args.copyHashCache.set(expected, copyHash);
+        }
+        links.push({
+          agentId: agent.id,
+          display: agent.display,
+          dir,
+          path: expected,
+          state: 'copy',
+          copyHash,
+        });
+        continue;
+      }
+
       links.push({
         agentId: agent.id,
         display: agent.display,
@@ -257,57 +320,20 @@ async function computeLinks(args: {
         path: expected,
         state: 'missing',
       });
-      continue;
     }
 
-    if (stats.isSymbolicLink()) {
-      const real = await safeRealpath(expected);
-      if (real) {
-        links.push({
-          agentId: agent.id,
-          display: agent.display,
-          dir,
-          path: expected,
-          state: 'symlink-ok',
-          target: real,
-        });
-      } else {
-        links.push({
-          agentId: agent.id,
-          display: agent.display,
-          dir,
-          path: expected,
-          state: 'symlink-dangling',
-          target: (await readlinkSafe(expected)) ?? undefined,
-        });
-      }
-      continue;
-    }
-
-    if (stats.isDirectory()) {
-      let copyHash = args.copyHashCache.get(expected);
-      if (!copyHash) {
-        copyHash = await computeSkillFolderHash(expected);
-        args.copyHashCache.set(expected, copyHash);
-      }
+    // An agent with several candidate dirs resolves the skill through any one
+    // of them, so report "missing" once — at the highest-priority dir — only
+    // when none of the candidates contains it.
+    if (!found && fallback) {
       links.push({
-        agentId: agent.id,
-        display: agent.display,
-        dir,
-        path: expected,
-        state: 'copy',
-        copyHash,
+        agentId: fallback.agent.id,
+        display: fallback.agent.display,
+        dir: fallback.dir,
+        path: join(fallback.dir, args.dirName),
+        state: 'missing',
       });
-      continue;
     }
-
-    links.push({
-      agentId: agent.id,
-      display: agent.display,
-      dir,
-      path: expected,
-      state: 'missing',
-    });
   }
 
   return links;

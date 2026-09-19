@@ -8,7 +8,7 @@ import type {
   RemoteSkill,
   Scope,
   SkillRecord,
-} from '@skillman/core';
+} from '@skillcat/core';
 
 export interface Snapshot {
   loading: boolean;
@@ -19,6 +19,7 @@ export interface Snapshot {
   findings: Finding[];
   projectErrors: Array<{ path: string; error: string }>;
   config: AppConfig;
+  configPath: string;
   cliAvailable: boolean;
   cliSource: string;
   cliError?: string;
@@ -47,9 +48,10 @@ export interface SettingsPatch {
   proxy?: { url: string; bypass: string };
   thresholds?: { overlap?: number; duplicate?: number };
   showInternal?: boolean;
+  customSkillDirs?: string[];
 }
 
-export interface SkillmanApi {
+export interface SkillCatApi {
   getSnapshot(): Promise<Snapshot>;
   refresh(options?: { deep?: boolean; projectPaths?: string[] }): Promise<void>;
   listProjects(): Promise<ProjectInfo[]>;
@@ -66,6 +68,9 @@ export interface SkillmanApi {
   openSkill(ref: SkillRefLite): Promise<void>;
   revealSkill(ref: SkillRefLite): Promise<void>;
   pickDirectory(): Promise<string | null>;
+  openConfig(): Promise<void>;
+  revealConfig(): Promise<void>;
+  reloadConfig(): Promise<void>;
   doctor(): Promise<DoctorReport>;
   onStateChanged(callback: (snapshot: Snapshot) => void): () => void;
   onOpEvent(callback: (event: OpEvent) => void): () => void;
@@ -88,6 +93,9 @@ export const CH = {
   openSkill: 'open:skill',
   revealSkill: 'reveal:skill',
   pickDirectory: 'dialog:pick-directory',
+  configOpen: 'config:open',
+  configReveal: 'config:reveal',
+  configReload: 'config:reload',
   doctor: 'app:doctor',
   stateChanged: 'event:state-changed',
   opEvent: 'event:op',

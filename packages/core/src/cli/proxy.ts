@@ -3,7 +3,7 @@
  *
  * The URL helpers are deliberately dependency-free (type-only imports), so the
  * settings UI validates proxy input with the exact same rules the CLI uses via
- * the `@skillman/core/proxy` subpath export.
+ * the `@skillcat/core/proxy` subpath export.
  */
 import type { ProxySettings } from '../types.js';
 

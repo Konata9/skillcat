@@ -14,7 +14,7 @@ if (!container) throw new Error('missing #root');
 createRoot(container).render(
   <React.StrictMode>
     <I18nProvider>
-      <ApiProvider api={window.skillman}>
+      <ApiProvider api={window.skillcat}>
         <App />
       </ApiProvider>
     </I18nProvider>

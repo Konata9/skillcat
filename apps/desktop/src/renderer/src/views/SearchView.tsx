@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState } from 'react';
-import type { RemoteSkill } from '@skillman/core';
+import type { RemoteSkill } from '@skillcat/core';
 import { Search } from 'lucide-react';
 import { formatInstalls } from '@renderer/lib/format';
 import { useI18n } from '@renderer/lib/i18n';

@@ -25,4 +25,11 @@ export interface AppConfig {
   thresholds: Thresholds;
   showInternal: boolean;
   maxScanDepth: number;
+  /**
+   * Extra skill dirs to scan on top of the built-in agent registry. Entries
+   * starting with `~` (or an absolute path) apply to the global scope;
+   * everything else is resolved relative to each project root. Each entry is a
+   * container dir whose children are skill folders with a `SKILL.md`.
+   */
+  customSkillDirs: string[];
 }

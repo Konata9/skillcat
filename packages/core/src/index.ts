@@ -1,5 +1,5 @@
 /**
- * Public API of `@skillman/core`. Consumers (the Electron app, future UIs)
+ * Public API of `@skillcat/core`. Consumers (the Electron app, future UIs)
  * import from this entry only; internal modules are implementation details.
  */
 export * from './types.js';

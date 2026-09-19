@@ -4,8 +4,8 @@
  * delegated to the caller so this hook stays free of UI copy.
  */
 import { useCallback, useState } from 'react';
-import type { Annotation, SkillRecord } from '@skillman/core';
-import type { SkillmanApi } from '@shared/contract';
+import type { Annotation, SkillRecord } from '@skillcat/core';
+import type { SkillCatApi } from '@shared/contract';
 
 export interface AnnotationEditorSession {
   record: SkillRecord;
@@ -20,7 +20,7 @@ export interface AnnotationEditorController {
 }
 
 export function useAnnotationEditor(
-  api: SkillmanApi,
+  api: SkillCatApi,
   onSaved: () => void,
   onError: (error: unknown) => void,
 ): AnnotationEditorController {

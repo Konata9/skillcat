@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import type { AppConfig, DoctorReport } from '@skillman/core';
-import { isValidProxyUrl, normalizeProxyUrl } from '@skillman/core/proxy';
+import type { AppConfig, DoctorReport } from '@skillcat/core';
+import { isValidProxyUrl, normalizeProxyUrl } from '@skillcat/core/proxy';
 import { useI18n, type Locale } from '@renderer/lib/i18n';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -27,15 +27,20 @@ function Field({
 
 export function SettingsView({
   config,
+  configPath,
   cliAvailable,
   cliSource,
   cliError,
   onSave,
   onStatus,
   onPickDirectory,
+  onOpenConfig,
+  onRevealConfig,
+  onReloadConfig,
   onDoctor,
 }: {
   config: AppConfig;
+  configPath: string;
   cliAvailable: boolean;
   cliSource: string;
   cliError?: string;
@@ -45,13 +50,18 @@ export function SettingsView({
     thresholds: { overlap: number; duplicate: number };
     skillsCommand: string[] | null;
     showInternal: boolean;
+    customSkillDirs: string[];
   }) => Promise<void>;
   onStatus: (message: string) => void;
   onPickDirectory: () => Promise<string | null>;
+  onOpenConfig: () => Promise<void>;
+  onRevealConfig: () => void;
+  onReloadConfig: () => Promise<void>;
   onDoctor: () => Promise<DoctorReport>;
 }): React.ReactElement {
   const { t, formatMessage, locale, setLocale } = useI18n();
   const [roots, setRoots] = useState(config.roots.join('\n'));
+  const [skillDirs, setSkillDirs] = useState(config.customSkillDirs.join('\n'));
   const [proxyEnabled, setProxyEnabled] = useState(Boolean(config.proxy.url));
   const [proxyUrl, setProxyUrl] = useState(config.proxy.url);
   const [proxyBypass, setProxyBypass] = useState(config.proxy.bypass);
@@ -62,10 +72,12 @@ export function SettingsView({
   const [dirty, setDirty] = useState(false);
   const [doctor, setDoctor] = useState<DoctorReport | null>(null);
   const [doctorLoading, setDoctorLoading] = useState(false);
+  const [reloadingConfig, setReloadingConfig] = useState(false);
 
   useEffect(() => {
     if (dirty) return;
     setRoots(config.roots.join('\n'));
+    setSkillDirs(config.customSkillDirs.join('\n'));
     setProxyEnabled(Boolean(config.proxy.url));
     if (config.proxy.url) {
       setProxyUrl(config.proxy.url);
@@ -94,6 +106,10 @@ export function SettingsView({
       },
       skillsCommand: command.trim() ? command.trim().split(/\s+/) : null,
       showInternal,
+      customSkillDirs: skillDirs
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean),
     }).then(() => setDirty(false));
   };
 
@@ -116,6 +132,15 @@ export function SettingsView({
       );
     } finally {
       setDoctorLoading(false);
+    }
+  };
+
+  const reloadConfig = async () => {
+    setReloadingConfig(true);
+    try {
+      await onReloadConfig();
+    } finally {
+      setReloadingConfig(false);
     }
   };
 
@@ -153,6 +178,37 @@ export function SettingsView({
             </Button>
             <span className="text-[11px] text-muted-foreground">
               {t('settings.rootsHint', { depth: config.maxScanDepth })}
+            </span>
+          </div>
+        </Field>
+
+        <Field label={t('settings.skillDirsLabel')}>
+          <Textarea
+            rows={3}
+            value={skillDirs}
+            onChange={(event) => {
+              setDirty(true);
+              setSkillDirs(event.target.value);
+            }}
+            placeholder={'.claude/skills\n~/.my-skills'}
+          />
+          <span className="text-[11px] text-muted-foreground">{t('settings.skillDirsHint')}</span>
+        </Field>
+
+        <Field label={t('settings.configFileLabel')}>
+          <div className="font-mono text-[11px] break-all text-muted-foreground">{configPath}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" onClick={() => void onOpenConfig()}>
+              {t('settings.openConfig')}
+            </Button>
+            <Button size="sm" onClick={() => onRevealConfig()}>
+              {t('settings.revealConfig')}
+            </Button>
+            <Button size="sm" onClick={() => void reloadConfig()} disabled={reloadingConfig}>
+              {reloadingConfig ? t('settings.reloadingConfig') : t('settings.reloadConfig')}
+            </Button>
+            <span className="text-[11px] text-muted-foreground">
+              {t('settings.configFileHint')}
             </span>
           </div>
         </Field>

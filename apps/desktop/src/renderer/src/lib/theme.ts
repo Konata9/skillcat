@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 
 export type Theme = 'light' | 'dark';
 
-const STORAGE_KEY = 'skillman-theme';
+const STORAGE_KEY = 'skillcat-theme';
+const LEGACY_STORAGE_KEY = 'skillman-theme';
 
 export function getStoredTheme(): Theme {
   try {
-    const value = window.localStorage.getItem(STORAGE_KEY);
+    const value =
+      window.localStorage.getItem(STORAGE_KEY) ??
+      window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (value === 'dark' || value === 'light') return value;
   } catch {
     // storage unavailable: fall back to the default

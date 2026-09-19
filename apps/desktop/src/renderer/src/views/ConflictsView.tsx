@@ -1,8 +1,8 @@
 // deslop-ignore-file 34: 规则名与证据条目是技术标识与数据值
 import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import type { Finding } from '@skillman/core';
-import { recordKey } from '@skillman/core/keys';
+import type { Finding } from '@skillcat/core';
+import { recordKey } from '@skillcat/core/keys';
 import { useI18n } from '@renderer/lib/i18n';
 import { cn } from '@renderer/lib/utils';
 import { EmptyState, SeverityDot } from '../components/indicators';

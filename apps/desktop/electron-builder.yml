@@ -1,5 +1,5 @@
-appId: com.konata9.skillman
-productName: skillman
+appId: com.konata9.skillcat
+productName: SkillCat
 copyright: Copyright © 2026 konata9
 directories:
   output: release
@@ -16,7 +16,7 @@ mac:
   category: public.app-category.developer-tools
   identity: null
 dmg:
-  title: skillman
+  title: SkillCat
   contents:
     - x: 130
       y: 220

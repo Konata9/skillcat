@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import type { SkillRecord } from '@skillman/core';
-import { recordKey } from '@skillman/core/keys';
+import type { SkillRecord } from '@skillcat/core';
+import { recordKey } from '@skillcat/core/keys';
 import { useI18n } from '@renderer/lib/i18n';
 import { SkillDetail, type SkillDetailActions } from '../components/SkillDetail';
 import { SkillList } from '../components/SkillList';

@@ -1,8 +1,10 @@
 import { join } from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain, net, session, shell } from 'electron';
-import { isValidProxyUrl, normalizeProxyUrl, SkillManager, type ProxySettings } from '@skillman/core';
+import { isValidProxyUrl, normalizeProxyUrl, SkillManager, type ProxySettings } from '@skillcat/core';
 import { bootstrap } from './bootstrap';
 import { registerIpc } from './ipc';
+
+app.setName('SkillCat');
 
 const manager = new SkillManager();
 
@@ -35,7 +37,7 @@ function createWindow(): void {
     height: 860,
     minWidth: 960,
     minHeight: 620,
-    title: 'skillman',
+    title: 'SkillCat',
     backgroundColor: '#f7f8fa',
     show: false,
     webPreferences: {
@@ -69,6 +71,11 @@ app.whenReady().then(async () => {
       if (error) throw new Error(error);
     },
     revealSkill: (path) => shell.showItemInFolder(path),
+    openConfig: async (path) => {
+      const error = await shell.openPath(path);
+      if (error) throw new Error(error);
+    },
+    revealConfig: (path) => shell.showItemInFolder(path),
     pickDirectory: async () => {
       const result = await dialog.showOpenDialog({ properties: ['openDirectory'] });
       return result.canceled ? null : (result.filePaths[0] ?? null);

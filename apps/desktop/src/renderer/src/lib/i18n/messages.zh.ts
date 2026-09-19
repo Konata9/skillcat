@@ -48,6 +48,7 @@ export const zh = {
   'status.projectAdded': '已添加项目 {path}',
   'status.projectsRescanned': '已重新发现项目',
   'status.settingsSaved': '设置已保存并刷新',
+  'status.configReloaded': '配置已重新加载并刷新',
   'status.doctorOk': '诊断完成：未发现问题',
   'status.doctorWarnings': { one: '诊断完成：{n} 条警告', other: '诊断完成：{n} 条警告' },
 
@@ -179,6 +180,15 @@ export const zh = {
   'settings.rootsLabel': '扫描根目录（每行一个，用于自动发现项目）',
   'settings.pickDirectory': '选择目录…',
   'settings.rootsHint': '深度上限 {depth} 层，自动跳过 node_modules / .git 等',
+  'settings.skillDirsLabel': '自定义 skill 目录（每行一个，如 .claude/skills）',
+  'settings.skillDirsHint':
+    '相对路径用于每个项目，~/ 或绝对路径用于全局；在内置 agent 目录之外追加扫描，也可直接编辑 config.json 的 customSkillDirs',
+  'settings.configFileLabel': '配置文件（JSON，与 UI 设置等价）',
+  'settings.openConfig': '打开配置文件',
+  'settings.revealConfig': '在文件夹中显示',
+  'settings.reloadConfig': '重新加载配置',
+  'settings.reloadingConfig': '重新加载中…',
+  'settings.configFileHint': '外部编辑保存后，点「重新加载配置」生效',
   'settings.overlapLabel': '触发词重叠阈值（0–1，默认 0.3）',
   'settings.duplicateLabel': '正文重复阈值（0–1，默认 0.5）',
   'settings.commandLabel': 'skills CLI 命令覆盖（留空则自动探测 npx）',
@@ -227,7 +237,7 @@ export const zh = {
   'finding.localModifiedHash.suggestion': '如需保留修改，先备份或提交到独立仓库。',
   'finding.localModifiedScan.title': '{name} 自上次扫描后内容发生变化',
   'finding.localModifiedScan.detail':
-    '来源为 GitHub 的 skill 使用 git tree hash，无法与本地内容直接比对；此处检测的是自 skillman 上次扫描以来的变化。',
+    '来源为 GitHub 的 skill 使用 git tree hash，无法与本地内容直接比对；此处检测的是自 SkillCat 上次扫描以来的变化。',
   'finding.localModifiedScan.suggestion': '若为手动修改，更新前请注意备份。',
   'finding.declaredLinkMissing.title': '{agent} 缺少 {count} 个已声明 skill 的链接',
   'finding.declaredLinkMissing.detail':

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { TriggerProfile, TriggerTerm } from '@skillman/core';
+import type { TriggerProfile, TriggerTerm } from '@skillcat/core';
 import { useI18n } from '@renderer/lib/i18n';
 import { cn } from '@renderer/lib/utils';
 

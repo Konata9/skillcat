@@ -1,4 +1,4 @@
-import type { FindingParam } from '@skillman/core';
+import type { FindingParam } from '@skillcat/core';
 
 export type Locale = 'zh' | 'en';
 

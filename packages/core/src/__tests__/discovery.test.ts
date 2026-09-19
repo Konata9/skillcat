@@ -15,7 +15,7 @@ const SKILL_MD = [
 
 describe('scanScope (project)', () => {
   it('discovers canonical skills, verifies links and reports orphan locks', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'skillman-scan-'));
+    const root = await mkdtemp(join(tmpdir(), 'skillcat-scan-'));
     await mkdir(join(root, '.agents', 'skills', 'foo'), { recursive: true });
     await writeFile(join(root, '.agents', 'skills', 'foo', 'SKILL.md'), SKILL_MD);
 
@@ -53,7 +53,7 @@ describe('scanScope (project)', () => {
   });
 
   it('skips internal skills unless requested', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'skillman-scan-internal-'));
+    const root = await mkdtemp(join(tmpdir(), 'skillcat-scan-internal-'));
     await mkdir(join(root, '.agents', 'skills', 'secret'), { recursive: true });
     await writeFile(
       join(root, '.agents', 'skills', 'secret', 'SKILL.md'),
@@ -77,5 +77,92 @@ describe('scanScope (project)', () => {
       copyHashCache: new Map(),
     });
     expect(shown.records).toHaveLength(1);
+  });
+
+  it('discovers skills in agent-native dirs such as .opencode/skills', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'skillcat-scan-native-'));
+    await mkdir(join(root, '.opencode', 'skills', 'native'), { recursive: true });
+    await writeFile(
+      join(root, '.opencode', 'skills', 'native', 'SKILL.md'),
+      ['---', 'name: native', 'description: Use when testing native agent dirs.', '---', '# Native'].join('\n'),
+    );
+
+    const result = await scanScope({
+      scope: 'project',
+      root,
+      annotations: {},
+      showInternal: false,
+      copyHashCache: new Map(),
+    });
+
+    expect(result.records.map((record) => record.name)).toEqual(['native']);
+    const opencode = result.records[0]!.links.find((link) => link.agentId === 'opencode');
+    expect(opencode?.state).toBe('canonical');
+    expect(opencode?.path).toBe(join(root, '.opencode', 'skills', 'native'));
+  });
+
+  it('does not mark a candidate dir missing when another one holds the skill', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'skillcat-scan-multidir-'));
+    await mkdir(join(root, '.agents', 'skills', 'foo'), { recursive: true });
+    await writeFile(join(root, '.agents', 'skills', 'foo', 'SKILL.md'), SKILL_MD);
+    await mkdir(join(root, '.opencode', 'skills', 'other'), { recursive: true });
+    await writeFile(
+      join(root, '.opencode', 'skills', 'other', 'SKILL.md'),
+      ['---', 'name: other', 'description: Use when testing sibling skills.', '---', '# Other'].join('\n'),
+    );
+
+    const result = await scanScope({
+      scope: 'project',
+      root,
+      annotations: {},
+      showInternal: false,
+      copyHashCache: new Map(),
+    });
+
+    const foo = result.records.find((record) => record.name === 'foo');
+    const opencode = foo?.links.filter((link) => link.agentId === 'opencode') ?? [];
+    expect(opencode).toHaveLength(1);
+    expect(opencode[0]?.state).toBe('canonical');
+    expect(opencode[0]?.path).toBe(join(root, '.agents', 'skills', 'foo'));
+  });
+
+  it('scans user-configured project skill dirs', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'skillcat-scan-custom-'));
+    await mkdir(join(root, '.my-skills', 'custom'), { recursive: true });
+    await writeFile(
+      join(root, '.my-skills', 'custom', 'SKILL.md'),
+      ['---', 'name: custom', 'description: Use when testing custom dirs.', '---', '# Custom'].join('\n'),
+    );
+
+    const result = await scanScope({
+      scope: 'project',
+      root,
+      annotations: {},
+      showInternal: false,
+      copyHashCache: new Map(),
+      customSkillDirs: ['.my-skills'],
+    });
+
+    expect(result.records.map((record) => record.name)).toEqual(['custom']);
+  });
+
+  it('ignores global custom dirs in the project scope', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'skillcat-scan-custom-global-'));
+    await mkdir(join(root, '.my-skills', 'custom'), { recursive: true });
+    await writeFile(
+      join(root, '.my-skills', 'custom', 'SKILL.md'),
+      ['---', 'name: custom', 'description: Use when testing custom dirs.', '---', '# Custom'].join('\n'),
+    );
+
+    const result = await scanScope({
+      scope: 'project',
+      root,
+      annotations: {},
+      showInternal: false,
+      copyHashCache: new Map(),
+      customSkillDirs: ['~/.my-skills'],
+    });
+
+    expect(result.records).toHaveLength(0);
   });
 });

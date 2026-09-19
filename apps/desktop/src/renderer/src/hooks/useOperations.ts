@@ -5,7 +5,7 @@
  * UI copy.
  */
 import { useCallback, useEffect, useState } from 'react';
-import type { OpStart, SkillmanApi } from '@shared/contract';
+import type { OpStart, SkillCatApi } from '@shared/contract';
 import type { OpState } from '../components/OperationDrawer';
 
 export interface OperationsController {
@@ -16,7 +16,7 @@ export interface OperationsController {
 }
 
 export function useOperations(
-  api: SkillmanApi,
+  api: SkillCatApi,
   onError: (error: unknown) => void,
 ): OperationsController {
   const [op, setOp] = useState<OpState | null>(null);

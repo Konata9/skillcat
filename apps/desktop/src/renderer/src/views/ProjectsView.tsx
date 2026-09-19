@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { ProjectInfo } from '@skillman/core';
+import type { ProjectInfo } from '@skillcat/core';
 import { FolderPlus, RefreshCw, Star } from 'lucide-react';
 import { useI18n } from '@renderer/lib/i18n';
 import { cn } from '@renderer/lib/utils';

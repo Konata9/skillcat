@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import type { AsyncOp, ProxySettings, SkillManager } from '@skillman/core';
+import type { AsyncOp, ProxySettings, SkillManager } from '@skillcat/core';
 import { z } from 'zod';
 import { CH, type OpStart, type SkillRefLite, type Snapshot } from '../shared/contract';
 
@@ -15,6 +15,8 @@ export interface IpcDeps {
   broadcast: (channel: string, payload: unknown) => void;
   openSkill: (path: string) => Promise<void>;
   revealSkill: (path: string) => void;
+  openConfig: (path: string) => Promise<void>;
+  revealConfig: (path: string) => void;
   pickDirectory: () => Promise<string | null>;
   /** Applies the proxy to the Electron session used by the in-process fetch. */
   applyProxy: (proxy: ProxySettings) => Promise<void>;
@@ -70,6 +72,7 @@ const SettingsSchema = z.object({
     })
     .optional(),
   showInternal: z.boolean().optional(),
+  customSkillDirs: z.array(z.string()).optional(),
 });
 
 export function toSnapshot(manager: SkillManager): Snapshot {
@@ -86,6 +89,7 @@ export function toSnapshot(manager: SkillManager): Snapshot {
       error,
     })),
     config: manager.config,
+    configPath: manager.configStore.filePath,
     cliAvailable: manager.cliAvailable,
     cliSource: resolved?.source ?? 'none',
     cliError: resolved?.error,
@@ -153,6 +157,7 @@ export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
     }
     if (patch.thresholds) await manager.setThresholds(patch.thresholds);
     if (patch.showInternal !== undefined) await manager.setShowInternal(patch.showInternal);
+    if (patch.customSkillDirs !== undefined) await manager.setCustomSkillDirs(patch.customSkillDirs);
     await manager.refresh();
   });
 
@@ -222,6 +227,13 @@ export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
     deps.revealSkill(record.path);
   });
   ipc.handle(CH.pickDirectory, () => deps.pickDirectory());
+  ipc.handle(CH.configOpen, async () => {
+    await deps.openConfig(await manager.ensureConfigFile());
+  });
+  ipc.handle(CH.configReveal, async () => {
+    deps.revealConfig(await manager.ensureConfigFile());
+  });
+  ipc.handle(CH.configReload, () => manager.reloadConfig());
   ipc.handle(CH.doctor, () => manager.doctor());
 
   manager.onChange(() => broadcast(CH.stateChanged, toSnapshot(manager)));

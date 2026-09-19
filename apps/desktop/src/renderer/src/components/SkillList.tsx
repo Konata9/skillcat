@@ -1,6 +1,6 @@
 import * as React from 'react';
-import type { SkillRecord } from '@skillman/core';
-import { recordKey } from '@skillman/core/keys';
+import type { SkillRecord } from '@skillcat/core';
+import { recordKey } from '@skillcat/core/keys';
 import { formatBytes } from '@renderer/lib/format';
 import { useI18n } from '@renderer/lib/i18n';
 import { cn } from '@renderer/lib/utils';

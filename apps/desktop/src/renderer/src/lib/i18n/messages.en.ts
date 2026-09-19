@@ -51,6 +51,7 @@ export const en: Record<MessageKey, MessageValue> = {
   'status.projectAdded': 'Project added: {path}',
   'status.projectsRescanned': 'Projects rediscovered',
   'status.settingsSaved': 'Settings saved and refreshed',
+  'status.configReloaded': 'Config reloaded and rescanned',
   'status.doctorOk': 'Doctor finished: no issues found',
   'status.doctorWarnings': {
     one: 'Doctor finished: {n} warning',
@@ -190,6 +191,15 @@ export const en: Record<MessageKey, MessageValue> = {
   'settings.rootsLabel': 'Scan roots (one per line, used to discover projects)',
   'settings.pickDirectory': 'Choose folder…',
   'settings.rootsHint': 'Up to {depth} levels deep; node_modules / .git and similar are skipped',
+  'settings.skillDirsLabel': 'Custom skill directories (one per line, e.g. .claude/skills)',
+  'settings.skillDirsHint':
+    'Relative paths apply to every project; ~/ or absolute paths apply globally. Scanned in addition to built-in agent dirs; also editable as customSkillDirs in config.json.',
+  'settings.configFileLabel': 'Config file (JSON, equivalent to the UI settings)',
+  'settings.openConfig': 'Open config file',
+  'settings.revealConfig': 'Show in folder',
+  'settings.reloadConfig': 'Reload config',
+  'settings.reloadingConfig': 'Reloading…',
+  'settings.configFileHint': 'After editing externally, click Reload config',
   'settings.overlapLabel': 'Trigger overlap threshold (0–1, default 0.3)',
   'settings.duplicateLabel': 'Body duplicate threshold (0–1, default 0.5)',
   'settings.commandLabel': 'skills CLI command override (blank = auto-detect npx)',
@@ -241,7 +251,7 @@ export const en: Record<MessageKey, MessageValue> = {
   'finding.localModifiedHash.suggestion': 'Back up or commit your changes if you want to keep them.',
   'finding.localModifiedScan.title': '{name} changed since the last scan',
   'finding.localModifiedScan.detail':
-    'GitHub-sourced skills store a git tree hash, which cannot be compared locally; this detects changes since skillman last scanned.',
+    'GitHub-sourced skills store a git tree hash, which cannot be compared locally; this detects changes since SkillCat last scanned.',
   'finding.localModifiedScan.suggestion':
     'If this was a manual edit, back it up before updating.',
   'finding.declaredLinkMissing.title': {

@@ -1,6 +1,6 @@
 // deslop-ignore-file 34: 本文件展示路径、hash、原始正文等数据值，等宽字体是内容要求
 import * as React from 'react';
-import type { SkillRecord } from '@skillman/core';
+import type { SkillRecord } from '@skillcat/core';
 import { FileText, FolderOpen, PencilLine, RefreshCw, Trash2 } from 'lucide-react';
 import { formatBytes } from '@renderer/lib/format';
 import { useI18n } from '@renderer/lib/i18n';

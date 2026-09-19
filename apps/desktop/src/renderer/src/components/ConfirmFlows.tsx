@@ -4,7 +4,7 @@
  * renders; the actual work is delegated to the injected callbacks.
  */
 import * as React from 'react';
-import type { ProjectInfo, RemoteSkill, SkillRecord } from '@skillman/core';
+import type { ProjectInfo, RemoteSkill, SkillRecord } from '@skillcat/core';
 import type { OpStart } from '@shared/contract';
 import { useI18n } from '@renderer/lib/i18n';
 import type { ScopeOption } from '@renderer/hooks/useScopes';

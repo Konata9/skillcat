@@ -1,21 +1,21 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { SkillmanApi, Snapshot } from '@shared/contract';
+import type { SkillCatApi, Snapshot } from '@shared/contract';
 
-const ApiContext = createContext<SkillmanApi | null>(null);
+const ApiContext = createContext<SkillCatApi | null>(null);
 
 export function ApiProvider({
   api,
   children,
 }: {
-  api: SkillmanApi;
+  api: SkillCatApi;
   children: React.ReactNode;
 }): React.ReactElement {
   return <ApiContext.Provider value={api}>{children}</ApiContext.Provider>;
 }
 
-export function useApi(): SkillmanApi {
+export function useApi(): SkillCatApi {
   const api = useContext(ApiContext);
-  if (!api) throw new Error('SkillmanApi is not available');
+  if (!api) throw new Error('SkillCatApi is not available');
   return api;
 }
 

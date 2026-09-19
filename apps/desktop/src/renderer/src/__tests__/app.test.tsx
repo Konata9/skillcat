@@ -2,8 +2,8 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Finding, SkillRecord } from '@skillman/core';
-import type { SkillmanApi, Snapshot } from '@shared/contract';
+import type { Finding, SkillRecord } from '@skillcat/core';
+import type { SkillCatApi, Snapshot } from '@shared/contract';
 import { ApiProvider } from '../api';
 import { App } from '../App';
 import { I18nProvider } from '../lib/i18n';
@@ -69,13 +69,15 @@ function snapshot(): Snapshot {
       thresholds: { overlap: 0.3, duplicate: 0.5 },
       showInternal: false,
       maxScanDepth: 3,
+      customSkillDirs: [],
     },
+    configPath: '/tmp/config/config.json',
     cliAvailable: true,
     cliSource: 'path',
   };
 }
 
-function makeApi(): SkillmanApi {
+function makeApi(): SkillCatApi {
   const value = snapshot();
   return {
     getSnapshot: vi.fn(async () => value),
@@ -94,6 +96,9 @@ function makeApi(): SkillmanApi {
     openSkill: vi.fn(async () => {}),
     revealSkill: vi.fn(async () => {}),
     pickDirectory: vi.fn(async () => null),
+    openConfig: vi.fn(async () => {}),
+    revealConfig: vi.fn(async () => {}),
+    reloadConfig: vi.fn(async () => {}),
     doctor: vi.fn(async () => ({
       ok: true,
       configDir: '/tmp/config',
@@ -107,7 +112,7 @@ function makeApi(): SkillmanApi {
   };
 }
 
-function renderApp(api: SkillmanApi) {
+function renderApp(api: SkillCatApi) {
   return render(
     <I18nProvider>
       <ApiProvider api={api}>
@@ -119,7 +124,7 @@ function renderApp(api: SkillmanApi) {
 
 describe('App', () => {
   beforeEach(() => {
-    window.localStorage.setItem('skillman-locale', 'zh');
+    window.localStorage.setItem('skillcat-locale', 'zh');
   });
 
   afterEach(() => {
@@ -168,7 +173,7 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '切换到暗色主题' }));
     expect(document.documentElement.classList.contains('dark')).toBe(true);
-    expect(window.localStorage.getItem('skillman-theme')).toBe('dark');
+    expect(window.localStorage.getItem('skillcat-theme')).toBe('dark');
 
     fireEvent.click(screen.getByRole('button', { name: '切换到亮色主题' }));
     expect(document.documentElement.classList.contains('dark')).toBe(false);
@@ -187,7 +192,7 @@ describe('App', () => {
     expect(await screen.findByText('Scopes')).toBeTruthy();
     expect(screen.getByText('Conflicts')).toBeTruthy();
     expect(document.documentElement.lang).toBe('en');
-    expect(window.localStorage.getItem('skillman-locale')).toBe('en');
+    expect(window.localStorage.getItem('skillcat-locale')).toBe('en');
 
     // The Settings page also exposes a language selector.
     fireEvent.click(screen.getByText('Settings'));
@@ -196,7 +201,7 @@ describe('App', () => {
 
     expect(await screen.findByText('作用域')).toBeTruthy();
     expect(document.documentElement.lang).toBe('zh-CN');
-    expect(window.localStorage.getItem('skillman-locale')).toBe('zh');
+    expect(window.localStorage.getItem('skillcat-locale')).toBe('zh');
   });
 
   it('searches remote skills and offers install', async () => {

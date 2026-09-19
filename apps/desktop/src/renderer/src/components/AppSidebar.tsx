@@ -37,7 +37,7 @@ export function AppSidebar({
   return (
     <aside className="flex min-h-0 flex-col border-r border-border bg-card">
       <div className="px-4 pt-4 pb-3 text-[15px] font-semibold tracking-wide">
-        skill<span className="text-primary">man</span>
+        Skill<span className="text-primary">Cat</span>
       </div>
 
       <nav className="flex flex-col gap-0.5 px-2 pb-3">

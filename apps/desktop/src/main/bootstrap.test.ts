@@ -2,11 +2,11 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { SkillManager } from '@skillman/core';
+import { SkillManager } from '@skillcat/core';
 import { bootstrap } from './bootstrap';
 
 const originalHome = process.env.HOME;
-const originalConfig = process.env.SKILLMAN_CONFIG_DIR;
+const originalConfig = process.env.SKILLCAT_CONFIG_DIR;
 
 function skillMd(name: string): string {
   return [
@@ -20,10 +20,10 @@ function skillMd(name: string): string {
 }
 
 beforeAll(async () => {
-  const fakeHome = await mkdtemp(join(tmpdir(), 'skillman-boot-home-'));
-  const configDir = await mkdtemp(join(tmpdir(), 'skillman-boot-config-'));
+  const fakeHome = await mkdtemp(join(tmpdir(), 'skillcat-boot-home-'));
+  const configDir = await mkdtemp(join(tmpdir(), 'skillcat-boot-config-'));
   process.env.HOME = fakeHome;
-  process.env.SKILLMAN_CONFIG_DIR = configDir;
+  process.env.SKILLCAT_CONFIG_DIR = configDir;
 
   for (const name of ['alpha', 'beta']) {
     await mkdir(join(fakeHome, '.agents', 'skills', name), { recursive: true });
@@ -47,13 +47,13 @@ beforeAll(async () => {
 afterAll(() => {
   if (originalHome === undefined) delete process.env.HOME;
   else process.env.HOME = originalHome;
-  if (originalConfig === undefined) delete process.env.SKILLMAN_CONFIG_DIR;
-  else process.env.SKILLMAN_CONFIG_DIR = originalConfig;
+  if (originalConfig === undefined) delete process.env.SKILLCAT_CONFIG_DIR;
+  else process.env.SKILLCAT_CONFIG_DIR = originalConfig;
 });
 
 describe('bootstrap', () => {
   it('scans on startup so the first snapshot already has skills', async () => {
-    const manager = new SkillManager({ configDir: process.env.SKILLMAN_CONFIG_DIR });
+    const manager = new SkillManager({ configDir: process.env.SKILLCAT_CONFIG_DIR });
     await bootstrap(manager);
 
     expect(manager.state.scannedAt).not.toBeNull();

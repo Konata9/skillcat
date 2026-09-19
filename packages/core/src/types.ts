@@ -1,5 +1,5 @@
 /**
- * Public type surface of `@skillman/core`.
+ * Public type surface of `@skillcat/core`.
  *
  * The definitions are grouped by concern under `types/`; this barrel keeps the
  * import path (`./types.js`) stable for every internal module.

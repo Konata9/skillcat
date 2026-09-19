@@ -3,9 +3,10 @@
  * Sanitizing keeps a hand-edited or partially corrupted file from crashing the
  * app — unknown fields fall back to defaults.
  */
+import { cp } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { atomicWriteFile, ensureDir, readJsonSafe } from './fs-utils.js';
-import { configFilePath, getConfigDir } from './paths.js';
+import { atomicWriteFile, ensureDir, pathExists, readJsonSafe } from './fs-utils.js';
+import { configFilePath, getConfigDir, getLegacyConfigDir } from './paths.js';
 import type { AppConfig } from './types.js';
 
 export function defaultConfig(): AppConfig {
@@ -19,7 +20,23 @@ export function defaultConfig(): AppConfig {
     thresholds: { overlap: 0.3, duplicate: 0.5 },
     showInternal: false,
     maxScanDepth: 3,
+    customSkillDirs: [],
   };
+}
+
+/** Trims, drops empties and de-duplicates user-configured skill dirs. */
+export function normalizeCustomSkillDirs(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const dirs: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'string') continue;
+    const dir = item.trim();
+    if (!dir || seen.has(dir)) continue;
+    seen.add(dir);
+    dirs.push(dir);
+  }
+  return dirs;
 }
 
 function sanitize(raw: unknown): AppConfig {
@@ -77,6 +94,7 @@ function sanitize(raw: unknown): AppConfig {
       typeof input.maxScanDepth === 'number' && input.maxScanDepth >= 0 && input.maxScanDepth <= 8
         ? input.maxScanDepth
         : base.maxScanDepth,
+    customSkillDirs: normalizeCustomSkillDirs(input.customSkillDirs),
   };
 }
 
@@ -98,14 +116,37 @@ export class ConfigStore {
   }
 
   async load(): Promise<AppConfig> {
+    await this.migrateLegacyDir();
     const raw = await readJsonSafe<unknown>(this.filePath);
     this.config = sanitize(raw);
     return this.config;
   }
 
+  /**
+   * One-time migration for the Skillman → SkillCat rename: when the default
+   * config dir has no config yet and the legacy dir has one, copy it over
+   * (settings, annotations and scan state included). Custom `configDir`
+   * overrides are never migrated.
+   */
+  private async migrateLegacyDir(): Promise<void> {
+    if (this.dir !== getConfigDir()) return;
+    const legacyDir = getLegacyConfigDir();
+    if (legacyDir === this.dir) return;
+    if (await pathExists(this.filePath)) return;
+    if (!(await pathExists(configFilePath(legacyDir)))) return;
+    await ensureDir(this.dir);
+    await cp(legacyDir, this.dir, { recursive: true, force: false, errorOnExist: false });
+  }
+
   async save(): Promise<void> {
     await ensureDir(dirname(this.filePath));
     await atomicWriteFile(this.filePath, `${JSON.stringify(this.config, null, 2)}\n`);
+  }
+
+  /** Writes the current config to disk when the file does not exist yet. */
+  async ensureFile(): Promise<void> {
+    if (await pathExists(this.filePath)) return;
+    await this.save();
   }
 
   async update(mutator: (config: AppConfig) => void): Promise<AppConfig> {

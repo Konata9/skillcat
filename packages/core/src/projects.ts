@@ -4,9 +4,10 @@
  * such as node_modules and build output are skipped.
  */
 import { basename, join } from 'node:path';
+import { AGENTS } from './agents.js';
 import { readLock } from './discovery.js';
 import { isDirectory, pathExists, readdirSafe, safeRealpath } from './fs-utils.js';
-import { expandHome, getProjectLockPath, getProjectSkillsDir } from './paths.js';
+import { expandHome, getProjectLockPath, getProjectSkillsDir, isGlobalSkillDir } from './paths.js';
 
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', 'out', '.next', '.nuxt', '.cache', '.turbo',
@@ -14,23 +15,11 @@ const SKIP_DIRS = new Set([
   '.vscode', 'Library', '.Trash', 'tmp', 'temp', '.pnpm-store', '.yarn',
 ]);
 
+// Derived from the agent registry so a newly registered agent dir is also a
+// project discovery marker. Hidden dirs only: bare `skills/` is handled by
+// `hasGenericSkillsDir`, which additionally requires a SKILL.md inside.
 const DIR_MARKERS = [
-  '.agents/skills',
-  '.claude/skills',
-  '.opencode/skills',
-  '.cursor/skills',
-  '.gemini/skills',
-  '.qwen/skills',
-  '.trae/skills',
-  '.roo/skills',
-  '.kiro/skills',
-  '.windsurf/skills',
-  '.pi/skills',
-  '.continue/skills',
-  '.goose/skills',
-  '.codex/skills',
-  '.augment/skills',
-  '.factory/skills',
+  ...new Set(AGENTS.flatMap((agent) => agent.projectDirs).filter((dir) => dir.startsWith('.'))),
 ];
 
 export interface DiscoveredProject {
@@ -42,6 +31,8 @@ export interface DiscoveredProject {
 
 export interface DiscoverProjectsOptions {
   maxDepth?: number;
+  /** Extra project-relative skill dirs from the config; global entries are ignored. */
+  customSkillDirs?: string[];
 }
 
 export async function discoverProjects(
@@ -49,6 +40,10 @@ export async function discoverProjects(
   options: DiscoverProjectsOptions = {},
 ): Promise<DiscoveredProject[]> {
   const maxDepth = options.maxDepth ?? 3;
+  const extraMarkers = (options.customSkillDirs ?? []).filter(
+    (entry) => !isGlobalSkillDir(entry),
+  );
+  const dirMarkers = [...new Set([...DIR_MARKERS, ...extraMarkers])];
   const found = new Map<string, DiscoveredProject>();
   const visited = new Set<string>();
   const queue: Array<{ dir: string; depth: number }> = roots
@@ -64,7 +59,7 @@ export async function discoverProjects(
 
     const markers: string[] = [];
     if (await pathExists(getProjectLockPath(real))) markers.push('skills-lock.json');
-    for (const marker of DIR_MARKERS) {
+    for (const marker of dirMarkers) {
       if (await isDirectory(join(real, marker))) markers.push(marker);
     }
     if (!markers.includes('.agents/skills') && (await hasGenericSkillsDir(real))) {

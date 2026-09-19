@@ -4,7 +4,7 @@
  * returns the records of the active scope.
  */
 import { useEffect, useMemo, useState } from 'react';
-import type { Scope, SkillRecord } from '@skillman/core';
+import type { Scope, SkillRecord } from '@skillcat/core';
 import type { Snapshot } from '@shared/contract';
 
 export interface ScopeOption {

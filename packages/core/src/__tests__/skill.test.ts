@@ -30,7 +30,7 @@ describe('parseFrontmatter', () => {
 
 describe('parseSkillDir', () => {
   it('reads metadata, files and triggers', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'skillman-skill-'));
+    const dir = await mkdtemp(join(tmpdir(), 'skillcat-skill-'));
     await mkdir(join(dir, 'scripts'), { recursive: true });
     await writeFile(
       join(dir, 'SKILL.md'),
@@ -56,8 +56,8 @@ describe('parseSkillDir', () => {
 
 describe('computeSkillFolderHash', () => {
   it('is deterministic and ignores .git/node_modules', async () => {
-    const dirA = await mkdtemp(join(tmpdir(), 'skillman-hash-a-'));
-    const dirB = await mkdtemp(join(tmpdir(), 'skillman-hash-b-'));
+    const dirA = await mkdtemp(join(tmpdir(), 'skillcat-hash-a-'));
+    const dirB = await mkdtemp(join(tmpdir(), 'skillcat-hash-b-'));
     for (const dir of [dirA, dirB]) {
       await writeFile(join(dir, 'SKILL.md'), 'same');
       await mkdir(join(dir, 'node_modules', 'x'), { recursive: true });
@@ -72,7 +72,7 @@ describe('computeSkillFolderHash', () => {
   });
 
   it('changes when content changes', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'skillman-hash-c-'));
+    const dir = await mkdtemp(join(tmpdir(), 'skillcat-hash-c-'));
     await writeFile(join(dir, 'SKILL.md'), 'one');
     const first = await computeSkillFolderHash(dir);
     await writeFile(join(dir, 'SKILL.md'), 'two');

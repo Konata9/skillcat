@@ -1,5 +1,5 @@
 {
-  "name": "skillman",
+  "name": "skillcat",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,10 +8,10 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "pnpm --filter @skillman/core build && pnpm --filter @skillman/desktop build",
+    "build": "pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop build",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter @skillman/core test && pnpm --filter @skillman/desktop test",
-    "desktop": "pnpm --filter @skillman/core build && pnpm --filter @skillman/desktop dev",
-    "dist": "pnpm --filter @skillman/core build && pnpm --filter @skillman/desktop dist"
+    "test": "pnpm --filter @skillcat/core test && pnpm --filter @skillcat/desktop test",
+    "desktop": "pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop dev",
+    "dist": "pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop dist"
   }
 }

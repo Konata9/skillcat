@@ -14,7 +14,7 @@ import {
   type FetchLike,
 } from './cli/remote-search.js';
 import { SkillsCli } from './cli/skills-cli.js';
-import { ConfigStore } from './config.js';
+import { ConfigStore, normalizeCustomSkillDirs } from './config.js';
 import { findConflicts } from './conflicts.js';
 import { readLock, scanScope } from './discovery.js';
 import { annotationKey, recordKey } from './keys.js';
@@ -81,6 +81,19 @@ export class SkillManager {
     await this.resolveCli();
   }
 
+  /** Guarantees `config.json` exists and returns its path (for open / reveal). */
+  async ensureConfigFile(): Promise<string> {
+    await this.configStore.ensureFile();
+    return this.configStore.filePath;
+  }
+
+  /** Re-reads `config.json` after an external edit and rescans everything. */
+  async reloadConfig(): Promise<void> {
+    await this.configStore.load();
+    await this.resolveCli();
+    await this.refresh();
+  }
+
   get config(): AppConfig {
     return this.configStore.value;
   }
@@ -139,10 +152,12 @@ export class SkillManager {
         showInternal: config.showInternal,
         deep: options.deep,
         copyHashCache: this.copyHashCache,
+        customSkillDirs: config.customSkillDirs,
       });
 
       const discovered = await discoverProjects(config.roots, {
         maxDepth: config.maxScanDepth,
+        customSkillDirs: config.customSkillDirs,
       });
       const projectPaths = new Set<string>([
         ...config.projects.map((entry) => entry.path),
@@ -164,6 +179,7 @@ export class SkillManager {
             showInternal: config.showInternal,
             deep: false,
             copyHashCache: this.copyHashCache,
+            customSkillDirs: config.customSkillDirs,
           });
           projects.set(path, scan.records);
           orphans.push(...scan.orphans);
@@ -212,6 +228,7 @@ export class SkillManager {
     const config = this.configStore.value;
     const discovered = await discoverProjects(config.roots, {
       maxDepth: config.maxScanDepth,
+      customSkillDirs: config.customSkillDirs,
     });
     const map = new Map<string, ProjectInfo>();
     for (const item of discovered) {
@@ -222,7 +239,7 @@ export class SkillManager {
         registered: false,
         discovered: true,
         markers: item.markers,
-        skillCount: item.skillCount,
+        skillCount: this.state.projects.get(item.path)?.length ?? item.skillCount,
       });
     }
     for (const entry of config.projects) {
@@ -333,6 +350,13 @@ export class SkillManager {
   async setShowInternal(showInternal: boolean): Promise<void> {
     await this.configStore.update((config) => {
       config.showInternal = showInternal;
+    });
+    this.emit();
+  }
+
+  async setCustomSkillDirs(dirs: string[]): Promise<void> {
+    await this.configStore.update((config) => {
+      config.customSkillDirs = normalizeCustomSkillDirs(dirs);
     });
     this.emit();
   }

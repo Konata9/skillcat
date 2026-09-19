@@ -1,8 +1,8 @@
-# skillman
+# SkillCat
 
 本地优先的 Agent SKILL 管理器。盘点全局与各项目的 skill，解释触发条件，发现安装态与语义冲突，并通过 `npx skills` 安全地执行安装 / 更新 / 删除 / 搜索。
 
-架构为 **Core + UI**：`@skillman/core` 是唯一事实来源（零 UI 依赖），当前 UI 为 Electron 桌面端。
+架构为 **Core + UI**：`@skillcat/core` 是唯一事实来源（零 UI 依赖），当前 UI 为 Electron 桌面端。
 
 ## 快速开始
 
@@ -18,7 +18,7 @@ pnpm desktop    # 桌面端（Electron，开发模式）
 
 ## 功能
 
-- **库存盘点**：全局（`~/.agents/skills`）与项目（`<project>/.agents/skills`）skill 一览，含来源、锁文件元数据、真实链接状态（符号链接 / 悬空 / 副本漂移）
+- **库存盘点**：全局（`~/.agents/skills` 及各 agent 的全局目录，如 `~/.claude/skills`、`~/.cursor/skills`）与项目（`<project>/.agents/skills` 及各 agent 原生目录，如 `.claude/skills`、`.cursor/skills`、`.trae/skills`）skill 一览，含来源、锁文件元数据、真实链接状态（符号链接 / 悬空 / 副本漂移）；agent 目录表在 `packages/core/src/agents.ts`，项目 marker 与扫描目录都由它派生
 - **触发画像**：从 `when_to_use`、`dispatch_intent`、`description`（中英模式）、正文 "When to Use / 触发" 小节、名称提取正向触发词与负向排除；支持人工标注（sidecar 存储，不修改 skill 目录）
 - **冲突检测**：确定性规则（悬空链接、锁记录缺失、副本漂移、本地修改、跨作用域遮蔽、来源冲突）+ 启发式规则（触发词重叠、负向矛盾、正文重复、description 触发信息缺失）
 - **项目发现**：扫描根下按 marker 自动发现项目，收藏 / 最近访问；注册表只存路径，删除条目不会删除文件
@@ -31,7 +31,7 @@ pnpm desktop    # 桌面端（Electron，开发模式）
 - 冲突：按级别筛选，右侧显示说明、建议、证据与相关 skill
 - 项目：收藏、添加目录（系统目录选择器）、移除注册、重新发现
 - 搜索：调用 skills.sh，选中后安装到当前作用域
-- 设置：扫描根、阈值、CLI 命令覆盖、网络代理、internal 显示、诊断（doctor）
+- 设置：扫描根、自定义 skill 目录、阈值、CLI 命令覆盖、网络代理、internal 显示、配置文件入口（打开 / 定位 / 外部编辑后重新加载）、诊断（doctor）
 - 代理：设置页开关启用后写入 `npx skills` 子进程环境（`HTTP(S)_PROXY`/`NO_PROXY`），远程搜索走 Electron session 的 `net.fetch`，GUI 启动的进程同样生效
 - 所有变更操作通过 `npx skills` 执行，底部抽屉流式显示输出并可取消
 
@@ -46,13 +46,13 @@ UI 技术栈：Tailwind CSS v4（主题 tokens 定义在 `src/renderer/src/index
 ## 打包为独立应用
 
 ```bash
-pnpm dist   # 产出 apps/desktop/release/ 下的 dmg、zip 与 mac-arm64/skillman.app
+pnpm dist   # 产出 apps/desktop/release/ 下的 dmg、zip 与 mac-arm64/SkillCat.app
 ```
 
 产物为未签名应用（`electron-builder.yml` 中 `mac.identity: null`）：
 
 - 本机直接双击可用；拷贝到其他 Mac 首次打开需右键 → 打开，或执行
-  `xattr -dr com.apple.quarantine /Applications/skillman.app`
+  `xattr -dr com.apple.quarantine /Applications/SkillCat.app`
 - 需要正式签名/公证时，删除 `mac.identity: null` 并配置 Apple Developer 证书
 - 应用图标：放置 `apps/desktop/build/icon.icns`（或 512×512 的 `icon.png`）后重新打包
 
@@ -64,7 +64,7 @@ ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-
 pnpm dist
 ```
 
-实现要点：`@skillman/core`、`zod`、`execa` 等全部被 Vite 打进 main bundle，renderer 亦为打包产物，因此应用内不含 `node_modules`（asar 仅含 `out/` 与 `package.json`）。
+实现要点：`@skillcat/core`、`zod`、`execa` 等全部被 Vite 打进 main bundle，renderer 亦为打包产物，因此应用内不含 `node_modules`（asar 仅含 `out/` 与 `package.json`）。
 
 ## 设计边界
 
@@ -94,10 +94,11 @@ pnpm dist
 
 ## 配置与数据
 
-- 配置目录：macOS `~/Library/Application Support/skillman/`，Linux `$XDG_CONFIG_HOME/skillman/`，可用 `SKILLMAN_CONFIG_DIR` 覆盖
+- 配置目录：macOS `~/Library/Application Support/skillcat/`，Linux `$XDG_CONFIG_HOME/skillcat/`，可用 `SKILLCAT_CONFIG_DIR` 覆盖
 - `config.json`：扫描根、项目注册表、CLI 命令覆盖（`skillsCommand`，用于 GUI 或 fnm 等 PATH 场景）、阈值
 - `annotations.json`：人工触发词标注（按 skill 内容哈希失效）
 - `state.json`：上次扫描的内容哈希（用于漂移提示）
+- 从旧版 Skillman 升级：首次启动会自动复制旧配置目录（`…/skillman/`）到新目录，`SKILLMAN_CONFIG_DIR` 环境变量仍然兼容
 
 ## 开发
 
@@ -106,7 +107,7 @@ packages/core   纯 TS，零 UI 依赖：发现、解析、触发词、相似度
                 （冲突/诊断信息以 { code, params } 返回，不含展示文案）
                 types.ts 仅做 re-export；定义按域拆分在 src/types/：
                 domain（skill/项目模型）、findings（冲突/诊断）、config、storage、cli
-                renderer 只可 import 类型与纯函数子路径（@skillman/core/keys、/proxy），
+                renderer 只可 import 类型与纯函数子路径（@skillcat/core/keys、/proxy），
                 其余入口会经 index → execa 把 Node 依赖带进浏览器包
 apps/desktop    Electron 44 + electron-vite + React 19
 ├─ src/main       主进程：SkillManager + IPC（zod 校验）+ 状态广播

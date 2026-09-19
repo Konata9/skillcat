@@ -10,7 +10,7 @@
  * changes on disk.
  *
  * This module is deliberately dependency-free (type-only imports), which makes
- * it safe to import from browser contexts via the `@skillman/core/keys`
+ * it safe to import from browser contexts via the `@skillcat/core/keys`
  * subpath export.
  */
 import type { SkillRecord } from './types.js';

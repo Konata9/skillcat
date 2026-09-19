@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useMemo, useState } from 'react';
-import type { Annotation, SkillRecord } from '@skillman/core';
+import type { Annotation, SkillRecord } from '@skillcat/core';
 import { useI18n } from '@renderer/lib/i18n';
 import { cn } from '@renderer/lib/utils';
 import { Badge } from './ui/badge';

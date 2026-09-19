@@ -1,4 +1,4 @@
-import type { SkillManager } from '@skillman/core';
+import type { SkillManager } from '@skillcat/core';
 
 /**
  * Startup sequence for the Electron main process: load config, resolve the
@@ -10,6 +10,6 @@ export async function bootstrap(manager: SkillManager): Promise<void> {
   try {
     await manager.refresh();
   } catch (error) {
-    console.error('[skillman] initial scan failed:', error);
+    console.error('[SkillCat] initial scan failed:', error);
   }
 }

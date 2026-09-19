@@ -1,8 +1,8 @@
-import type { SkillmanApi } from '../../shared/contract';
+import type { SkillCatApi } from '../../shared/contract';
 
 declare global {
   interface Window {
-    skillman: SkillmanApi;
+    skillcat: SkillCatApi;
   }
 }
 

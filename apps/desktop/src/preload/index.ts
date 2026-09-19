@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { CH, type OpEvent, type SkillmanApi, type Snapshot } from '../shared/contract';
+import { CH, type OpEvent, type SkillCatApi, type Snapshot } from '../shared/contract';
 
-const api: SkillmanApi = {
+const api: SkillCatApi = {
   getSnapshot: () => ipcRenderer.invoke(CH.snapshot),
   refresh: (options) => ipcRenderer.invoke(CH.refresh, options),
   listProjects: () => ipcRenderer.invoke(CH.projectsList),
@@ -18,6 +18,9 @@ const api: SkillmanApi = {
   openSkill: (ref) => ipcRenderer.invoke(CH.openSkill, ref),
   revealSkill: (ref) => ipcRenderer.invoke(CH.revealSkill, ref),
   pickDirectory: () => ipcRenderer.invoke(CH.pickDirectory),
+  openConfig: () => ipcRenderer.invoke(CH.configOpen),
+  revealConfig: () => ipcRenderer.invoke(CH.configReveal),
+  reloadConfig: () => ipcRenderer.invoke(CH.configReload),
   doctor: () => ipcRenderer.invoke(CH.doctor),
   onStateChanged: (callback) => {
     const listener = (_event: unknown, snapshot: Snapshot) => callback(snapshot);
@@ -35,4 +38,4 @@ const api: SkillmanApi = {
   },
 };
 
-contextBridge.exposeInMainWorld('skillman', api);
+contextBridge.exposeInMainWorld('skillcat', api);

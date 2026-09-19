@@ -5,7 +5,7 @@
  */
 import * as React from 'react';
 import { useState } from 'react';
-import type { ProjectInfo, RemoteSkill, SkillRecord } from '@skillman/core';
+import type { ProjectInfo, RemoteSkill, SkillRecord } from '@skillcat/core';
 import type { OpStart } from '@shared/contract';
 import { useApi, useSnapshot, useStatus } from './api';
 import { AppNotices } from './components/AppNotices';
@@ -109,6 +109,7 @@ export function App(): React.ReactElement {
     thresholds: { overlap: number; duplicate: number };
     skillsCommand: string[] | null;
     showInternal: boolean;
+    customSkillDirs: string[];
   }): Promise<void> => {
     try {
       await api.setSettings({
@@ -116,6 +117,7 @@ export function App(): React.ReactElement {
         proxy: patch.proxy,
         thresholds: patch.thresholds,
         showInternal: patch.showInternal,
+        customSkillDirs: patch.customSkillDirs,
       });
       await api.setRoots(patch.roots);
       showStatus(t('status.settingsSaved'));
@@ -193,12 +195,27 @@ export function App(): React.ReactElement {
           {tab === 'settings' && snapshot ? (
             <SettingsView
               config={snapshot.config}
+              configPath={snapshot.configPath}
               cliAvailable={snapshot.cliAvailable}
               cliSource={snapshot.cliSource}
               cliError={snapshot.cliError}
               onStatus={showStatus}
               onSave={saveSettings}
               onPickDirectory={() => api.pickDirectory()}
+              onOpenConfig={() =>
+                api.openConfig().catch((error) => {
+                  showStatus(t('status.opFailed', { message: errorMessage(error) }));
+                })
+              }
+              onRevealConfig={() => api.revealConfig()}
+              onReloadConfig={() =>
+                api
+                  .reloadConfig()
+                  .then(() => showStatus(t('status.configReloaded')))
+                  .catch((error) => {
+                    showStatus(t('status.opFailed', { message: errorMessage(error) }));
+                  })
+              }
               onDoctor={() => api.doctor()}
             />
           ) : null}

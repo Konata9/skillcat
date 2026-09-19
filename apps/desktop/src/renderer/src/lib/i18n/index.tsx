@@ -6,7 +6,7 @@ import type {
   FindingCode,
   FindingMessage,
   FindingParam,
-} from '@skillman/core';
+} from '@skillcat/core';
 import { en } from './messages.en';
 import { zh, type MessageKey } from './messages.zh';
 import type { Locale, MessageParams, MessageValue } from './types';
@@ -19,13 +19,16 @@ const doctorCodesCovered: AssertDoctorCodesCovered = true;
 void findingCodesCovered;
 void doctorCodesCovered;
 
-const STORAGE_KEY = 'skillman-locale';
+const STORAGE_KEY = 'skillcat-locale';
+const LEGACY_STORAGE_KEY = 'skillman-locale';
 
 const catalogs: Record<Locale, Record<MessageKey, MessageValue>> = { zh, en };
 
 function detectLocale(): Locale {
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
+    const stored =
+      window.localStorage.getItem(STORAGE_KEY) ??
+      window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (stored === 'zh' || stored === 'en') return stored;
   } catch {
     // storage unavailable: fall through to system detection

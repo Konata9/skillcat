@@ -2,7 +2,7 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AppConfig, DoctorReport, SkillRecord } from '@skillman/core';
+import type { AppConfig, DoctorReport, SkillRecord } from '@skillcat/core';
 import { I18nProvider } from '../lib/i18n';
 import { SkillList } from '../components/SkillList';
 import { TriggersPanel } from '../components/TriggersPanel';
@@ -39,7 +39,7 @@ function wrap(node: React.ReactElement): React.ReactElement {
 }
 
 beforeEach(() => {
-  window.localStorage.setItem('skillman-locale', 'zh');
+  window.localStorage.setItem('skillcat-locale', 'zh');
 });
 
 afterEach(() => {
@@ -152,6 +152,7 @@ describe('SettingsView proxy', () => {
       thresholds: { overlap: 0.3, duplicate: 0.5 },
       showInternal: false,
       maxScanDepth: 3,
+      customSkillDirs: [],
     };
   }
 
@@ -160,11 +161,15 @@ describe('SettingsView proxy', () => {
     const view = (value: AppConfig): React.ReactElement => (
       <SettingsView
         config={value}
+        configPath="/tmp/config/config.json"
         cliAvailable
         cliSource="path"
         onSave={onSave}
         onStatus={() => {}}
         onPickDirectory={async () => null}
+        onOpenConfig={async () => {}}
+        onRevealConfig={() => {}}
+        onReloadConfig={async () => {}}
         onDoctor={async () => ({
           ok: true,
           configDir: '/tmp/config',
