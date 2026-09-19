@@ -165,4 +165,26 @@ describe('ipc contract', () => {
     expect(done?.ok).toBe(true);
     expect(events.some((event) => event.channel === CH.stateChanged)).toBe(true);
   });
+
+  it('runs a multi-target add as a single operation', async () => {
+    events.length = 0;
+    const { opId } = await call<{ opId: string }>(CH.opStart, {
+      kind: 'add',
+      source: 'owner/repo@skill',
+      targets: [{ scope: 'global' }, { scope: 'project', cwd: projectRoot }],
+      title: 'add owner/repo@skill',
+    });
+    expect(opId).toBeTruthy();
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const opEvents = events
+      .filter((event) => event.channel === CH.opEvent)
+      .map((event) => event.payload as OpEvent);
+    const lines = opEvents
+      .filter((event) => event.line !== undefined)
+      .map((event) => event.line);
+    expect(lines).toContain('# global');
+    expect(lines).toContain(`# ${projectRoot}`);
+    expect(opEvents.find((event) => event.done)?.ok).toBe(true);
+  });
 });

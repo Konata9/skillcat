@@ -6,8 +6,9 @@
 import { cp } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { atomicWriteFile, ensureDir, pathExists, readJsonSafe } from './fs-utils.js';
+import { defaultLlmSettings, getLlmPreset, LLM_PROVIDERS } from './llm.js';
 import { configFilePath, getConfigDir, getLegacyConfigDir } from './paths.js';
-import type { AppConfig } from './types.js';
+import type { AppConfig, LlmProvider, LlmSettings } from './types.js';
 
 export function defaultConfig(): AppConfig {
   return {
@@ -21,6 +22,7 @@ export function defaultConfig(): AppConfig {
     showInternal: false,
     maxScanDepth: 3,
     customSkillDirs: [],
+    llm: defaultLlmSettings(),
   };
 }
 
@@ -37,6 +39,27 @@ export function normalizeCustomSkillDirs(raw: unknown): string[] {
     dirs.push(dir);
   }
   return dirs;
+}
+
+/** Validates a persisted LLM config, falling back to provider presets. */
+export function sanitizeLlm(raw: unknown): LlmSettings {
+  const base = defaultLlmSettings();
+  if (typeof raw !== 'object' || raw === null) return base;
+  const input = raw as Partial<LlmSettings>;
+  const provider: LlmProvider = LLM_PROVIDERS.some((preset) => preset.id === input.provider)
+    ? (input.provider as LlmProvider)
+    : base.provider;
+  const preset = getLlmPreset(provider);
+  return {
+    provider,
+    apiKey: typeof input.apiKey === 'string' ? input.apiKey : base.apiKey,
+    baseUrl:
+      typeof input.baseUrl === 'string' && input.baseUrl.trim()
+        ? input.baseUrl
+        : preset.baseUrl,
+    model:
+      typeof input.model === 'string' && input.model.trim() ? input.model : preset.model,
+  };
 }
 
 function sanitize(raw: unknown): AppConfig {
@@ -95,6 +118,7 @@ function sanitize(raw: unknown): AppConfig {
         ? input.maxScanDepth
         : base.maxScanDepth,
     customSkillDirs: normalizeCustomSkillDirs(input.customSkillDirs),
+    llm: sanitizeLlm(input.llm),
   };
 }
 

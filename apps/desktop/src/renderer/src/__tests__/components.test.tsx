@@ -2,8 +2,9 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AppConfig, DoctorReport, SkillRecord } from '@skillcat/core';
+import type { AppConfig, DoctorReport, RemoteSkill, SkillRecord } from '@skillcat/core';
 import { I18nProvider } from '../lib/i18n';
+import { ConfirmFlows } from '../components/ConfirmFlows';
 import { SkillList } from '../components/SkillList';
 import { TriggersPanel } from '../components/TriggersPanel';
 import { SettingsView } from '../views/SettingsView';
@@ -140,6 +141,163 @@ describe('TriggersPanel', () => {
   });
 });
 
+describe('ConfirmFlows install targets', () => {
+  const skill: RemoteSkill = {
+    name: 'pdf',
+    slug: 'anthropics/skills/pdf',
+    source: 'anthropics/skills',
+    installs: 3400,
+  };
+
+  const globalScope = { key: 'global', label: '全局', path: null, count: 0 };
+  const demo = { key: 'project:/tmp/demo', label: 'demo', path: '/tmp/demo', count: 0 };
+  const other = { key: 'project:/tmp/other', label: 'other', path: '/tmp/other', count: 0 };
+  const scopes = [globalScope, demo, other];
+
+  function renderInstall(
+    activeScope: (typeof scopes)[number],
+    availableScopes: (typeof scopes)[number][],
+    onStartOp: (request: unknown) => Promise<void>,
+  ): void {
+    render(
+      wrap(
+        <ConfirmFlows
+          state={{ kind: 'install', skill }}
+          activeScope={activeScope}
+          scopes={availableScopes}
+          onStartOp={onStartOp as never}
+          onRemoveProject={async () => {}}
+          onClose={() => {}}
+        />,
+      ),
+    );
+  }
+
+  it('defaults to the active project and installs project-scoped', async () => {
+    const onStartOp = vi.fn(async () => {});
+    renderInstall(demo, scopes, onStartOp);
+
+    fireEvent.click(screen.getByRole('button', { name: '安装' }));
+    await waitFor(() => {
+      expect(onStartOp).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'add',
+          source: 'anthropics/skills@pdf',
+          targets: [{ scope: 'project', cwd: '/tmp/demo' }],
+        }),
+      );
+    });
+  });
+
+  it('switches to a global install', async () => {
+    const onStartOp = vi.fn(async () => {});
+    renderInstall(demo, scopes, onStartOp);
+
+    fireEvent.click(screen.getByRole('button', { name: /^全局/ }));
+    fireEvent.click(screen.getByRole('button', { name: '安装' }));
+    await waitFor(() => {
+      expect(onStartOp).toHaveBeenCalledWith(
+        expect.objectContaining({ targets: [{ scope: 'global' }] }),
+      );
+    });
+  });
+
+  it('installs into multiple selected projects', async () => {
+    const onStartOp = vi.fn(async () => {});
+    renderInstall(demo, scopes, onStartOp);
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /^other/ }));
+    fireEvent.click(screen.getByRole('button', { name: '安装' }));
+    await waitFor(() => {
+      expect(onStartOp).toHaveBeenCalledWith(
+        expect.objectContaining({
+          targets: [
+            { scope: 'project', cwd: '/tmp/demo' },
+            { scope: 'project', cwd: '/tmp/other' },
+          ],
+        }),
+      );
+    });
+  });
+
+  it('defaults to global and disables the project option when there are no projects', () => {
+    renderInstall(globalScope, [globalScope], vi.fn(async () => {}));
+    expect((screen.getByRole('button', { name: /^项目/ }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect((screen.getByRole('button', { name: '安装' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+describe('SettingsView LLM', () => {
+  function llmConfig(): AppConfig {
+    return {
+      version: 1,
+      roots: [],
+      projects: [],
+      recent: [],
+      skillsCommand: null,
+      proxy: { url: '', bypass: '' },
+      thresholds: { overlap: 0.3, duplicate: 0.5 },
+      showInternal: false,
+      maxScanDepth: 3,
+      customSkillDirs: [],
+      llm: {
+        provider: 'openai',
+        apiKey: '',
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-4o',
+      },
+    };
+  }
+
+  it('applies provider presets and tests the connection', async () => {
+    const onTestLlm = vi.fn(async () => ({ ok: true, status: 200, message: 'ok' }));
+    render(
+      wrap(
+        <SettingsView
+          config={llmConfig()}
+          configPath="/tmp/config/config.json"
+          cliAvailable
+          cliSource="path"
+          onSave={async () => {}}
+          onStatus={() => {}}
+          onPickDirectory={async () => null}
+          onOpenConfig={async () => {}}
+          onRevealConfig={() => {}}
+          onReloadConfig={async () => {}}
+          onTestLlm={onTestLlm}
+          onDoctor={async () => ({
+            ok: true,
+            configDir: '/tmp/config',
+            cli: { command: null, version: null },
+            proxy: null,
+            lockFiles: [],
+            warnings: [],
+          })}
+        />,
+      ),
+    );
+
+    fireEvent.change(screen.getByRole('combobox', { name: '服务商' }), {
+      target: { value: 'deepseek' },
+    });
+    expect(screen.getByDisplayValue('https://api.deepseek.com/v1')).toBeTruthy();
+    expect(screen.getByDisplayValue('deepseek-chat')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '测试连接' }));
+    await waitFor(() => {
+      expect(onTestLlm).toHaveBeenCalledWith({
+        provider: 'deepseek',
+        apiKey: '',
+        baseUrl: 'https://api.deepseek.com/v1',
+        model: 'deepseek-chat',
+      });
+    });
+    expect(await screen.findByText(/连接成功/)).toBeTruthy();
+  });
+});
+
 describe('SettingsView proxy', () => {
   function config(proxy: { url: string; bypass: string }): AppConfig {
     return {
@@ -153,6 +311,7 @@ describe('SettingsView proxy', () => {
       showInternal: false,
       maxScanDepth: 3,
       customSkillDirs: [],
+      llm: { provider: 'openai', apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o' },
     };
   }
 
@@ -170,6 +329,7 @@ describe('SettingsView proxy', () => {
         onOpenConfig={async () => {}}
         onRevealConfig={() => {}}
         onReloadConfig={async () => {}}
+        onTestLlm={async () => ({ ok: true, status: 200, message: 'ok' })}
         onDoctor={async () => ({
           ok: true,
           configDir: '/tmp/config',

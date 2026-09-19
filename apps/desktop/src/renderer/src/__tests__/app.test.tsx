@@ -6,6 +6,7 @@ import type { Finding, SkillRecord } from '@skillcat/core';
 import type { SkillCatApi, Snapshot } from '@shared/contract';
 import { ApiProvider } from '../api';
 import { App } from '../App';
+import { resetLeaderboardCache } from '../hooks/useLeaderboard';
 import { I18nProvider } from '../lib/i18n';
 
 function record(partial: Partial<SkillRecord> & { name: string }): SkillRecord {
@@ -70,6 +71,7 @@ function snapshot(): Snapshot {
       showInternal: false,
       maxScanDepth: 3,
       customSkillDirs: [],
+      llm: { provider: 'openai', apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o' },
     },
     configPath: '/tmp/config/config.json',
     cliAvailable: true,
@@ -91,6 +93,8 @@ function makeApi(): SkillCatApi {
     getAnnotation: vi.fn(async () => null),
     saveAnnotation: vi.fn(async () => {}),
     searchRemote: vi.fn(async () => []),
+    leaderboard: vi.fn(async () => []),
+    testLlm: vi.fn(async () => ({ ok: true, status: 200, message: 'ok' })),
     startOp: vi.fn(async () => ({ opId: 'op-1' })),
     cancelOp: vi.fn(async () => {}),
     openSkill: vi.fn(async () => {}),
@@ -125,6 +129,7 @@ function renderApp(api: SkillCatApi) {
 describe('App', () => {
   beforeEach(() => {
     window.localStorage.setItem('skillcat-locale', 'zh');
+    resetLeaderboardCache();
   });
 
   afterEach(() => {
@@ -202,6 +207,48 @@ describe('App', () => {
     expect(await screen.findByText('作用域')).toBeTruthy();
     expect(document.documentElement.lang).toBe('zh-CN');
     expect(window.localStorage.getItem('skillcat-locale')).toBe('zh');
+  });
+
+  it('shows the all-time leaderboard by default', async () => {
+    const api = makeApi();
+    vi.mocked(api.leaderboard).mockResolvedValue([
+      {
+        name: 'find-skills',
+        slug: 'vercel-labs/skills/find-skills',
+        source: 'vercel-labs/skills',
+        installs: 3_465_509,
+        isOfficial: true,
+      },
+    ]);
+    renderApp(api);
+
+    fireEvent.click(await screen.findByText('搜索'));
+
+    expect(await screen.findByText('find-skills')).toBeTruthy();
+    expect(api.leaderboard).toHaveBeenCalledWith('all-time');
+  });
+
+  it('reuses the cached leaderboard when re-entering the search tab', async () => {
+    const api = makeApi();
+    vi.mocked(api.leaderboard).mockResolvedValue([
+      {
+        name: 'find-skills',
+        slug: 'vercel-labs/skills/find-skills',
+        source: 'vercel-labs/skills',
+        installs: 3_465_509,
+      },
+    ]);
+    renderApp(api);
+
+    fireEvent.click(await screen.findByText('搜索'));
+    expect(await screen.findByText('find-skills')).toBeTruthy();
+    expect(api.leaderboard).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText('Skills'));
+    fireEvent.click(screen.getByText('搜索'));
+
+    expect(await screen.findByText('find-skills')).toBeTruthy();
+    expect(api.leaderboard).toHaveBeenCalledTimes(1);
   });
 
   it('searches remote skills and offers install', async () => {

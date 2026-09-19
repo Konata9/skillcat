@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { app, BrowserWindow, dialog, ipcMain, net, session, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, net, session, shell } from 'electron';
 import { isValidProxyUrl, normalizeProxyUrl, SkillManager, type ProxySettings } from '@skillcat/core';
 import { bootstrap } from './bootstrap';
 import { registerIpc } from './ipc';
@@ -58,6 +58,13 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+  // Packaged macOS builds read the icon from the app bundle; in dev the dock
+  // would otherwise fall back to the default Electron icon.
+  if (process.platform === 'darwin' && process.env.ELECTRON_RENDERER_URL) {
+    const icon = nativeImage.createFromPath(join(__dirname, '../../build/icon.png'));
+    if (!icon.isEmpty()) app.dock?.setIcon(icon);
+  }
+
   await bootstrap(manager);
   await applyProxy(manager.config.proxy);
   manager.setRemoteFetch((url, init) => net.fetch(url, init));

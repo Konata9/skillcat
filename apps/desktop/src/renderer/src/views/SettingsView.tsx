@@ -1,14 +1,35 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import type { AppConfig, DoctorReport } from '@skillcat/core';
+import type {
+  AppConfig,
+  DoctorReport,
+  LlmProvider,
+  LlmSettings,
+  LlmTestResult,
+} from '@skillcat/core';
+import { getLlmPreset, LLM_PROVIDERS } from '@skillcat/core/llm';
 import { isValidProxyUrl, normalizeProxyUrl } from '@skillcat/core/proxy';
-import { useI18n, type Locale } from '@renderer/lib/i18n';
+import { useI18n, type Locale, type MessageKey } from '@renderer/lib/i18n';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import { Textarea } from '../components/ui/textarea';
+
+const LLM_PROVIDER_LABEL: Record<LlmProvider, MessageKey> = {
+  anthropic: 'settings.llmProvider.anthropic',
+  openai: 'settings.llmProvider.openai',
+  gemini: 'settings.llmProvider.gemini',
+  deepseek: 'settings.llmProvider.deepseek',
+  qwen: 'settings.llmProvider.qwen',
+  glm: 'settings.llmProvider.glm',
+  kimi: 'settings.llmProvider.kimi',
+  minimax: 'settings.llmProvider.minimax',
+  mimo: 'settings.llmProvider.mimo',
+  ollama: 'settings.llmProvider.ollama',
+  custom: 'settings.llmProvider.custom',
+};
 
 function Field({
   label,
@@ -38,6 +59,7 @@ export function SettingsView({
   onRevealConfig,
   onReloadConfig,
   onDoctor,
+  onTestLlm,
 }: {
   config: AppConfig;
   configPath: string;
@@ -51,6 +73,7 @@ export function SettingsView({
     skillsCommand: string[] | null;
     showInternal: boolean;
     customSkillDirs: string[];
+    llm: LlmSettings;
   }) => Promise<void>;
   onStatus: (message: string) => void;
   onPickDirectory: () => Promise<string | null>;
@@ -58,6 +81,7 @@ export function SettingsView({
   onRevealConfig: () => void;
   onReloadConfig: () => Promise<void>;
   onDoctor: () => Promise<DoctorReport>;
+  onTestLlm: (settings: LlmSettings) => Promise<LlmTestResult>;
 }): React.ReactElement {
   const { t, formatMessage, locale, setLocale } = useI18n();
   const [roots, setRoots] = useState(config.roots.join('\n'));
@@ -69,6 +93,12 @@ export function SettingsView({
   const [duplicate, setDuplicate] = useState(String(config.thresholds.duplicate));
   const [command, setCommand] = useState(config.skillsCommand?.join(' ') ?? '');
   const [showInternal, setShowInternal] = useState(config.showInternal);
+  const [llmProvider, setLlmProvider] = useState<LlmProvider>(config.llm.provider);
+  const [llmApiKey, setLlmApiKey] = useState(config.llm.apiKey);
+  const [llmBaseUrl, setLlmBaseUrl] = useState(config.llm.baseUrl);
+  const [llmModel, setLlmModel] = useState(config.llm.model);
+  const [llmResult, setLlmResult] = useState<LlmTestResult | null>(null);
+  const [llmTesting, setLlmTesting] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [doctor, setDoctor] = useState<DoctorReport | null>(null);
   const [doctorLoading, setDoctorLoading] = useState(false);
@@ -87,6 +117,11 @@ export function SettingsView({
     setDuplicate(String(config.thresholds.duplicate));
     setCommand(config.skillsCommand?.join(' ') ?? '');
     setShowInternal(config.showInternal);
+    setLlmProvider(config.llm.provider);
+    setLlmApiKey(config.llm.apiKey);
+    setLlmBaseUrl(config.llm.baseUrl);
+    setLlmModel(config.llm.model);
+    setLlmResult(null);
   }, [config, dirty]);
 
   const save = () => {
@@ -110,7 +145,39 @@ export function SettingsView({
         .split('\n')
         .map((line) => line.trim())
         .filter(Boolean),
+      llm: {
+        provider: llmProvider,
+        apiKey: llmApiKey.trim(),
+        baseUrl: llmBaseUrl.trim(),
+        model: llmModel.trim(),
+      },
     }).then(() => setDirty(false));
+  };
+
+  const changeProvider = (provider: LlmProvider) => {
+    setDirty(true);
+    setLlmProvider(provider);
+    const preset = getLlmPreset(provider);
+    setLlmBaseUrl(preset.baseUrl);
+    setLlmModel(preset.model);
+    setLlmResult(null);
+  };
+
+  const runLlmTest = async () => {
+    setLlmTesting(true);
+    setLlmResult(null);
+    try {
+      setLlmResult(
+        await onTestLlm({
+          provider: llmProvider,
+          apiKey: llmApiKey.trim(),
+          baseUrl: llmBaseUrl.trim(),
+          model: llmModel.trim(),
+        }),
+      );
+    } finally {
+      setLlmTesting(false);
+    }
   };
 
   const pickDirectory = async () => {
@@ -143,6 +210,8 @@ export function SettingsView({
       setReloadingConfig(false);
     }
   };
+
+  const llmPreset = getLlmPreset(llmProvider);
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -312,6 +381,101 @@ export function SettingsView({
               </div>
             </div>
           ) : null}
+        </Field>
+
+        <Field label={t('settings.llmHeading')}>
+          <span className="text-[11px] text-muted-foreground">{t('settings.llmHint')}</span>
+          <div className="flex flex-col gap-3 pt-1">
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] text-muted-foreground">
+                {t('settings.llmProviderLabel')}
+              </span>
+              <div className="flex items-center gap-2">
+                <Select
+                  aria-label={t('settings.llmProviderLabel')}
+                  className="w-52"
+                  value={llmProvider}
+                  onChange={(event) => changeProvider(event.target.value as LlmProvider)}
+                >
+                  {LLM_PROVIDERS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {t(LLM_PROVIDER_LABEL[preset.id])}
+                    </option>
+                  ))}
+                </Select>
+                {llmPreset.requiresKey ? null : (
+                  <span className="text-[11px] text-muted-foreground">{t('settings.llmNoKey')}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] text-muted-foreground">
+                {t('settings.llmApiKeyLabel')}
+              </span>
+              <Input
+                type="password"
+                autoComplete="off"
+                value={llmApiKey}
+                onChange={(event) => {
+                  setDirty(true);
+                  setLlmApiKey(event.target.value);
+                }}
+                placeholder={llmPreset.requiresKey ? 'sk-…' : t('settings.llmApiKeyOptional')}
+              />
+              <span className="text-[11px] text-muted-foreground">{t('settings.llmKeyHint')}</span>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] text-muted-foreground">
+                {t('settings.llmBaseUrlLabel')}
+              </span>
+              <Input
+                value={llmBaseUrl}
+                onChange={(event) => {
+                  setDirty(true);
+                  setLlmBaseUrl(event.target.value);
+                }}
+                placeholder="https://api.openai.com/v1"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] text-muted-foreground">
+                {t('settings.llmModelLabel')}
+              </span>
+              <Input
+                value={llmModel}
+                onChange={(event) => {
+                  setDirty(true);
+                  setLlmModel(event.target.value);
+                }}
+                placeholder="gpt-4o"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => void runLlmTest()}
+                disabled={llmTesting || !llmBaseUrl.trim() || !llmModel.trim()}
+              >
+                {llmTesting ? t('settings.llmTesting') : t('settings.llmTest')}
+              </Button>
+              {llmResult ? (
+                <Badge tone={llmResult.ok ? 'success' : 'error'}>
+                  {llmResult.ok
+                    ? t('settings.llmTestOk', { model: llmModel.trim() })
+                    : t('settings.llmTestFail', { status: llmResult.status ?? '—' })}
+                </Badge>
+              ) : null}
+            </div>
+            {llmResult && !llmResult.ok ? (
+              <span className="font-mono text-[11px] break-all text-destructive">
+                {llmResult.message}
+              </span>
+            ) : null}
+          </div>
         </Field>
 
         <label className="flex items-center gap-2 text-muted-foreground">

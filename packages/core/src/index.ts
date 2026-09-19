@@ -42,13 +42,22 @@ export {
   normalizeProxyUrl,
 } from './cli/proxy.js';
 export {
+  fetchLeaderboardApi,
   searchRemoteApi,
   searchRemoteViaCli,
   parseFindOutput,
   type FetchLike,
   type FetchLikeResponse,
 } from './cli/remote-search.js';
-export { ConfigStore, defaultConfig } from './config.js';
+export { ConfigStore, defaultConfig, sanitizeLlm } from './config.js';
+export {
+  LLM_PROVIDERS,
+  defaultLlmSettings,
+  getLlmPreset,
+  testLlmConnection,
+  type LlmProviderPreset,
+  type LlmTestResult,
+} from './llm.js';
 export { SidecarStore } from './sidecar.js';
 export {
   APP_NAME,

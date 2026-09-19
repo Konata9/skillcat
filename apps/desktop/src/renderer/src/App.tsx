@@ -5,7 +5,7 @@
  */
 import * as React from 'react';
 import { useState } from 'react';
-import type { ProjectInfo, RemoteSkill, SkillRecord } from '@skillcat/core';
+import type { ProjectInfo, RemoteSkill, SkillRecord, LlmSettings } from '@skillcat/core';
 import type { OpStart } from '@shared/contract';
 import { useApi, useSnapshot, useStatus } from './api';
 import { AppNotices } from './components/AppNotices';
@@ -110,6 +110,7 @@ export function App(): React.ReactElement {
     skillsCommand: string[] | null;
     showInternal: boolean;
     customSkillDirs: string[];
+    llm: LlmSettings;
   }): Promise<void> => {
     try {
       await api.setSettings({
@@ -118,6 +119,7 @@ export function App(): React.ReactElement {
         thresholds: patch.thresholds,
         showInternal: patch.showInternal,
         customSkillDirs: patch.customSkillDirs,
+        llm: patch.llm,
       });
       await api.setRoots(patch.roots);
       showStatus(t('status.settingsSaved'));
@@ -188,7 +190,8 @@ export function App(): React.ReactElement {
           ) : null}
           {tab === 'search' ? (
             <SearchView
-              onSearch={(query) => api.searchRemote(query)}
+              onSearch={api.searchRemote}
+              onLeaderboard={api.leaderboard}
               onInstall={(skill: RemoteSkill) => setConfirmState({ kind: 'install', skill })}
             />
           ) : null}
@@ -201,6 +204,7 @@ export function App(): React.ReactElement {
               cliError={snapshot.cliError}
               onStatus={showStatus}
               onSave={saveSettings}
+              onTestLlm={api.testLlm}
               onPickDirectory={() => api.pickDirectory()}
               onOpenConfig={() =>
                 api.openConfig().catch((error) => {
@@ -234,6 +238,7 @@ export function App(): React.ReactElement {
         <ConfirmFlows
           state={confirmState}
           activeScope={activeScope}
+          scopes={scopes}
           onStartOp={startOpFromConfirm}
           onRemoveProject={removeProject}
           onClose={() => setConfirmState(null)}

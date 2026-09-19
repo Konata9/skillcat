@@ -9,25 +9,31 @@ import { basename } from 'node:path';
 import { resolveSkillsCommand, type ResolvedCommand } from './cli/env.js';
 import { buildProxyEnv, isValidProxyUrl, normalizeProxyUrl } from './cli/proxy.js';
 import {
+  fetchLeaderboardApi,
   searchRemoteApi,
   searchRemoteViaCli,
   type FetchLike,
 } from './cli/remote-search.js';
 import { SkillsCli } from './cli/skills-cli.js';
-import { ConfigStore, normalizeCustomSkillDirs } from './config.js';
+import { ConfigStore, normalizeCustomSkillDirs, sanitizeLlm } from './config.js';
 import { findConflicts } from './conflicts.js';
 import { readLock, scanScope } from './discovery.js';
 import { annotationKey, recordKey } from './keys.js';
+import { testLlmConnection, type LlmTestResult } from './llm.js';
 import { getConfigDir, getGlobalLockPath, getProjectLockPath } from './paths.js';
 import { discoverProjects } from './projects.js';
 import { SidecarStore } from './sidecar.js';
 import type {
+  AddTarget,
   Annotation,
   AppConfig,
   AsyncOp,
   DoctorReport,
   DoctorWarning,
   Finding,
+  LeaderboardKind,
+  LlmSettings,
+  OpResult,
   OrphanLock,
   ProjectInfo,
   ProxySettings,
@@ -354,6 +360,13 @@ export class SkillManager {
     this.emit();
   }
 
+  async setLlm(llm: LlmSettings): Promise<void> {
+    await this.configStore.update((config) => {
+      config.llm = sanitizeLlm(llm);
+    });
+    this.emit();
+  }
+
   async setCustomSkillDirs(dirs: string[]): Promise<void> {
     await this.configStore.update((config) => {
       config.customSkillDirs = normalizeCustomSkillDirs(dirs);
@@ -389,15 +402,78 @@ export class SkillManager {
     }
   }
 
-  runAdd(
-    source: string,
-    options: { scope: Scope; cwd?: string; skills?: string; agents?: string },
-  ): AsyncOp {
+  /** Fetches a skills.sh leaderboard page; the site has no CLI equivalent. */
+  async fetchLeaderboard(kind: LeaderboardKind, page = 0): Promise<RemoteSkill[]> {
+    return fetchLeaderboardApi(kind, page, this.remoteFetch ?? fetch);
+  }
+
+  /** Probes the user-supplied LLM endpoint/key/model (proxy-aware). */
+  async testLlm(settings: LlmSettings): Promise<LlmTestResult> {
+    return testLlmConnection(settings, this.remoteFetch ?? fetch);
+  }
+
+  /**
+   * Installs a skill into one or more targets. A single target maps to one CLI
+   * run; multiple targets run sequentially inside one operation so the UI shows
+   * a single stream and one final result.
+   */
+  runAdd(source: string, targets: AddTarget[]): AsyncOp {
     const cli = this.ensureCli();
-    const args = ['add', source, '-y'];
-    if (options.scope === 'global') args.push('-g');
-    args.push('-s', options.skills ?? '*', '-a', options.agents ?? '*');
-    return cli.run(args, { cwd: options.cwd });
+    const runOne = (target: AddTarget): AsyncOp => {
+      const args = ['add', source, '-y'];
+      if (target.scope === 'global') args.push('-g');
+      args.push('-s', '*', '-a', '*');
+      return cli.run(args, { cwd: target.cwd });
+    };
+
+    if (targets.length <= 1) {
+      return runOne(targets[0] ?? { scope: 'global' });
+    }
+
+    const id = `op-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    let current: AsyncOp | null = null;
+    let cancelled = false;
+    let settle!: (result: OpResult) => void;
+    const result = new Promise<OpResult>((resolve) => {
+      settle = resolve;
+    });
+
+    const lines = (async function* () {
+      let ok = true;
+      let code: number | null = 0;
+      try {
+        for (const target of targets) {
+          if (cancelled) {
+            ok = false;
+            code = null;
+            break;
+          }
+          yield `# ${target.scope === 'global' ? 'global' : (target.cwd ?? 'project')}`;
+          const op = runOne(target);
+          current = op;
+          for await (const line of op.lines) yield line;
+          const outcome = await op.result;
+          if (!outcome.ok) {
+            ok = false;
+            code = outcome.code;
+          }
+        }
+      } finally {
+        current = null;
+        settle({ ok, code });
+      }
+    })();
+
+    return {
+      id,
+      title: `add ${source}`,
+      lines,
+      result,
+      cancel: () => {
+        cancelled = true;
+        current?.cancel();
+      },
+    };
   }
 
   runRemove(name: string, options: { scope: Scope; cwd?: string }): AsyncOp {

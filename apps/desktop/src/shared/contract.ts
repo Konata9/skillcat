@@ -1,8 +1,12 @@
 import type {
+  AddTarget,
   Annotation,
   AppConfig,
   DoctorReport,
   Finding,
+  LeaderboardKind,
+  LlmSettings,
+  LlmTestResult,
   OrphanLock,
   ProjectInfo,
   RemoteSkill,
@@ -32,7 +36,7 @@ export interface SkillRefLite {
 }
 
 export type OpStart =
-  | { kind: 'add'; source: string; scope: Scope; cwd?: string; title: string }
+  | { kind: 'add'; source: string; targets: AddTarget[]; title: string }
   | { kind: 'remove'; name: string; scope: Scope; cwd?: string; title: string }
   | { kind: 'update'; names: string[]; scope: Scope; cwd?: string; title: string };
 
@@ -49,6 +53,7 @@ export interface SettingsPatch {
   thresholds?: { overlap?: number; duplicate?: number };
   showInternal?: boolean;
   customSkillDirs?: string[];
+  llm?: LlmSettings;
 }
 
 export interface SkillCatApi {
@@ -63,6 +68,8 @@ export interface SkillCatApi {
   getAnnotation(ref: SkillRefLite): Promise<Annotation | null>;
   saveAnnotation(ref: SkillRefLite, annotation: Annotation | null): Promise<void>;
   searchRemote(query: string): Promise<RemoteSkill[]>;
+  leaderboard(kind: LeaderboardKind, page?: number): Promise<RemoteSkill[]>;
+  testLlm(settings: LlmSettings): Promise<LlmTestResult>;
   startOp(op: OpStart): Promise<{ opId: string }>;
   cancelOp(opId: string): Promise<void>;
   openSkill(ref: SkillRefLite): Promise<void>;
@@ -88,6 +95,8 @@ export const CH = {
   annotationGet: 'annotation:get',
   annotationSave: 'annotation:save',
   searchRemote: 'search:remote',
+  leaderboard: 'search:leaderboard',
+  testLlm: 'llm:test',
   opStart: 'op:start',
   opCancel: 'op:cancel',
   openSkill: 'open:skill',

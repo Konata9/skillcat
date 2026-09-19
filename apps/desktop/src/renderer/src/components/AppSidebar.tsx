@@ -5,6 +5,7 @@
 import * as React from 'react';
 import type { Snapshot } from '@shared/contract';
 import { Languages, Moon, Sun } from 'lucide-react';
+import logoUrl from '@renderer/assets/logo.png';
 import { Button } from './ui/button';
 import { useI18n } from '@renderer/lib/i18n';
 import { TAB_LABEL_KEY, TAB_ORDER, type Tab } from '@renderer/lib/navigation';
@@ -36,8 +37,11 @@ export function AppSidebar({
 
   return (
     <aside className="flex min-h-0 flex-col border-r border-border bg-card">
-      <div className="px-4 pt-4 pb-3 text-[15px] font-semibold tracking-wide">
-        Skill<span className="text-primary">Cat</span>
+      <div className="flex items-center gap-2 px-4 pt-4 pb-3 text-[15px] font-semibold tracking-wide">
+        <img src={logoUrl} alt="" className="size-6 shrink-0 rounded-md" />
+        <span>
+          Skill<span className="text-primary">Cat</span>
+        </span>
       </div>
 
       <nav className="flex flex-col gap-0.5 px-2 pb-3">

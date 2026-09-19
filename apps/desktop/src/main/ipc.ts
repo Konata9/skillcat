@@ -23,6 +23,24 @@ export interface IpcDeps {
 }
 
 const ScopeSchema = z.enum(['global', 'project']);
+const LlmSchema = z.object({
+  provider: z.enum([
+    'anthropic',
+    'openai',
+    'gemini',
+    'deepseek',
+    'qwen',
+    'glm',
+    'kimi',
+    'minimax',
+    'mimo',
+    'ollama',
+    'custom',
+  ]),
+  apiKey: z.string(),
+  baseUrl: z.string(),
+  model: z.string(),
+});
 const RefSchema = z.object({
   scope: ScopeSchema,
   projectPath: z.string().optional(),
@@ -38,8 +56,9 @@ const OpSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('add'),
     source: z.string().min(1),
-    scope: ScopeSchema,
-    cwd: z.string().optional(),
+    targets: z
+      .array(z.object({ scope: ScopeSchema, cwd: z.string().optional() }))
+      .min(1),
     title: z.string(),
   }),
   z.object({
@@ -73,6 +92,7 @@ const SettingsSchema = z.object({
     .optional(),
   showInternal: z.boolean().optional(),
   customSkillDirs: z.array(z.string()).optional(),
+  llm: LlmSchema.optional(),
 });
 
 export function toSnapshot(manager: SkillManager): Snapshot {
@@ -106,7 +126,7 @@ function skillFilePath(manager: SkillManager, ref: SkillRefLite): string | null 
 function createOp(manager: SkillManager, request: OpStart): AsyncOp {
   switch (request.kind) {
     case 'add':
-      return manager.runAdd(request.source, { scope: request.scope, cwd: request.cwd });
+      return manager.runAdd(request.source, request.targets);
     case 'remove':
       return manager.runRemove(request.name, { scope: request.scope, cwd: request.cwd });
     case 'update':
@@ -158,6 +178,7 @@ export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
     if (patch.thresholds) await manager.setThresholds(patch.thresholds);
     if (patch.showInternal !== undefined) await manager.setShowInternal(patch.showInternal);
     if (patch.customSkillDirs !== undefined) await manager.setCustomSkillDirs(patch.customSkillDirs);
+    if (patch.llm !== undefined) await manager.setLlm(patch.llm);
     await manager.refresh();
   });
 
@@ -187,6 +208,14 @@ export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
   ipc.handle(CH.searchRemote, async (_event, rawQuery) => {
     const query = z.string().min(1).parse(rawQuery);
     return manager.searchRemote(query);
+  });
+  ipc.handle(CH.leaderboard, async (_event, rawKind, rawPage) => {
+    const kind = z.enum(['all-time', 'trending', 'hot']).parse(rawKind);
+    const page = z.number().int().min(0).optional().parse(rawPage);
+    return manager.fetchLeaderboard(kind, page ?? 0);
+  });
+  ipc.handle(CH.testLlm, async (_event, rawSettings) => {
+    return manager.testLlm(LlmSchema.parse(rawSettings));
   });
 
   const ops = new Map<string, AsyncOp>();

@@ -19,6 +19,21 @@ export interface RemoteSkill {
   slug: string;
   source: string;
   installs: number;
+  /** Weekly install counts, oldest → newest (all-time leaderboard only). */
+  weeklyInstalls?: number[];
+  /** Net install change over the last day (hot leaderboard only). */
+  change?: number;
+  /** Published by a first-party / official source. */
+  isOfficial?: boolean;
+}
+
+/** Leaderboard views exposed by skills.sh. */
+export type LeaderboardKind = 'all-time' | 'trending' | 'hot';
+
+/** One install destination for `SkillManager.runAdd`. */
+export interface AddTarget {
+  scope: Scope;
+  cwd?: string;
 }
 
 export interface OpResult {

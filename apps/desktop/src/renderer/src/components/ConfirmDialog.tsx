@@ -14,6 +14,7 @@ export function ConfirmDialog({
   title,
   confirmLabel,
   danger,
+  confirmDisabled,
   onConfirm,
   onClose,
   children,
@@ -21,6 +22,7 @@ export function ConfirmDialog({
   title: string;
   confirmLabel: string;
   danger?: boolean;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onClose: () => void;
   children: React.ReactNode;
@@ -38,7 +40,11 @@ export function ConfirmDialog({
           <Button variant="outline" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button variant={danger ? 'destructive' : 'primary'} onClick={onConfirm}>
+          <Button
+            variant={danger ? 'destructive' : 'primary'}
+            disabled={confirmDisabled}
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </Button>
         </DialogFooter>

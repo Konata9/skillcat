@@ -17,6 +17,10 @@
     "./proxy": {
       "types": "./dist/cli/proxy.d.ts",
       "default": "./dist/cli/proxy.js"
+    },
+    "./llm": {
+      "types": "./dist/llm.d.ts",
+      "default": "./dist/llm.js"
     }
   },
   "files": [

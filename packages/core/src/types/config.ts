@@ -15,6 +15,30 @@ export interface ProxySettings {
   bypass: string;
 }
 
+/** Supported LLM vendors. SkillCat ships no model; the user supplies a key. */
+export type LlmProvider =
+  | 'anthropic'
+  | 'openai'
+  | 'gemini'
+  | 'deepseek'
+  | 'qwen'
+  | 'glm'
+  | 'kimi'
+  | 'minimax'
+  | 'mimo'
+  | 'ollama'
+  | 'custom';
+
+export interface LlmSettings {
+  provider: LlmProvider;
+  /** API key, stored locally in config.json. Empty for keyless local servers. */
+  apiKey: string;
+  /** Base URL of the API, e.g. `https://api.openai.com/v1`. */
+  baseUrl: string;
+  /** Model identifier, e.g. `gpt-4o`. */
+  model: string;
+}
+
 export interface AppConfig {
   version: 1;
   roots: string[];
@@ -32,4 +56,6 @@ export interface AppConfig {
    * container dir whose children are skill folders with a `SKILL.md`.
    */
   customSkillDirs: string[];
+  /** User-supplied language-model credentials. Never bundled by SkillCat. */
+  llm: LlmSettings;
 }

@@ -15,6 +15,12 @@ mac:
     - target: zip
   category: public.app-category.developer-tools
   identity: null
+  icon: build/icon.icns
+win:
+  icon: build/icon.ico
+linux:
+  icon: build/icon.png
+  category: Development
 dmg:
   title: SkillCat
   contents:
