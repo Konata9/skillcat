@@ -131,8 +131,11 @@ asar 仅含 `out/` 与 `package.json`。
 - `scripts/audit-fix.sh` 运行 `pnpm audit --audit-level=high`；发现 high/critical 时先
   `pnpm audit --fix update` 更新锁文件，仍存在则 `pnpm audit --fix override` 添加 overrides，
   并写出 `audit-report.md` 供 PR 正文使用。
-- 随后运行 `pnpm typecheck` 与 `pnpm test`。**只有全部通过**，且当前分支是默认分支时，才通过
-  `peter-evans/create-pull-request` 创建 PR（分支 `chore/dependency-audit`，已存在则更新）。
+- **无 high/critical 时提前结束**：脚本输出 `vulnerable=false`，后续的 typecheck、test 与创建 PR
+  全部跳过（日志打印 "Nothing to fix"）。
+- 有 high/critical 时，运行 `pnpm typecheck` 与 `pnpm test`。**只有全部通过**，且当前分支是默认
+  分支时，才通过 `peter-evans/create-pull-request` 创建 PR（分支 `chore/dependency-audit`，
+  已存在则更新）。
 - 工作流需要 `contents: write` 与 `pull-requests: write` 权限。创建 PR 的 token 优先使用
   `DEPENDENCY_AUDIT_TOKEN` secret，未配置时回退到 `GITHUB_TOKEN`。
 - `chore/dependency-audit` 分支被 `branches-ignore` 排除，避免用 PAT 时自我触发。

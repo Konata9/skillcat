@@ -1,7 +1,8 @@
 name: Dependency audit
 
-# Runs on every commit. Scans with `pnpm audit`, attempts to fix high/critical
-# advisories, and opens a pull request only when the full test suite passes.
+# Runs on every commit. Scans with `pnpm audit` and, only when high/critical
+# advisories are found, attempts to fix them, runs the test suite and opens a
+# pull request. A clean audit ends the job early.
 on:
   push:
     # The PR branch is pushed by this same workflow; skip it to avoid a
@@ -44,14 +45,23 @@ jobs:
           AUDIT_REPORT: ${{ runner.temp }}/audit-report.md
         run: bash scripts/audit-fix.sh
 
+      # No high/critical advisories means nothing to fix, so skip typecheck,
+      # tests and the PR entirely.
+      - name: Nothing to fix
+        if: steps.audit.outputs.vulnerable != 'true'
+        run: echo "No high/critical advisories found — skipping typecheck, tests and pull request."
+
       - name: Typecheck
+        if: steps.audit.outputs.vulnerable == 'true'
         run: pnpm typecheck
 
       - name: Test
+        if: steps.audit.outputs.vulnerable == 'true'
         run: pnpm test
 
-      # Only on the default branch, and only if every step above succeeded —
-      # i.e. the fixes applied by the audit step keep typecheck and tests green.
+      # Only when there was something to fix, on the default branch, and only if
+      # every step above succeeded — i.e. the applied fixes keep typecheck and
+      # tests green.
       #
       # GITHUB_TOKEN can open the PR only when the repository setting
       # "Allow GitHub Actions to create and approve pull requests" is enabled.
@@ -59,7 +69,10 @@ jobs:
       # fine-grained PAT with Contents + Pull requests: Read and write) and it
       # is used automatically instead.
       - name: Create pull request
-        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        if: |
+          steps.audit.outputs.vulnerable == 'true' &&
+          github.event_name == 'push' &&
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.DEPENDENCY_AUDIT_TOKEN || secrets.GITHUB_TOKEN }}
