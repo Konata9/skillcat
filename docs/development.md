@@ -25,6 +25,10 @@ pnpm --filter @skillcat/core test
 pnpm --filter @skillcat/desktop test
 ```
 
+`pnpm typecheck` 与 `pnpm test` 会先构建 `@skillcat/core`：桌面端的类型检查与测试都通过
+`@skillcat/core` 的 `dist` 声明解析，而 core 的 `typecheck` 用 `tsc --noEmit` 不产出 `dist`。
+因此在干净的检出（如 CI）上直接运行即可，无需手动先 build。
+
 开发模式下 `electron.vite.config.ts` 把 `@skillcat/core` 别名到源码，修改 core 会触发热更新 /
 重启，无需先构建 core。
 
@@ -113,7 +117,8 @@ asar 仅含 `out/` 与 `package.json`。
 
 ## GitHub Actions
 
-仓库有两个工作流，辅助脚本放在 `scripts/`。
+仓库有两个工作流，辅助脚本放在 `scripts/`。两者均使用 Node 24，pnpm 版本由根 `package.json`
+的 `packageManager` 字段决定。
 
 ### 依赖扫描（`.github/workflows/dependency-audit.yml`）
 

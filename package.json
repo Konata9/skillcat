@@ -18,8 +18,8 @@
   },
   "scripts": {
     "build": "pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop build",
-    "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter @skillcat/core test && pnpm --filter @skillcat/desktop test",
+    "typecheck": "pnpm --filter @skillcat/core build && pnpm -r typecheck",
+    "test": "pnpm --filter @skillcat/core build && pnpm --filter @skillcat/core test && pnpm --filter @skillcat/desktop test",
     "sync-version": "node scripts/sync-app-version.mjs",
     "desktop": "node scripts/sync-app-version.mjs && pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop dev",
     "dist": "node scripts/sync-app-version.mjs && pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop dist"

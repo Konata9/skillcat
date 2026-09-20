@@ -30,19 +30,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Full history + tags so we can diff the version against the previous
-          # commit and detect whether a tag already exists.
+          # Full history + tags so we can diff the version against the base of
+          # the push and detect whether a tag already exists.
           fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
+      # Runs first, before any toolchain setup: the script is pure shell, and
+      # gating setup-node on the result avoids a post-job cache-save failure
+      # when no release is needed.
       - name: Detect version change
         id: version
         env:
@@ -50,6 +44,17 @@ jobs:
           BASE_REF: ${{ github.event.before }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/detect-version-change.sh
+
+      - name: Setup pnpm
+        if: steps.version.outputs.changed == 'true'
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        if: steps.version.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
 
       - name: Install dependencies
         if: steps.version.outputs.changed == 'true'

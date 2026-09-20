@@ -16,11 +16,11 @@ GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/stdout}"
 ZERO_SHA="0000000000000000000000000000000000000000"
 
 read_version() {
-  node -e "const fs=require('fs');try{process.stdout.write(String(JSON.parse(fs.readFileSync(process.argv[1],'utf8')).version||''))}catch(e){}" "$1"
+  sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1" | head -n 1
 }
 
 read_stdin_version() {
-  node -e "let s='';process.stdin.on('data',(d)=>{s+=d}).on('end',()=>{try{process.stdout.write(String(JSON.parse(s).version||''))}catch(e){}})"
+  sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1
 }
 
 if [ ! -f "$PKG" ]; then
