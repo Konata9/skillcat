@@ -16,7 +16,9 @@
 | `pnpm build` | 构建 core 与 desktop |
 | `pnpm typecheck` | 全 workspace 类型检查 |
 | `pnpm test` | core 单测 + 桌面端 IPC/组件/交互测试 |
-| `pnpm dist` | 打包 macOS 应用（dmg + zip） |
+| `pnpm dist` | 打包当前平台（macOS 或 Windows） |
+| `pnpm dist:mac` | 打包 macOS：dmg + zip（arm64 与 x64） |
+| `pnpm dist:win` | 打包 Windows：x64 NSIS 安装包 |
 
 单包运行：
 
@@ -107,13 +109,16 @@ electron-builder 读取它）、构建并发布 `v<version>`。
 
 ## 打包
 
-`pnpm dist` 使用 electron-builder 产出未签名应用（`mac.identity: null`），输出到
-`apps/desktop/release/`。`@skillcat/core`、`zod`、`execa` 等会被 Vite 打进 main bundle，
+`pnpm dist:mac` / `pnpm dist:win` 使用 electron-builder 产出未签名产物，输出到
+`apps/desktop/release/`（macOS：dmg + zip，arm64 与 x64；Windows：x64 NSIS 安装包）。
+`pnpm dist` 只构建当前平台。`@skillcat/core`、`zod`、`execa` 等会被 Vite 打进 main bundle，
 asar 仅含 `out/` 与 `package.json`。
 
 应用图标：`apps/desktop/build/icon.icns`（macOS）、`icon.ico`（Windows）、`icon.png`（Linux）。
 
-需要正式签名 / 公证时，删除 `mac.identity: null` 并配置 Apple Developer 证书。
+需要正式签名时：macOS 删除 `mac.identity: null` 并配置 Apple Developer 证书；Windows 配置
+代码签名证书。Windows 安装包行为（是否一键安装、是否允许改安装目录等）在 `electron-builder.yml`
+的 `nsis` 段配置。
 
 ## GitHub Actions
 
@@ -161,12 +166,16 @@ asar 仅含 `out/` 与 `package.json`。
 
 ### 发布（`.github/workflows/release.yml`）
 
-- 触发：`main` 分支上根 `package.json` 发生变化时（以及手动 `workflow_dispatch`，可传 `force`
-  忽略版本变化）。
-- `scripts/detect-version-change.sh` 比较当前 `version` 与本次 push 起点（`github.event.before`）
-  的 `version`，并检查 `v<version>` tag 是否已存在；只有版本变化且未发布时才继续。
-- 在 `macos-latest` 上 `pnpm install --frozen-lockfile` → `pnpm dist`（内含版本同步）→
-  `softprops/action-gh-release` 发布 `v<version>`，附带 dmg 与 zip，自动生成 release notes。
+分三个 job：
 
-发版流程：修改根 `package.json` 的 `version` 并合并到 `main`，工作流会自动构建并发布。若要补发
-当前版本（例如版本号已改但尚未发布），可手动运行该工作流并勾选 `force`。
+- **detect**（ubuntu）：`scripts/detect-version-change.sh` 比较当前 `version` 与本次 push 起点
+  （`github.event.before`）的 `version`，并检查该版本是否已有 release；只有版本变化且未发布时才
+  继续。触发条件为 `main` 分支上根 `package.json` 发生变化，或手动 `workflow_dispatch`（可传
+  `force` 忽略版本变化）。
+- **build**（矩阵）：`macos-latest` 跑 `pnpm dist:mac`，`windows-latest` 跑 `pnpm dist:win`
+  （两者都含版本同步与 core 构建），各自上传产物为 workflow artifact。
+- **release**（ubuntu）：汇总所有 artifact，用 `softprops/action-gh-release` 发布 `v<version>`，
+  附带 macOS 的 dmg / zip 与 Windows 的安装包，自动生成 release notes。
+
+发版流程：修改根 `package.json` 的 `version` 并合并到 `main`，工作流会自动构建双平台并发布。若要
+补发当前版本（例如版本号已改但尚未发布，或首次接入工作流时），手动运行该工作流并勾选 `force`。

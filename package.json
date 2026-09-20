@@ -22,6 +22,8 @@
     "test": "pnpm --filter @skillcat/core build && pnpm --filter @skillcat/core test && pnpm --filter @skillcat/desktop test",
     "sync-version": "node scripts/sync-app-version.mjs",
     "desktop": "node scripts/sync-app-version.mjs && pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop dev",
-    "dist": "node scripts/sync-app-version.mjs && pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop dist"
+    "dist": "node scripts/sync-app-version.mjs && pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop dist",
+    "dist:mac": "node scripts/sync-app-version.mjs && pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop dist:mac",
+    "dist:win": "node scripts/sync-app-version.mjs && pnpm --filter @skillcat/core build && pnpm --filter @skillcat/desktop dist:win"
   }
 }

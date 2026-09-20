@@ -17,7 +17,9 @@
     "dev": "electron-vite dev --watch",
     "build": "electron-vite build",
     "start": "electron-vite preview",
-    "dist": "electron-vite build && electron-builder --mac",
+    "dist": "electron-vite build && electron-builder",
+    "dist:mac": "electron-vite build && electron-builder --mac --arm64 --x64 --publish never",
+    "dist:win": "electron-vite build && electron-builder --win --x64 --publish never",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run"
   },

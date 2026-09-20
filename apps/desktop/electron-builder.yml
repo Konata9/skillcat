@@ -16,11 +16,23 @@ mac:
   category: public.app-category.developer-tools
   identity: null
   icon: build/icon.icns
+  artifactName: ${productName}-${version}-${arch}.${ext}
 win:
+  target:
+    - target: nsis
+      arch:
+        - x64
   icon: build/icon.ico
 linux:
   icon: build/icon.png
   category: Development
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  artifactName: ${productName}-${version}-setup.${ext}
 dmg:
   title: SkillCat
   contents:

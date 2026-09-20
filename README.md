@@ -6,7 +6,7 @@
 
   <p>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-    <img src="https://img.shields.io/badge/platform-macOS-lightgrey.svg" alt="Platform: macOS" />
+    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg" alt="Platform: macOS and Windows" />
     <img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg" alt="Node >= 22" />
     <img src="https://img.shields.io/badge/pnpm-11-orange.svg" alt="pnpm 11" />
   </p>
@@ -73,20 +73,25 @@ your files behind your back.
 
 ### Requirements
 
-- macOS (prebuilt artifacts are macOS-only; the codebase is cross-platform)
+- macOS or Windows (prebuilt artifacts for both; the codebase is cross-platform)
 - [Node.js](https://nodejs.org/) ≥ 22 and [pnpm](https://pnpm.io/) 11 for building from source
 
 ### Option A — Download the app
 
-Grab the latest `SkillCat-<version>-arm64.dmg` (or `.zip`) from the
-[Releases](https://github.com/Konata9/skillcat/releases) page and drag **SkillCat** into
-`/Applications`.
+Grab the latest build from the [Releases](https://github.com/Konata9/skillcat/releases) page:
 
-The builds are unsigned. On first launch from a downloaded copy, right-click → **Open**, or run:
+- **macOS** — `SkillCat-<version>-arm64.dmg` or `SkillCat-<version>-x64.dmg` (Apple Silicon / Intel),
+  then drag **SkillCat** into `/Applications`.
+- **Windows** — `SkillCat-<version>-setup.exe`, then run the installer.
+
+The builds are unsigned. On macOS, the first launch of a downloaded copy needs right-click → **Open**,
+or run:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/SkillCat.app
 ```
+
+On Windows, SmartScreen may warn about an unknown publisher — choose **More info → Run anyway**.
 
 ### Option B — Build from source
 
@@ -99,10 +104,12 @@ pnpm desktop   # Electron app in development mode
 
 On first run, set a scan root (for example `~/Workspace`) so project-level skills can be discovered.
 
-To produce a distributable app (dmg + zip under `apps/desktop/release/`):
+To produce distributable artifacts under `apps/desktop/release/`, run the script for the target
+platform (`pnpm dist` builds for the current platform):
 
 ```bash
-pnpm dist
+pnpm dist:mac   # macOS: dmg + zip (Apple Silicon and Intel)
+pnpm dist:win   # Windows: x64 NSIS installer
 ```
 
 <details>

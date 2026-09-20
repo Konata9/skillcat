@@ -6,7 +6,7 @@
 
   <p>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-    <img src="https://img.shields.io/badge/platform-macOS-lightgrey.svg" alt="Platform: macOS" />
+    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg" alt="Platform: macOS and Windows" />
     <img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg" alt="Node >= 22" />
     <img src="https://img.shields.io/badge/pnpm-11-orange.svg" alt="pnpm 11" />
   </p>
@@ -69,19 +69,24 @@ agent 各自的原生目录里；彼此遮蔽；与锁文件记录的版本发�
 
 ### 环境要求
 
-- macOS（预构建产物仅提供 macOS；代码本身跨平台）
+- macOS 或 Windows（两者均提供预构建产物；代码本身跨平台）
 - 从源码构建需要 [Node.js](https://nodejs.org/) ≥ 22 与 [pnpm](https://pnpm.io/) 11
 
 ### 方式一 —— 下载应用
 
-从 [Releases](https://github.com/Konata9/skillcat/releases) 页面下载最新的
-`SkillCat-<version>-arm64.dmg`（或 `.zip`），把 **SkillCat** 拖入 `/Applications`。
+从 [Releases](https://github.com/Konata9/skillcat/releases) 页面下载最新版本：
 
-产物未签名。首次打开下载副本时，请右键 → **打开**，或执行：
+- **macOS** —— `SkillCat-<version>-arm64.dmg` 或 `SkillCat-<version>-x64.dmg`（Apple Silicon / Intel），
+  把 **SkillCat** 拖入 `/Applications`。
+- **Windows** —— `SkillCat-<version>-setup.exe`，运行安装程序即可。
+
+产物未签名。macOS 首次打开下载副本时请右键 → **打开**，或执行：
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/SkillCat.app
 ```
+
+Windows 上 SmartScreen 可能提示未知发布者，选择 **更多信息 → 仍要运行**。
 
 ### 方式二 —— 从源码构建
 
@@ -94,10 +99,12 @@ pnpm desktop   # Electron 桌面端（开发模式）
 
 首次运行请设置扫描根目录（例如 `~/Workspace`），用于自动发现项目级 skill。
 
-打包为可分发的独立应用（dmg 与 zip 产出到 `apps/desktop/release/`）：
+打包为可分发的独立应用（产出到 `apps/desktop/release/`），按目标平台执行对应脚本（`pnpm dist`
+则构建当前平台）：
 
 ```bash
-pnpm dist
+pnpm dist:mac   # macOS：dmg + zip（Apple Silicon 与 Intel）
+pnpm dist:win   # Windows：x64 NSIS 安装包
 ```
 
 <details>
