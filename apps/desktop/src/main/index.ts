@@ -8,9 +8,8 @@ app.setName('SkillCat');
 
 /**
  * GitHub repository used for the in-app update check, in `owner/repo` form.
- * TODO: fill this in once the project is published on GitHub.
  */
-const UPDATE_REPO = '';
+const UPDATE_REPO = 'Konata9/skillcat';
 
 const manager = new SkillManager();
 
