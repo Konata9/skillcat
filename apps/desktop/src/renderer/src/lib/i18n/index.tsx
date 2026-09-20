@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type {
   DoctorWarning,
   DoctorWarningCode,
+  EvaluationStepCode,
   FindingCode,
   FindingMessage,
   FindingParam,
@@ -14,10 +15,13 @@ import type { Locale, MessageParams, MessageValue } from './types';
 // Compile-time guarantees that every core message code has a translation entry.
 type AssertFindingCodesCovered = FindingCode extends MessageKey ? true : never;
 type AssertDoctorCodesCovered = DoctorWarningCode extends MessageKey ? true : never;
+type AssertEvaluationStepCodesCovered = EvaluationStepCode extends MessageKey ? true : never;
 const findingCodesCovered: AssertFindingCodesCovered = true;
 const doctorCodesCovered: AssertDoctorCodesCovered = true;
+const evaluationStepCodesCovered: AssertEvaluationStepCodesCovered = true;
 void findingCodesCovered;
 void doctorCodesCovered;
+void evaluationStepCodesCovered;
 
 const STORAGE_KEY = 'skillcat-locale';
 const LEGACY_STORAGE_KEY = 'skillman-locale';

@@ -81,7 +81,7 @@ describe('SkillList', () => {
     const { unmount } = render(
       wrap(<SkillList records={[]} selectedKey={null} onSelect={() => {}} />),
     );
-    expect(screen.getByText('这个作用域还没有 skill')).toBeTruthy();
+    expect(screen.getByText('当前位置还没有 skill')).toBeTruthy();
     unmount();
 
     render(wrap(<SkillList records={[]} selectedKey={null} onSelect={() => {}} filterActive />));
@@ -167,6 +167,7 @@ describe('ConfirmFlows install targets', () => {
           scopes={availableScopes}
           onStartOp={onStartOp as never}
           onRemoveProject={async () => {}}
+          onReevaluate={() => {}}
           onClose={() => {}}
         />,
       ),
@@ -243,6 +244,7 @@ describe('SettingsView LLM', () => {
       maxScanDepth: 3,
       customSkillDirs: [],
       llm: {
+        enabled: true,
         provider: 'openai',
         apiKey: '',
         baseUrl: 'https://api.openai.com/v1',
@@ -251,13 +253,13 @@ describe('SettingsView LLM', () => {
     };
   }
 
-  it('applies provider presets and tests the connection', async () => {
-    const onTestLlm = vi.fn(async () => ({ ok: true, status: 200, message: 'ok' }));
+  function renderLlm(config: AppConfig, onTestLlm = vi.fn(async () => ({ ok: true, status: 200, message: 'ok' }))) {
     render(
       wrap(
         <SettingsView
-          config={llmConfig()}
+          config={config}
           configPath="/tmp/config/config.json"
+          appVersion="0.1.0"
           cliAvailable
           cliSource="path"
           onSave={async () => {}}
@@ -267,6 +269,15 @@ describe('SettingsView LLM', () => {
           onRevealConfig={() => {}}
           onReloadConfig={async () => {}}
           onTestLlm={onTestLlm}
+          onCheckUpdate={async () => ({
+            configured: false,
+            current: '0.1.0',
+            latest: null,
+            hasUpdate: false,
+            url: null,
+            publishedAt: null,
+          })}
+          onOpenExternal={async () => {}}
           onDoctor={async () => ({
             ok: true,
             configDir: '/tmp/config',
@@ -278,6 +289,12 @@ describe('SettingsView LLM', () => {
         />,
       ),
     );
+    fireEvent.click(screen.getByText('大模型'));
+    return onTestLlm;
+  }
+
+  it('applies provider presets and tests the connection', async () => {
+    const onTestLlm = renderLlm(llmConfig());
 
     fireEvent.change(screen.getByRole('combobox', { name: '服务商' }), {
       target: { value: 'deepseek' },
@@ -288,6 +305,7 @@ describe('SettingsView LLM', () => {
     fireEvent.click(screen.getByRole('button', { name: '测试连接' }));
     await waitFor(() => {
       expect(onTestLlm).toHaveBeenCalledWith({
+        enabled: true,
         provider: 'deepseek',
         apiKey: '',
         baseUrl: 'https://api.deepseek.com/v1',
@@ -295,6 +313,20 @@ describe('SettingsView LLM', () => {
       });
     });
     expect(await screen.findByText(/连接成功/)).toBeTruthy();
+  });
+
+  it('hides the configuration until the model is enabled', () => {
+    const disabled = llmConfig();
+    disabled.llm.enabled = false;
+    renderLlm(disabled);
+
+    expect(screen.queryByRole('combobox', { name: '服务商' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '测试连接' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('switch', { name: '启用大模型' }));
+
+    expect(screen.getByRole('combobox', { name: '服务商' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '测试连接' })).toBeTruthy();
   });
 });
 
@@ -311,7 +343,13 @@ describe('SettingsView proxy', () => {
       showInternal: false,
       maxScanDepth: 3,
       customSkillDirs: [],
-      llm: { provider: 'openai', apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o' },
+      llm: {
+        enabled: false,
+        provider: 'openai',
+        apiKey: '',
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-4o',
+      },
     };
   }
 
@@ -321,6 +359,7 @@ describe('SettingsView proxy', () => {
       <SettingsView
         config={value}
         configPath="/tmp/config/config.json"
+        appVersion="0.1.0"
         cliAvailable
         cliSource="path"
         onSave={onSave}
@@ -330,6 +369,15 @@ describe('SettingsView proxy', () => {
         onRevealConfig={() => {}}
         onReloadConfig={async () => {}}
         onTestLlm={async () => ({ ok: true, status: 200, message: 'ok' })}
+        onCheckUpdate={async () => ({
+          configured: false,
+          current: '0.1.0',
+          latest: null,
+          hasUpdate: false,
+          url: null,
+          publishedAt: null,
+        })}
+        onOpenExternal={async () => {}}
         onDoctor={async () => ({
           ok: true,
           configDir: '/tmp/config',
@@ -342,6 +390,7 @@ describe('SettingsView proxy', () => {
     );
 
     const { rerender } = render(wrap(view(config({ url: '', bypass: '' }))));
+    fireEvent.click(screen.getByText('网络'));
     const toggle = screen.getByRole('switch', { name: '启用代理' });
     expect(toggle.getAttribute('aria-checked')).toBe('false');
     expect(screen.queryByPlaceholderText('127.0.0.1:7890')).toBeNull();

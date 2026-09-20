@@ -6,6 +6,12 @@ import { registerIpc } from './ipc';
 
 app.setName('SkillCat');
 
+/**
+ * GitHub repository used for the in-app update check, in `owner/repo` form.
+ * TODO: fill this in once the project is published on GitHub.
+ */
+const UPDATE_REPO = '';
+
 const manager = new SkillManager();
 
 /**
@@ -86,6 +92,11 @@ app.whenReady().then(async () => {
     pickDirectory: async () => {
       const result = await dialog.showOpenDialog({ properties: ['openDirectory'] });
       return result.canceled ? null : (result.filePaths[0] ?? null);
+    },
+    appVersion: app.getVersion(),
+    checkUpdate: () => manager.checkUpdate(UPDATE_REPO, app.getVersion()),
+    openExternal: async (url) => {
+      await shell.openExternal(url);
     },
   });
 

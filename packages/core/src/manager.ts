@@ -1,6 +1,6 @@
 /**
  * `SkillManager` is the core facade: it owns config, the sidecar stores, the
- * scan state and the conflict findings, and exposes operations (refresh,
+ * scan state and the analysis findings, and exposes operations (refresh,
  * project registry, annotations, remote search, CLI ops) to any UI.
  *
  * UI-agnostic: listeners receive change notifications, never rendered strings.
@@ -10,26 +10,39 @@ import { resolveSkillsCommand, type ResolvedCommand } from './cli/env.js';
 import { buildProxyEnv, isValidProxyUrl, normalizeProxyUrl } from './cli/proxy.js';
 import {
   fetchLeaderboardApi,
+  fetchRemoteSkillDetail,
   searchRemoteApi,
   searchRemoteViaCli,
   type FetchLike,
 } from './cli/remote-search.js';
 import { SkillsCli } from './cli/skills-cli.js';
 import { ConfigStore, normalizeCustomSkillDirs, sanitizeLlm } from './config.js';
-import { findConflicts } from './conflicts.js';
+import { analyzeSkills } from './analysis.js';
 import { readLock, scanScope } from './discovery.js';
+import {
+  evaluateSkills,
+  evaluationSignature,
+  reviewCandidatePairs,
+  type EvaluationLocale,
+} from './evaluation/evaluate.js';
+import { applyVerdicts } from './evaluation/verdicts.js';
 import { annotationKey, recordKey } from './keys.js';
-import { testLlmConnection, type LlmTestResult } from './llm.js';
+import { isLlmConfigured, testLlmConnection, type LlmTestResult } from './llm.js';
 import { getConfigDir, getGlobalLockPath, getProjectLockPath } from './paths.js';
 import { discoverProjects } from './projects.js';
 import { SidecarStore } from './sidecar.js';
+import { checkForUpdate, type UpdateCheckResult } from './update.js';
 import type {
   AddTarget,
+  AiPairVerdict,
   Annotation,
   AppConfig,
   AsyncOp,
   DoctorReport,
   DoctorWarning,
+  EvaluationEvent,
+  EvaluationProgress,
+  EvaluationReport,
   Finding,
   LeaderboardKind,
   LlmSettings,
@@ -38,6 +51,7 @@ import type {
   ProjectInfo,
   ProxySettings,
   RemoteSkill,
+  RemoteSkillDetail,
   Scope,
   SkillRecord,
 } from './types.js';
@@ -50,6 +64,17 @@ export interface ManagerState {
   orphans: OrphanLock[];
   findings: Finding[];
   projectErrors: Map<string, string>;
+  /** Rule-engine findings before AI verdicts are applied. */
+  baseFindings: Finding[];
+  /** Latest saved LLM evaluation, loaded from disk and refreshed on demand. */
+  evaluation: EvaluationReport | null;
+  verdicts: AiPairVerdict[];
+  verdictsAt: string | null;
+  verdictsSignature: string | null;
+  evaluating: boolean;
+  reviewing: boolean;
+  evaluationProgress: EvaluationProgress | null;
+  evaluationError: string | null;
 }
 
 export interface RefreshOptions {
@@ -68,11 +93,21 @@ export class SkillManager {
     orphans: [],
     findings: [],
     projectErrors: new Map(),
+    baseFindings: [],
+    evaluation: null,
+    verdicts: [],
+    verdictsAt: null,
+    verdictsSignature: null,
+    evaluating: false,
+    reviewing: false,
+    evaluationProgress: null,
+    evaluationError: null,
   };
 
   private resolved: ResolvedCommand | null = null;
   private cli: SkillsCli | null = null;
   private listeners = new Set<() => void>();
+  private evaluationListeners = new Set<(event: EvaluationEvent) => void>();
   private copyHashCache = new Map<string, string>();
   private remoteFetch: FetchLike | null = null;
 
@@ -85,6 +120,11 @@ export class SkillManager {
   async init(): Promise<void> {
     await this.configStore.load();
     await this.resolveCli();
+    const store = await this.sidecar.loadEvaluation();
+    this.state.evaluation = store?.report ?? null;
+    this.state.verdicts = store?.verdicts ?? [];
+    this.state.verdictsAt = store?.verdictsAt ?? null;
+    this.state.verdictsSignature = store?.verdictsSignature ?? null;
   }
 
   /** Guarantees `config.json` exists and returns its path (for open / reveal). */
@@ -121,6 +161,18 @@ export class SkillManager {
 
   private emit(): void {
     for (const listener of this.listeners) listener();
+  }
+
+  /** Subscribes to the transient evaluation process log (never persisted). */
+  onEvaluationEvent(listener: (event: EvaluationEvent) => void): () => void {
+    this.evaluationListeners.add(listener);
+    return () => {
+      this.evaluationListeners.delete(listener);
+    };
+  }
+
+  private emitEvaluation(event: EvaluationEvent): void {
+    for (const listener of this.evaluationListeners) listener(event);
   }
 
   private async resolveCli(): Promise<void> {
@@ -201,12 +253,13 @@ export class SkillManager {
       this.state.projects = projects;
       this.state.orphans = orphans;
       this.state.projectErrors = errors;
-      this.state.findings = findConflicts({
+      this.state.baseFindings = analyzeSkills({
         records: allRecords,
         orphans,
         lastSeen: savedState.hashes,
         thresholds: config.thresholds,
       });
+      this.state.findings = applyVerdicts(this.state.baseFindings, this.state.verdicts);
 
       const hashes: Record<string, string> = {};
       for (const record of allRecords) hashes[recordKey(record)] = record.contentHash;
@@ -221,6 +274,42 @@ export class SkillManager {
 
   allRecords(): SkillRecord[] {
     return [...this.state.global, ...[...this.state.projects.values()].flat()];
+  }
+
+  /** Current input fingerprint; `null` when there is nothing to evaluate. */
+  private currentSignature(): string | null {
+    const records = this.allRecords();
+    if (records.length === 0) return null;
+    return evaluationSignature(records, this.configStore.value.llm);
+  }
+
+  /** Whether the saved evaluation no longer matches the scanned skills. */
+  evaluationStale(): boolean {
+    const report = this.state.evaluation;
+    if (!report) return false;
+    const signature = this.currentSignature();
+    return signature !== null && signature !== report.signature;
+  }
+
+  /** Whether the saved AI verdicts no longer match the scanned skills. */
+  verdictsStale(): boolean {
+    if (this.state.verdicts.length === 0 || !this.state.verdictsSignature) return false;
+    const signature = this.currentSignature();
+    return signature !== null && signature !== this.state.verdictsSignature;
+  }
+
+  /** Re-applies the saved verdicts to the current rule findings. */
+  private rebuildFindings(): void {
+    this.state.findings = applyVerdicts(this.state.baseFindings, this.state.verdicts);
+  }
+
+  private async saveEvaluationStore(): Promise<void> {
+    await this.sidecar.saveEvaluation({
+      report: this.state.evaluation,
+      verdicts: this.state.verdicts,
+      verdictsAt: this.state.verdictsAt,
+      verdictsSignature: this.state.verdictsSignature,
+    });
   }
 
   findRecord(scope: Scope, projectPath: string | undefined, name: string): SkillRecord | undefined {
@@ -407,9 +496,129 @@ export class SkillManager {
     return fetchLeaderboardApi(kind, page, this.remoteFetch ?? fetch);
   }
 
+  /** Fetches a published skill's detail (SKILL.md + files) from skills.sh. */
+  async getRemoteSkillDetail(slug: string): Promise<RemoteSkillDetail> {
+    return fetchRemoteSkillDetail(slug, this.remoteFetch ?? fetch);
+  }
+
   /** Probes the user-supplied LLM endpoint/key/model (proxy-aware). */
   async testLlm(settings: LlmSettings): Promise<LlmTestResult> {
     return testLlmConnection(settings, this.remoteFetch ?? fetch);
+  }
+
+  /**
+   * Coalesces per-token reasoning deltas so the renderer is not flooded with
+   * one broadcast per character.
+   */
+  private createEventSink(): { onEvent: (event: EvaluationEvent) => void; flush: () => void } {
+    let reasoningBuffer = '';
+    const flush = () => {
+      if (!reasoningBuffer) return;
+      this.emitEvaluation({ type: 'reasoning', text: reasoningBuffer });
+      reasoningBuffer = '';
+    };
+    const onEvent = (event: EvaluationEvent) => {
+      if (event.type === 'reasoning') {
+        reasoningBuffer += event.text ?? '';
+        if (reasoningBuffer.length >= 160) flush();
+        return;
+      }
+      flush();
+      this.emitEvaluation(event);
+    };
+    return { onEvent, flush };
+  }
+
+  /**
+   * Runs the LLM evaluation over every scanned skill and saves the report plus
+   * the AI pair verdicts. Only called explicitly (button press).
+   */
+  async runEvaluation(locale: EvaluationLocale): Promise<void> {
+    const settings = this.configStore.value.llm;
+    if (!isLlmConfigured(settings)) throw new Error('LLM is not configured');
+    const records = this.allRecords();
+    if (records.length === 0) throw new Error('no skills to evaluate');
+
+    this.state.evaluating = true;
+    this.state.evaluationProgress = { done: 0, total: 0 };
+    this.state.evaluationError = null;
+    this.emit();
+
+    const sink = this.createEventSink();
+    try {
+      const { report, verdicts } = await evaluateSkills({
+        records,
+        settings,
+        locale,
+        fetchImpl: this.remoteFetch ?? fetch,
+        onEvent: sink.onEvent,
+        onProgress: (progress) => {
+          this.state.evaluationProgress = progress;
+          this.emit();
+        },
+      });
+      this.state.evaluation = report;
+      this.state.verdicts = verdicts;
+      this.state.verdictsAt = report.generatedAt;
+      this.state.verdictsSignature = report.signature;
+      this.rebuildFindings();
+      await this.saveEvaluationStore();
+    } catch (error) {
+      this.state.evaluationError = error instanceof Error ? error.message : String(error);
+      throw error;
+    } finally {
+      sink.flush();
+      this.emitEvaluation({ type: 'done' });
+      this.state.evaluating = false;
+      this.state.evaluationProgress = null;
+      this.emit();
+    }
+  }
+
+  /**
+   * Reviews only the heuristic candidate pairs and updates the AI verdicts,
+   * keeping the existing report. Backs the "review candidates" button.
+   */
+  async runCandidateReview(locale: EvaluationLocale): Promise<void> {
+    const settings = this.configStore.value.llm;
+    if (!isLlmConfigured(settings)) throw new Error('LLM is not configured');
+    const records = this.allRecords();
+    if (records.length === 0) throw new Error('no skills to evaluate');
+
+    this.state.reviewing = true;
+    this.state.evaluationProgress = null;
+    this.state.evaluationError = null;
+    this.emit();
+
+    const sink = this.createEventSink();
+    try {
+      const verdicts = await reviewCandidatePairs({
+        records,
+        settings,
+        locale,
+        fetchImpl: this.remoteFetch ?? fetch,
+        onEvent: sink.onEvent,
+      });
+      this.state.verdicts = verdicts;
+      this.state.verdictsAt = new Date().toISOString();
+      this.state.verdictsSignature = this.currentSignature();
+      this.rebuildFindings();
+      await this.saveEvaluationStore();
+    } catch (error) {
+      this.state.evaluationError = error instanceof Error ? error.message : String(error);
+      throw error;
+    } finally {
+      sink.flush();
+      this.emitEvaluation({ type: 'done' });
+      this.state.reviewing = false;
+      this.state.evaluationProgress = null;
+      this.emit();
+    }
+  }
+
+  /** Checks the configured GitHub repo for a newer release (proxy-aware). */
+  async checkUpdate(repo: string, currentVersion: string): Promise<UpdateCheckResult> {
+    return checkForUpdate(repo, currentVersion, this.remoteFetch ?? fetch);
   }
 
   /**

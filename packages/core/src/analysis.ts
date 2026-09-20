@@ -1,5 +1,5 @@
 /**
- * Deterministic and heuristic conflict detection over scanned skill records.
+ * Deterministic and heuristic analysis over scanned skill records.
  *
  * Deterministic rules cover disk reality (dangling links, lock drift, copy
  * drift, shadowing); heuristic rules cover trigger overlap and body duplication
@@ -12,12 +12,13 @@ import type {
   Finding,
   FindingMessage,
   OrphanLock,
+  Severity,
   SkillRecord,
   SkillRef,
   Thresholds,
 } from './types.js';
 
-export interface ConflictInput {
+export interface AnalysisInput {
   records: SkillRecord[];
   orphans: OrphanLock[];
   lastSeen: Record<string, string>;
@@ -41,7 +42,7 @@ function message(code: FindingMessage['code'], params?: FindingMessage['params']
   return params ? { code, params } : { code };
 }
 
-export function findConflicts(input: ConflictInput): Finding[] {
+export function analyzeSkills(input: AnalysisInput): Finding[] {
   const findings: Finding[] = [];
   const { records, orphans, lastSeen, thresholds } = input;
   const declaredMissing = new Map<
@@ -389,13 +390,18 @@ export function findConflicts(input: ConflictInput): Finding[] {
   }
   findings.push(...duplicates);
 
-  const severityRank = { error: 0, warn: 1, info: 2 } as const;
-  findings.sort(
+  return sortFindings(findings);
+}
+
+const SEVERITY_RANK: Record<Severity, number> = { error: 0, warn: 1, info: 2 };
+
+/** Shared ordering so rule findings and AI-annotated findings stay consistent. */
+export function sortFindings(findings: Finding[]): Finding[] {
+  return [...findings].sort(
     (a, b) =>
-      severityRank[a.severity] - severityRank[b.severity] ||
+      SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] ||
       (b.score ?? 0) - (a.score ?? 0) ||
       a.title.code.localeCompare(b.title.code) ||
       a.id.localeCompare(b.id),
   );
-  return findings;
 }

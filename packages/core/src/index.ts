@@ -4,7 +4,7 @@
  */
 export * from './types.js';
 export { SkillManager, type ManagerState, type RefreshOptions } from './manager.js';
-export { findConflicts, type ConflictInput } from './conflicts.js';
+export { analyzeSkills, sortFindings, type AnalysisInput } from './analysis.js';
 export {
   extractTriggers,
   applyAnnotation,
@@ -43,6 +43,7 @@ export {
 } from './cli/proxy.js';
 export {
   fetchLeaderboardApi,
+  fetchRemoteSkillDetail,
   searchRemoteApi,
   searchRemoteViaCli,
   parseFindOutput,
@@ -54,10 +55,38 @@ export {
   LLM_PROVIDERS,
   defaultLlmSettings,
   getLlmPreset,
+  isLlmConfigured,
   testLlmConnection,
   type LlmProviderPreset,
   type LlmTestResult,
 } from './llm.js';
+export {
+  evaluateSkills,
+  reviewCandidatePairs,
+  evaluationSignature,
+  buildCatalogEntries,
+  buildPairs,
+  extractJson,
+  extractJsonCandidate,
+  parseModelJson,
+  defaultModelCaller,
+  type ModelCaller,
+  type ModelCallRequest,
+  type EvaluateOptions,
+  type EvaluationRunResult,
+  type EvaluationLocale,
+} from './evaluation/evaluate.js';
+export { createEvaluationModel } from './evaluation/model.js';
+export { applyVerdicts, pairKey } from './evaluation/verdicts.js';
+export {
+  EVALUATION_PROMPT_VERSION,
+  buildScoringPrompt,
+  buildVerdictPrompt,
+  buildSummaryPrompt,
+  type CatalogPair,
+  type CatalogSkill,
+} from './evaluation/prompt.js';
+export { checkForUpdate, compareVersions, type UpdateCheckResult } from './update.js';
 export { SidecarStore } from './sidecar.js';
 export {
   APP_NAME,

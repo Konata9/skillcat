@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { fetchLeaderboardApi, parseFindOutput } from '../cli/remote-search.js';
+import {
+  fetchLeaderboardApi,
+  fetchRemoteSkillDetail,
+  parseFindOutput,
+} from '../cli/remote-search.js';
 import type { FetchLike } from '../cli/remote-search.js';
 
 describe('parseFindOutput', () => {
@@ -85,5 +89,58 @@ describe('fetchLeaderboardApi', () => {
 
     const failing: FetchLike = async () => ({ ok: false, status: 500, json: async () => ({}) });
     await expect(fetchLeaderboardApi('hot', 0, failing)).rejects.toThrow('500');
+  });
+});
+
+describe('fetchRemoteSkillDetail', () => {
+  function fakeFetch(payload: unknown, status = 200): { impl: FetchLike; calls: string[] } {
+    const calls: string[] = [];
+    const impl: FetchLike = async (url) => {
+      calls.push(url);
+      return { ok: status < 400, status, json: async () => payload };
+    };
+    return { impl, calls };
+  }
+
+  const skillMd = [
+    '---',
+    'name: pdf',
+    'description: Use this skill for PDF work.',
+    'license: MIT',
+    '---',
+    '',
+    '# PDF Processing Guide',
+  ].join('\n');
+
+  it('parses SKILL.md and builds the install command from the download API', async () => {
+    const { impl, calls } = fakeFetch({
+      files: [
+        { path: 'reference.md', contents: 'ref' },
+        { path: 'SKILL.md', contents: skillMd },
+      ],
+      hash: 'abc123',
+    });
+
+    const detail = await fetchRemoteSkillDetail('anthropics/skills/pdf', impl);
+    expect(calls).toEqual(['https://skills.sh/api/download/anthropics/skills/pdf']);
+    expect(detail).toMatchObject({
+      name: 'pdf',
+      source: 'anthropics/skills',
+      slug: 'anthropics/skills/pdf',
+      description: 'Use this skill for PDF work.',
+      license: 'MIT',
+      body: '\n# PDF Processing Guide',
+      installCommand: 'npx skills add https://github.com/anthropics/skills --skill pdf',
+      hash: 'abc123',
+    });
+    expect(detail.files.map((file) => file.path)).toEqual(['reference.md', 'SKILL.md']);
+  });
+
+  it('fails when the payload has no SKILL.md or the API errors', async () => {
+    const { impl } = fakeFetch({ files: [{ path: 'README.md', contents: 'x' }] });
+    await expect(fetchRemoteSkillDetail('owner/repo/skill', impl)).rejects.toThrow('SKILL.md');
+
+    const failing: FetchLike = async () => ({ ok: false, status: 404, json: async () => ({}) });
+    await expect(fetchRemoteSkillDetail('owner/repo/skill', failing)).rejects.toThrow('404');
   });
 });

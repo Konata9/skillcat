@@ -2,7 +2,7 @@
  * Canonical identity helpers for skill records.
  *
  * A skill is uniquely identified by `scope + projectPath + name`. The scanner,
- * the conflict engine, the annotation sidecar and the UI must all derive that
+ * the analysis engine, the annotation sidecar and the UI must all derive that
  * identity the same way, so the derivation lives in exactly one place.
  *
  * `annotationKey` extends the identity with the content hash: annotations are

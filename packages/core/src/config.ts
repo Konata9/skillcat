@@ -51,6 +51,7 @@ export function sanitizeLlm(raw: unknown): LlmSettings {
     : base.provider;
   const preset = getLlmPreset(provider);
   return {
+    enabled: input.enabled === true,
     provider,
     apiKey: typeof input.apiKey === 'string' ? input.apiKey : base.apiKey,
     baseUrl:

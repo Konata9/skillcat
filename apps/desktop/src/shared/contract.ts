@@ -3,6 +3,9 @@ import type {
   Annotation,
   AppConfig,
   DoctorReport,
+  EvaluationEvent,
+  EvaluationProgress,
+  EvaluationReport,
   Finding,
   LeaderboardKind,
   LlmSettings,
@@ -10,12 +13,15 @@ import type {
   OrphanLock,
   ProjectInfo,
   RemoteSkill,
+  RemoteSkillDetail,
   Scope,
   SkillRecord,
+  UpdateCheckResult,
 } from '@skillcat/core';
 
 export interface Snapshot {
   loading: boolean;
+  version: string;
   scannedAt: string | null;
   global: SkillRecord[];
   projects: Array<{ path: string; records: SkillRecord[] }>;
@@ -27,6 +33,14 @@ export interface Snapshot {
   cliAvailable: boolean;
   cliSource: string;
   cliError?: string;
+  evaluation: EvaluationReport | null;
+  evaluationStale: boolean;
+  verdictsAt: string | null;
+  verdictsStale: boolean;
+  evaluating: boolean;
+  reviewing: boolean;
+  evaluationProgress: EvaluationProgress | null;
+  evaluationError: string | null;
 }
 
 export interface SkillRefLite {
@@ -69,7 +83,12 @@ export interface SkillCatApi {
   saveAnnotation(ref: SkillRefLite, annotation: Annotation | null): Promise<void>;
   searchRemote(query: string): Promise<RemoteSkill[]>;
   leaderboard(kind: LeaderboardKind, page?: number): Promise<RemoteSkill[]>;
+  remoteSkillDetail(slug: string): Promise<RemoteSkillDetail>;
+  evaluate(locale: 'zh' | 'en'): Promise<void>;
+  reviewCandidates(locale: 'zh' | 'en'): Promise<void>;
   testLlm(settings: LlmSettings): Promise<LlmTestResult>;
+  checkUpdate(): Promise<UpdateCheckResult>;
+  openExternal(url: string): Promise<void>;
   startOp(op: OpStart): Promise<{ opId: string }>;
   cancelOp(opId: string): Promise<void>;
   openSkill(ref: SkillRefLite): Promise<void>;
@@ -81,6 +100,7 @@ export interface SkillCatApi {
   doctor(): Promise<DoctorReport>;
   onStateChanged(callback: (snapshot: Snapshot) => void): () => void;
   onOpEvent(callback: (event: OpEvent) => void): () => void;
+  onEvaluationEvent(callback: (event: EvaluationEvent) => void): () => void;
 }
 
 export const CH = {
@@ -96,7 +116,12 @@ export const CH = {
   annotationSave: 'annotation:save',
   searchRemote: 'search:remote',
   leaderboard: 'search:leaderboard',
+  remoteSkillDetail: 'search:detail',
+  evaluate: 'evaluation:run',
+  reviewCandidates: 'evaluation:review',
   testLlm: 'llm:test',
+  checkUpdate: 'app:check-update',
+  openExternal: 'app:open-external',
   opStart: 'op:start',
   opCancel: 'op:cancel',
   openSkill: 'open:skill',
@@ -108,4 +133,5 @@ export const CH = {
   doctor: 'app:doctor',
   stateChanged: 'event:state-changed',
   opEvent: 'event:op',
+  evaluationEvent: 'event:evaluation',
 } as const;

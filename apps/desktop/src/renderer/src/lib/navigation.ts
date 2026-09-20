@@ -3,11 +3,11 @@
  */
 import type { MessageKey } from './i18n';
 
-export type Tab = 'skills' | 'conflicts' | 'projects' | 'search' | 'settings';
+export type Tab = 'skills' | 'analysis' | 'projects' | 'search' | 'settings';
 
 export const TAB_ORDER: readonly Tab[] = [
   'skills',
-  'conflicts',
+  'analysis',
   'projects',
   'search',
   'settings',
@@ -15,7 +15,7 @@ export const TAB_ORDER: readonly Tab[] = [
 
 export const TAB_LABEL_KEY: Record<Tab, MessageKey> = {
   skills: 'nav.skills',
-  conflicts: 'nav.conflicts',
+  analysis: 'nav.analysis',
   projects: 'nav.projects',
   search: 'nav.search',
   settings: 'nav.settings',

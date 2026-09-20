@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import type { AsyncOp, ProxySettings, SkillManager } from '@skillcat/core';
+import type { AsyncOp, ProxySettings, SkillManager, UpdateCheckResult } from '@skillcat/core';
 import { z } from 'zod';
 import { CH, type OpStart, type SkillRefLite, type Snapshot } from '../shared/contract';
 
@@ -20,10 +20,15 @@ export interface IpcDeps {
   pickDirectory: () => Promise<string | null>;
   /** Applies the proxy to the Electron session used by the in-process fetch. */
   applyProxy: (proxy: ProxySettings) => Promise<void>;
+  /** The packaged app version, surfaced in the snapshot for the updates view. */
+  appVersion: string;
+  checkUpdate: () => Promise<UpdateCheckResult>;
+  openExternal: (url: string) => Promise<void>;
 }
 
 const ScopeSchema = z.enum(['global', 'project']);
 const LlmSchema = z.object({
+  enabled: z.boolean(),
   provider: z.enum([
     'anthropic',
     'openai',
@@ -95,10 +100,11 @@ const SettingsSchema = z.object({
   llm: LlmSchema.optional(),
 });
 
-export function toSnapshot(manager: SkillManager): Snapshot {
+export function toSnapshot(manager: SkillManager, version: string): Snapshot {
   const resolved = manager.cliInfo;
   return {
     loading: manager.state.loading,
+    version,
     scannedAt: manager.state.scannedAt,
     global: manager.state.global,
     projects: [...manager.state.projects.entries()].map(([path, records]) => ({ path, records })),
@@ -113,6 +119,14 @@ export function toSnapshot(manager: SkillManager): Snapshot {
     cliAvailable: manager.cliAvailable,
     cliSource: resolved?.source ?? 'none',
     cliError: resolved?.error,
+    evaluation: manager.state.evaluation,
+    evaluationStale: manager.evaluationStale(),
+    verdictsAt: manager.state.verdictsAt,
+    verdictsStale: manager.verdictsStale(),
+    evaluating: manager.state.evaluating,
+    reviewing: manager.state.reviewing,
+    evaluationProgress: manager.state.evaluationProgress,
+    evaluationError: manager.state.evaluationError,
   };
 }
 
@@ -137,7 +151,7 @@ function createOp(manager: SkillManager, request: OpStart): AsyncOp {
 export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
   const { ipc, broadcast } = deps;
 
-  ipc.handle(CH.snapshot, () => toSnapshot(manager));
+  ipc.handle(CH.snapshot, () => toSnapshot(manager, deps.appVersion));
 
   ipc.handle(CH.refresh, async (_event, rawOptions) => {
     const options = RefreshSchema.parse(rawOptions);
@@ -214,8 +228,26 @@ export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
     const page = z.number().int().min(0).optional().parse(rawPage);
     return manager.fetchLeaderboard(kind, page ?? 0);
   });
+  ipc.handle(CH.remoteSkillDetail, async (_event, rawSlug) => {
+    const slug = z.string().min(1).parse(rawSlug);
+    return manager.getRemoteSkillDetail(slug);
+  });
+  ipc.handle(CH.evaluate, async (_event, rawLocale) => {
+    const locale = z.enum(['zh', 'en']).parse(rawLocale);
+    await manager.runEvaluation(locale);
+  });
+  ipc.handle(CH.reviewCandidates, async (_event, rawLocale) => {
+    const locale = z.enum(['zh', 'en']).parse(rawLocale);
+    await manager.runCandidateReview(locale);
+  });
   ipc.handle(CH.testLlm, async (_event, rawSettings) => {
     return manager.testLlm(LlmSchema.parse(rawSettings));
+  });
+  ipc.handle(CH.checkUpdate, () => deps.checkUpdate());
+  ipc.handle(CH.openExternal, async (_event, rawUrl) => {
+    const url = z.string().url().parse(rawUrl);
+    if (!/^https:\/\//i.test(url)) throw new Error('only https URLs can be opened');
+    await deps.openExternal(url);
   });
 
   const ops = new Map<string, AsyncOp>();
@@ -265,5 +297,6 @@ export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
   ipc.handle(CH.configReload, () => manager.reloadConfig());
   ipc.handle(CH.doctor, () => manager.doctor());
 
-  manager.onChange(() => broadcast(CH.stateChanged, toSnapshot(manager)));
+  manager.onChange(() => broadcast(CH.stateChanged, toSnapshot(manager, deps.appVersion)));
+  manager.onEvaluationEvent((event) => broadcast(CH.evaluationEvent, event));
 }

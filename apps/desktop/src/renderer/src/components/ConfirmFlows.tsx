@@ -18,6 +18,7 @@ export type ConfirmState =
   | { kind: 'update'; record: SkillRecord }
   | { kind: 'update-all' }
   | { kind: 'install'; skill: RemoteSkill }
+  | { kind: 'reevaluate'; generatedAt: string | null }
   | { kind: 'project-remove'; project: ProjectInfo };
 
 export function ConfirmFlows({
@@ -26,6 +27,7 @@ export function ConfirmFlows({
   scopes,
   onStartOp,
   onRemoveProject,
+  onReevaluate,
   onClose,
 }: {
   state: ConfirmState;
@@ -33,9 +35,10 @@ export function ConfirmFlows({
   scopes: ScopeOption[];
   onStartOp: (request: OpStart) => Promise<void>;
   onRemoveProject: (project: ProjectInfo) => Promise<void>;
+  onReevaluate: () => void;
   onClose: () => void;
 }): React.ReactElement {
-  const { t, scopeLabel } = useI18n();
+  const { t, scopeLabel, relativeTime } = useI18n();
 
   switch (state.kind) {
     case 'remove':
@@ -119,6 +122,17 @@ export function ConfirmFlows({
           onStartOp={onStartOp}
           onClose={onClose}
         />
+      );
+    case 'reevaluate':
+      return (
+        <ConfirmDialog
+          title={t('confirm.reevaluate.title')}
+          confirmLabel={t('confirm.reevaluate.confirm')}
+          onClose={onClose}
+          onConfirm={onReevaluate}
+        >
+          <p>{t('confirm.reevaluate.body', { time: relativeTime(state.generatedAt) })}</p>
+        </ConfirmDialog>
       );
     case 'project-remove':
       return (

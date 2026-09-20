@@ -111,9 +111,20 @@ export function getLlmPreset(provider: LlmProvider): LlmProviderPreset {
   return LLM_PROVIDERS.find((preset) => preset.id === provider) ?? LLM_PROVIDERS[0]!;
 }
 
+/**
+ * Whether the saved settings are complete enough to call a model: enabled,
+ * endpoint + model filled in, and a key present when the provider needs one.
+ */
+export function isLlmConfigured(settings: LlmSettings): boolean {
+  if (!settings.enabled) return false;
+  if (!settings.baseUrl.trim() || !settings.model.trim()) return false;
+  if (getLlmPreset(settings.provider).requiresKey && !settings.apiKey.trim()) return false;
+  return true;
+}
+
 export function defaultLlmSettings(): LlmSettings {
   const preset = getLlmPreset('openai');
-  return { provider: preset.id, apiKey: '', baseUrl: preset.baseUrl, model: preset.model };
+  return { enabled: false, provider: preset.id, apiKey: '', baseUrl: preset.baseUrl, model: preset.model };
 }
 
 export interface LlmTestResult {

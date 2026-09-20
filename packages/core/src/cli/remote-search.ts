@@ -3,7 +3,8 @@
  * over `npx skills find` output. Output is sanitized before it reaches the UI.
  */
 import { execa } from 'execa';
-import type { LeaderboardKind, RemoteSkill } from '../types.js';
+import { parseFrontmatter } from '../skill.js';
+import type { LeaderboardKind, RemoteSkill, RemoteSkillDetail, RemoteSkillFile } from '../types.js';
 import { stripAnsi } from './ansi.js';
 
 const SEARCH_API_BASE = process.env.SKILLS_API_URL ?? 'https://skills.sh';
@@ -121,6 +122,72 @@ export async function fetchLeaderboardApi(
       return entry;
     })
     .filter((skill) => skill.name.length > 0 && skill.source.length > 0);
+}
+
+interface DownloadApiResponse {
+  files?: Array<{ path?: unknown; contents?: unknown }>;
+  hash?: unknown;
+}
+
+function coerceText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
+
+/**
+ * Fetches a skill's published files from skills.sh (`/api/download/<slug>`)
+ * and parses SKILL.md. This is the same payload the website renders, so the
+ * drawer can mirror the site's SKILL.md and metadata exactly.
+ */
+export async function fetchRemoteSkillDetail(
+  slug: string,
+  fetchImpl: FetchLike = fetch,
+): Promise<RemoteSkillDetail> {
+  const path = slug
+    .split('/')
+    .filter((segment) => segment.length > 0)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+  if (!path) throw new Error('skill slug is required');
+  const response = await fetchImpl(`${SEARCH_API_BASE}/api/download/${path}`, {
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!response.ok) {
+    throw new Error(`skill detail API responded with ${response.status}`);
+  }
+  const data = (await response.json()) as DownloadApiResponse;
+  const files: RemoteSkillFile[] = (data.files ?? [])
+    .map((file) => ({
+      path: sanitize(file.path),
+      contents: typeof file.contents === 'string' ? file.contents : '',
+    }))
+    .filter((file) => file.path.length > 0);
+  const skillFile = files.find((file) => file.path.toLowerCase() === 'skill.md');
+  if (!skillFile) throw new Error(`skill ${slug} has no SKILL.md`);
+
+  const { data: frontmatter, content } = parseFrontmatter(skillFile.contents);
+  const segments = slug.split('/').filter((segment) => segment.length > 0);
+  const source = segments.slice(0, -1).join('/');
+  const fallbackName = segments.at(-1) ?? slug;
+  const rawName = frontmatter.name;
+  const name = typeof rawName === 'string' && rawName.trim() ? rawName.trim() : fallbackName;
+  const description = coerceText(frontmatter.description).trim();
+  const rawLicense = frontmatter.license;
+  const license = typeof rawLicense === 'string' && rawLicense.trim() ? rawLicense.trim() : null;
+
+  return {
+    name,
+    source,
+    slug,
+    description,
+    license,
+    frontmatter,
+    body: content,
+    files,
+    installCommand: `npx skills add https://github.com/${source} --skill ${name}`,
+    hash: sanitize(data.hash) || null,
+  };
 }
 
 export function parseFindOutput(stdout: string): RemoteSkill[] {

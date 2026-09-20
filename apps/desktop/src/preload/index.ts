@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { EvaluationEvent } from '@skillcat/core';
 import { CH, type OpEvent, type SkillCatApi, type Snapshot } from '../shared/contract';
 
 const api: SkillCatApi = {
@@ -14,7 +15,12 @@ const api: SkillCatApi = {
   saveAnnotation: (ref, annotation) => ipcRenderer.invoke(CH.annotationSave, ref, annotation),
   searchRemote: (query) => ipcRenderer.invoke(CH.searchRemote, query),
   leaderboard: (kind, page) => ipcRenderer.invoke(CH.leaderboard, kind, page),
+  remoteSkillDetail: (slug) => ipcRenderer.invoke(CH.remoteSkillDetail, slug),
+  evaluate: (locale) => ipcRenderer.invoke(CH.evaluate, locale),
+  reviewCandidates: (locale) => ipcRenderer.invoke(CH.reviewCandidates, locale),
   testLlm: (settings) => ipcRenderer.invoke(CH.testLlm, settings),
+  checkUpdate: () => ipcRenderer.invoke(CH.checkUpdate),
+  openExternal: (url) => ipcRenderer.invoke(CH.openExternal, url),
   startOp: (op) => ipcRenderer.invoke(CH.opStart, op),
   cancelOp: (opId) => ipcRenderer.invoke(CH.opCancel, opId),
   openSkill: (ref) => ipcRenderer.invoke(CH.openSkill, ref),
@@ -36,6 +42,13 @@ const api: SkillCatApi = {
     ipcRenderer.on(CH.opEvent, listener);
     return () => {
       ipcRenderer.removeListener(CH.opEvent, listener);
+    };
+  },
+  onEvaluationEvent: (callback) => {
+    const listener = (_event: unknown, payload: EvaluationEvent) => callback(payload);
+    ipcRenderer.on(CH.evaluationEvent, listener);
+    return () => {
+      ipcRenderer.removeListener(CH.evaluationEvent, listener);
     };
   },
 };

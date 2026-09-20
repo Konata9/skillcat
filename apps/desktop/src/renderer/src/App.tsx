@@ -4,24 +4,27 @@
  * `components/` and `views/`; this file only orchestrates them.
  */
 import * as React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ProjectInfo, RemoteSkill, SkillRecord, LlmSettings } from '@skillcat/core';
+import { isLlmConfigured } from '@skillcat/core/llm';
 import type { OpStart } from '@shared/contract';
 import { useApi, useSnapshot, useStatus } from './api';
 import { AppNotices } from './components/AppNotices';
 import { AppSidebar } from './components/AppSidebar';
 import { AppToolbar } from './components/AppToolbar';
 import { ConfirmFlows, type ConfirmState } from './components/ConfirmFlows';
+import { GlobalProgress } from './components/GlobalProgress';
 import { OperationDrawer } from './components/OperationDrawer';
 import { TriggerEditorModal } from './components/TriggerEditorModal';
 import { useAnnotationEditor } from './hooks/useAnnotationEditor';
+import { useEvaluationLog } from './hooks/useEvaluationLog';
 import { useOperations } from './hooks/useOperations';
 import { useProjects } from './hooks/useProjects';
 import { useScopes } from './hooks/useScopes';
 import { errorMessage } from './lib/format';
 import { useI18n } from './lib/i18n';
 import type { Tab } from './lib/navigation';
-import { ConflictsView } from './views/ConflictsView';
+import { AnalysisView } from './views/AnalysisView';
 import { ProjectsView } from './views/ProjectsView';
 import { SearchView } from './views/SearchView';
 import { SettingsView } from './views/SettingsView';
@@ -31,13 +34,26 @@ export function App(): React.ReactElement {
   const api = useApi();
   const snapshot = useSnapshot();
   const { status, showStatus } = useStatus();
-  const { t, scopeLabel } = useI18n();
+  const { t, scopeLabel, locale } = useI18n();
   const [tab, setTab] = useState<Tab>('skills');
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+
+  // Cmd/Ctrl+, opens Settings, matching the platform convention.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === ',') {
+        event.preventDefault();
+        setTab('settings');
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const { op, startOp, cancelOp, closeOp } = useOperations(api, (error) => {
     showStatus(t('status.opFailed', { message: errorMessage(error) }));
   });
+  const evaluationLog = useEvaluationLog(api);
   const { projects, reload: reloadProjects } = useProjects(api, snapshot?.scannedAt);
   const { scopes, scopeKey, setScopeKey, activeScope, records } = useScopes(snapshot, scopeLabel);
   const editor = useAnnotationEditor(
@@ -46,13 +62,17 @@ export function App(): React.ReactElement {
     (error) => showStatus(t('status.saveFailed', { message: errorMessage(error) })),
   );
 
-  const conflicts = snapshot?.findings ?? [];
+  const globalLoading = snapshot === null || snapshot.loading;
+  const llmConfigured = snapshot !== null && isLlmConfigured(snapshot.config.llm);
+  const evaluating = snapshot?.evaluating ?? false;
+  const reviewing = snapshot?.reviewing ?? false;
+  const findings = snapshot?.findings ?? [];
   const navCounts: Record<Tab, string> = {
     skills: String(
       (snapshot?.global.length ?? 0) +
         (snapshot?.projects.reduce((sum, project) => sum + project.records.length, 0) ?? 0),
     ),
-    conflicts: String(conflicts.length),
+    analysis: String(findings.length),
     projects: String(projects.length),
     search: '',
     settings: '',
@@ -86,6 +106,26 @@ export function App(): React.ReactElement {
     void api.refresh().then(async () => {
       await reloadProjects();
       showStatus(t('status.projectsRescanned'));
+    });
+  };
+
+  const runEvaluation = () => {
+    void api.evaluate(locale).catch((error) => {
+      showStatus(t('status.opFailed', { message: errorMessage(error) }));
+    });
+  };
+
+  const requestEvaluate = () => {
+    if (snapshot?.evaluation) {
+      setConfirmState({ kind: 'reevaluate', generatedAt: snapshot.evaluation.generatedAt });
+    } else {
+      runEvaluation();
+    }
+  };
+
+  const reviewCandidates = () => {
+    void api.reviewCandidates(locale).catch((error) => {
+      showStatus(t('status.opFailed', { message: errorMessage(error) }));
     });
   };
 
@@ -135,6 +175,7 @@ export function App(): React.ReactElement {
 
   return (
     <div className="grid h-screen grid-rows-1 grid-cols-[232px_1fr] overflow-hidden">
+      <GlobalProgress active={globalLoading} />
       <AppSidebar
         tab={tab}
         onSelectTab={setTab}
@@ -143,7 +184,7 @@ export function App(): React.ReactElement {
         scopeKey={scopeKey}
         onSelectScope={selectScope}
         snapshot={snapshot}
-        conflictCount={conflicts.length}
+        analysisCount={findings.length}
       />
 
       <main className="flex min-w-0 flex-col">
@@ -151,9 +192,17 @@ export function App(): React.ReactElement {
           tab={tab}
           scopeLabel={activeScope.label}
           recordCount={records.length}
+          refreshing={snapshot?.loading ?? false}
           onRefresh={() => void api.refresh()}
           onDeepRefresh={() => void api.refresh({ deep: true })}
           onUpdateAll={() => setConfirmState({ kind: 'update-all' })}
+          onEvaluate={requestEvaluate}
+          evaluateDisabled={!llmConfigured || evaluating || reviewing}
+          evaluating={evaluating}
+          evaluateProgress={snapshot?.evaluationProgress ?? null}
+          onReviewCandidates={reviewCandidates}
+          reviewDisabled={!llmConfigured || evaluating || reviewing}
+          reviewing={reviewing}
         />
 
         <AppNotices
@@ -178,7 +227,20 @@ export function App(): React.ReactElement {
               onRemove={(record) => setConfirmState({ kind: 'remove', record })}
             />
           ) : null}
-          {tab === 'conflicts' ? <ConflictsView findings={conflicts} /> : null}
+          {tab === 'analysis' ? (
+            <AnalysisView
+              findings={findings}
+              evaluation={snapshot?.evaluation ?? null}
+              evaluationStale={snapshot?.evaluationStale ?? false}
+              verdictsAt={snapshot?.verdictsAt ?? null}
+              verdictsStale={snapshot?.verdictsStale ?? false}
+              evaluating={evaluating}
+              reviewing={reviewing}
+              evaluationProgress={snapshot?.evaluationProgress ?? null}
+              evaluationError={snapshot?.evaluationError ?? null}
+              processEvents={evaluationLog.events}
+            />
+          ) : null}
           {tab === 'projects' ? (
             <ProjectsView
               projects={projects}
@@ -199,12 +261,15 @@ export function App(): React.ReactElement {
             <SettingsView
               config={snapshot.config}
               configPath={snapshot.configPath}
+              appVersion={snapshot.version}
               cliAvailable={snapshot.cliAvailable}
               cliSource={snapshot.cliSource}
               cliError={snapshot.cliError}
               onStatus={showStatus}
               onSave={saveSettings}
               onTestLlm={api.testLlm}
+              onCheckUpdate={api.checkUpdate}
+              onOpenExternal={api.openExternal}
               onPickDirectory={() => api.pickDirectory()}
               onOpenConfig={() =>
                 api.openConfig().catch((error) => {
@@ -241,6 +306,10 @@ export function App(): React.ReactElement {
           scopes={scopes}
           onStartOp={startOpFromConfirm}
           onRemoveProject={removeProject}
+          onReevaluate={() => {
+            setConfirmState(null);
+            runEvaluation();
+          }}
           onClose={() => setConfirmState(null)}
         />
       ) : null}

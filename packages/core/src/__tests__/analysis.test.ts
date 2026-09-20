@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findConflicts } from '../conflicts.js';
+import { analyzeSkills } from '../analysis.js';
 import type { AgentLink, Finding, SkillRecord, TriggerTerm } from '../types.js';
 
 function term(text: string, kind: 'positive' | 'negative' = 'positive'): TriggerTerm {
@@ -49,9 +49,9 @@ function rules(findings: Finding[]): string[] {
 
 const thresholds = { overlap: 0.2, duplicate: 0.5 };
 
-describe('findConflicts', () => {
+describe('analyzeSkills', () => {
   it('flags dangling symlinks', () => {
-    const findings = findConflicts({
+    const findings = analyzeSkills({
       records: [record({ name: 'demo', links: [link({ state: 'symlink-dangling' })] })],
       orphans: [],
       lastSeen: {},
@@ -62,7 +62,7 @@ describe('findConflicts', () => {
   });
 
   it('flags manual skills without lock entries', () => {
-    const findings = findConflicts({
+    const findings = analyzeSkills({
       records: [record({ name: 'demo' })],
       orphans: [],
       lastSeen: {},
@@ -72,7 +72,7 @@ describe('findConflicts', () => {
   });
 
   it('flags orphan lock entries', () => {
-    const findings = findConflicts({
+    const findings = analyzeSkills({
       records: [],
       orphans: [
         {
@@ -107,7 +107,7 @@ describe('findConflicts', () => {
       lock: { source: 'other/repo', sourceType: 'github' },
     });
 
-    const same = findConflicts({
+    const same = analyzeSkills({
       records: [globalRecord, projectSame],
       orphans: [],
       lastSeen: {},
@@ -115,7 +115,7 @@ describe('findConflicts', () => {
     });
     expect(rules(same)).toContain('shadowing');
 
-    const other = findConflicts({
+    const other = analyzeSkills({
       records: [globalRecord, projectOther],
       orphans: [],
       lastSeen: {},
@@ -125,7 +125,7 @@ describe('findConflicts', () => {
   });
 
   it('flags local content drift when the lock hash is sha256', () => {
-    const findings = findConflicts({
+    const findings = analyzeSkills({
       records: [
         record({
           name: 'demo',
@@ -159,7 +159,7 @@ describe('findConflicts', () => {
         hasWhenSignal: true,
       },
     });
-    const findings = findConflicts({ records: [a, b], orphans: [], lastSeen: {}, thresholds });
+    const findings = analyzeSkills({ records: [a, b], orphans: [], lastSeen: {}, thresholds });
     expect(rules(findings)).toContain('trigger-overlap');
     expect(rules(findings)).toContain('negative-contradiction');
     const overlap = findings.find((finding) => finding.rule === 'trigger-overlap')!;
@@ -170,12 +170,12 @@ describe('findConflicts', () => {
     const body = '这是一段用于测试的正文内容，包含足够的长度来生成 shingles。'.repeat(30);
     const a = record({ name: 'alpha', body });
     const b = record({ name: 'beta', body });
-    const findings = findConflicts({ records: [a, b], orphans: [], lastSeen: {}, thresholds });
+    const findings = analyzeSkills({ records: [a, b], orphans: [], lastSeen: {}, thresholds });
     expect(rules(findings)).toContain('duplicate-content');
   });
 
   it('flags missing when-signal as lint', () => {
-    const findings = findConflicts({
+    const findings = analyzeSkills({
       records: [
         record({
           name: 'demo',

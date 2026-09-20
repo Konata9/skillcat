@@ -1,6 +1,6 @@
 # SkillCat
 
-本地优先的 Agent SKILL 管理器。盘点全局与各项目的 skill，解释触发条件，发现安装态与语义冲突，并通过 `npx skills` 安全地执行安装 / 更新 / 删除 / 搜索。
+本地优先的 Agent SKILL 管理器。盘点全局与各项目的 skill，解释触发条件，分析安装态与语义问题，并通过 `npx skills` 安全地执行安装 / 更新 / 删除 / 搜索。
 
 架构为 **Core + UI**：`@skillcat/core` 是唯一事实来源（零 UI 依赖），当前 UI 为 Electron 桌面端。
 
@@ -20,15 +20,15 @@ pnpm desktop    # 桌面端（Electron，开发模式）
 
 - **库存盘点**：全局（`~/.agents/skills` 及各 agent 的全局目录，如 `~/.claude/skills`、`~/.cursor/skills`）与项目（`<project>/.agents/skills` 及各 agent 原生目录，如 `.claude/skills`、`.cursor/skills`、`.trae/skills`）skill 一览，含来源、锁文件元数据、真实链接状态（符号链接 / 悬空 / 副本漂移）；agent 目录表在 `packages/core/src/agents.ts`，项目 marker 与扫描目录都由它派生
 - **触发画像**：从 `when_to_use`、`dispatch_intent`、`description`（中英模式）、正文 "When to Use / 触发" 小节、名称提取正向触发词与负向排除；支持人工标注（sidecar 存储，不修改 skill 目录）
-- **冲突检测**：确定性规则（悬空链接、锁记录缺失、副本漂移、本地修改、跨作用域遮蔽、来源冲突）+ 启发式规则（触发词重叠、负向矛盾、正文重复、description 触发信息缺失）
+- **问题分析**：确定性规则（悬空链接、锁记录缺失、副本漂移、本地修改、跨作用域遮蔽、来源冲突）+ 启发式规则（触发词重叠、负向矛盾、正文重复、description 触发信息缺失）
 - **项目发现**：扫描根下按 marker 自动发现项目，收藏 / 最近访问；注册表只存路径，删除条目不会删除文件
 - **操作代理**：add / remove / update / 远程搜索全部委托给 `npx skills`，流式进度与二次确认
 
 ## 桌面端
 
-- 左侧：Skills / 冲突 / 项目 / 搜索 / 设置；作用域列表（全局 + 各项目）
+- 左侧：Skills / 分析 / 项目 / 搜索 / 设置；作用域列表（全局 + 各项目）
 - Skills：列表 + 详情（触发画像、链接状态、文件、正文），详情页可直接打开 / 定位 / 编辑触发词 / 更新 / 删除
-- 冲突：按级别筛选，右侧显示说明、建议、证据与相关 skill
+- 分析：按级别筛选，右侧显示说明、建议、证据与相关 skill
 - 项目：收藏、添加目录（系统目录选择器）、移除注册、重新发现
 - 搜索：调用 skills.sh，选中后安装到当前作用域
 - 设置：扫描根、自定义 skill 目录、阈值、CLI 命令覆盖、网络代理、internal 显示、配置文件入口（打开 / 定位 / 外部编辑后重新加载）、诊断（doctor）
@@ -41,7 +41,7 @@ UI 技术栈：Tailwind CSS v4（主题 tokens 定义在 `src/renderer/src/index
 
 主题：亮色 / 暗色双主题，**默认亮色**，侧边栏底部一键切换（localStorage 记忆）。所有颜色通过语义 tokens（`bg-background`、`text-muted-foreground`、`border-border`…）引用，组件内不写死颜色，新增界面自动适配两套主题。
 
-多语言：中文 / English，**默认跟随系统语言**（`navigator.language`），侧边栏底部一键切换、设置页亦可选择（localStorage 记忆）。文案字典位于 `src/renderer/src/lib/i18n/messages.{zh,en}.ts`，英文包以 `Record<MessageKey, MessageValue>` 约束，缺 key 直接编译报错；支持 `{param}` 插值与 `Intl.PluralRules` 复数。core 不产出面向展示的字符串——冲突与诊断信息以 `{ code, params }` 结构化返回，由 UI 翻译（`FindingCode`/`DoctorWarningCode` 与字典 key 有编译期覆盖校验），因此新增规则时不会漏翻译。
+多语言：中文 / English，**默认跟随系统语言**（`navigator.language`），侧边栏底部一键切换、设置页亦可选择（localStorage 记忆）。文案字典位于 `src/renderer/src/lib/i18n/messages.{zh,en}.ts`，英文包以 `Record<MessageKey, MessageValue>` 约束，缺 key 直接编译报错；支持 `{param}` 插值与 `Intl.PluralRules` 复数。core 不产出面向展示的字符串——分析与诊断信息以 `{ code, params }` 结构化返回，由 UI 翻译（`FindingCode`/`DoctorWarningCode` 与字典 key 有编译期覆盖校验），因此新增规则时不会漏翻译。
 
 ## 打包为独立应用
 
@@ -69,12 +69,12 @@ pnpm dist
 ## 设计边界
 
 - **读写分离**：读取走文件系统 + 锁文件（快速、离线可用）；写入一律委托 `npx skills`（带显式 `cwd` 与 `--global/--project`），不重造安装逻辑
-- **统一身份**：skill 身份（`scope|project|name`）与标注键（追加内容哈希）由 `packages/core/src/keys.ts` 单点推导，扫描、冲突与 UI 共用同一实现
+- **统一身份**：skill 身份（`scope|project|name`）与标注键（追加内容哈希）由 `packages/core/src/keys.ts` 单点推导，扫描、分析与 UI 共用同一实现
 - **只读安全**：默认不写入 skill 目录、锁文件或 agent 目录；人工标注存于配置目录的 sidecar
 - **作用域模型**：项目作用域由 `cwd` 决定，项目锁为 `<project>/skills-lock.json`；项目级同名 skill 会遮蔽全局版本，工具会明确提示
-- **冲突分级**：确定性 vs 启发式，后者标注置信度与共享词证据，阈值可配置
+- **分析分级**：确定性 vs 启发式，后者标注置信度与共享词证据，阈值可配置
 
-## 冲突规则
+## 分析规则
 
 | 规则 | 级别 | 类型 |
 |---|---|---|
@@ -103,10 +103,10 @@ pnpm dist
 ## 开发
 
 ```
-packages/core   纯 TS，零 UI 依赖：发现、解析、触发词、相似度、冲突、CLI 适配、项目注册表
-                （冲突/诊断信息以 { code, params } 返回，不含展示文案）
+packages/core   纯 TS，零 UI 依赖：发现、解析、触发词、相似度、分析、CLI 适配、项目注册表
+                （分析/诊断信息以 { code, params } 返回，不含展示文案）
                 types.ts 仅做 re-export；定义按域拆分在 src/types/：
-                domain（skill/项目模型）、findings（冲突/诊断）、config、storage、cli
+                domain（skill/项目模型）、findings（分析/诊断）、config、storage、cli
                 renderer 只可 import 类型与纯函数子路径（@skillcat/core/keys、/proxy），
                 其余入口会经 index → execa 把 Node 依赖带进浏览器包
 apps/desktop    Electron 44 + electron-vite + React 19
@@ -117,7 +117,7 @@ apps/desktop    Electron 44 + electron-vite + React 19
    ├─ components/ui  原语组件（button/badge/dialog/table…，仓库内自有源码）
    ├─ components     业务组件与外壳（SkillList/SkillDetail/TriggerEditor/AppSidebar/AppToolbar/ConfirmFlows…）
    ├─ hooks          API 驱动的状态（useOperations/useProjects/useScopes/useAnnotationEditor）
-   ├─ views          页面组合（Skills/Conflicts/Projects/Search/Settings），纯展示、经 props 回调交互
+   ├─ views          页面组合（Skills/Analysis/Projects/Search/Settings），纯展示、经 props 回调交互
    └─ lib            cn()、格式化、i18n 字典与 Provider、主题、导航模型
 ```
 

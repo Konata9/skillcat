@@ -1,5 +1,5 @@
 /**
- * Conflict findings and doctor diagnostics.
+ * Analysis findings and doctor diagnostics.
  *
  * Every user-facing string is a message code plus params, never prose: the UI
  * layer owns translation and has a compile-time guarantee that each code has a
@@ -8,9 +8,12 @@
 import type { SkillRef } from './domain.js';
 
 export type Severity = 'error' | 'warn' | 'info';
-export type Confidence = 'deterministic' | 'heuristic';
+export type Confidence = 'deterministic' | 'heuristic' | 'ai';
 
-export type ConflictRule =
+/** Outcome of an AI review of a heuristic candidate pair. */
+export type AiVerdict = 'confirmed' | 'false-positive' | 'uncertain';
+
+export type AnalysisRule =
   | 'dangling-link'
   | 'lock-missing-dir'
   | 'dir-missing-lock'
@@ -22,7 +25,12 @@ export type ConflictRule =
   | 'trigger-overlap'
   | 'negative-contradiction'
   | 'duplicate-content'
-  | 'description-lint';
+  | 'description-lint'
+  | 'ai-duplicate'
+  | 'ai-conflict'
+  | 'ai-trigger'
+  | 'ai-boundary'
+  | 'ai-quality';
 
 /** Every user-facing finding string is a message code resolved by the UI layer. */
 export type FindingCode =
@@ -69,7 +77,10 @@ export type FindingCode =
   | 'finding.negativeContradiction.suggestion'
   | 'finding.duplicateContent.title'
   | 'finding.duplicateContent.detail'
-  | 'finding.duplicateContent.suggestion';
+  | 'finding.duplicateContent.suggestion'
+  | 'finding.aiIssue.title'
+  | 'finding.aiIssue.detail'
+  | 'finding.aiIssue.suggestion';
 
 export type FindingParam = string | number | FindingMessage | FindingParam[];
 
@@ -78,9 +89,16 @@ export interface FindingMessage {
   params?: Record<string, FindingParam>;
 }
 
+/** AI review attached to a heuristic finding, or to an AI-only finding. */
+export interface FindingAiNote {
+  verdict: AiVerdict;
+  detail: string;
+  suggestion: string | null;
+}
+
 export interface Finding {
   id: string;
-  rule: ConflictRule;
+  rule: AnalysisRule;
   severity: Severity;
   confidence: Confidence;
   title: FindingMessage;
@@ -89,6 +107,8 @@ export interface Finding {
   skills: SkillRef[];
   evidence: string[];
   score?: number;
+  /** Present when the AI reviewed this candidate (or produced the finding). */
+  ai?: FindingAiNote;
 }
 
 export type DoctorWarningCode =

@@ -27,6 +27,32 @@ export interface RemoteSkill {
   isOfficial?: boolean;
 }
 
+/** One file inside a published skill, as returned by the skills.sh download API. */
+export interface RemoteSkillFile {
+  path: string;
+  contents: string;
+}
+
+/**
+ * The detail payload behind a skills.sh skill page (`/api/download`): the
+ * parsed SKILL.md plus every supporting file, so the drawer can show exactly
+ * what the website shows.
+ */
+export interface RemoteSkillDetail {
+  name: string;
+  source: string;
+  slug: string;
+  description: string;
+  license: string | null;
+  frontmatter: Record<string, unknown>;
+  /** SKILL.md body with the YAML frontmatter stripped. */
+  body: string;
+  files: RemoteSkillFile[];
+  /** `npx skills add …` command shown on the website. */
+  installCommand: string;
+  hash: string | null;
+}
+
 /** Leaderboard views exposed by skills.sh. */
 export type LeaderboardKind = 'all-time' | 'trending' | 'hot';
 

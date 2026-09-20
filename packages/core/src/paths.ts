@@ -83,3 +83,7 @@ export function stateFilePath(configDir: string): string {
 export function annotationsFilePath(configDir: string): string {
   return join(configDir, 'annotations.json');
 }
+
+export function evaluationFilePath(configDir: string): string {
+  return join(configDir, 'evaluation.json');
+}

@@ -85,6 +85,16 @@ beforeAll(async () => {
     revealConfig: () => {},
     pickDirectory: async () => null,
     applyProxy: async () => {},
+    appVersion: '0.1.0',
+    checkUpdate: async () => ({
+      configured: false,
+      current: '0.1.0',
+      latest: null,
+      hasUpdate: false,
+      url: null,
+      publishedAt: null,
+    }),
+    openExternal: async () => {},
   });
 
   await manager.refresh();
@@ -104,6 +114,16 @@ describe('ipc contract', () => {
     expect(snapshot.cliAvailable).toBe(true);
     expect(snapshot.config.skillsCommand).toEqual(['true']);
     expect(snapshot.configPath).toBe(join(configDir, 'config.json'));
+    expect(snapshot.evaluation).toBeNull();
+    expect(snapshot.evaluating).toBe(false);
+  });
+
+  it('refuses to evaluate without a configured model', async () => {
+    await expect(call(CH.evaluate, 'zh')).rejects.toThrow(/not configured/);
+  });
+
+  it('refuses to review candidates without a configured model', async () => {
+    await expect(call(CH.reviewCandidates, 'zh')).rejects.toThrow(/not configured/);
   });
 
   it('discovers projects after setting roots', async () => {

@@ -9,3 +9,4 @@ export * from './types/findings.js';
 export * from './types/config.js';
 export * from './types/storage.js';
 export * from './types/cli.js';
+export * from './types/evaluation.js';

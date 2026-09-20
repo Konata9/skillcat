@@ -32,7 +32,11 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.57",
+    "@ai-sdk/openai-compatible": "^3.0.52",
+    "ai": "^7.0.106",
     "execa": "^10.0.1",
+    "jsonrepair": "^3.15.0",
     "yaml": "^2.9.1",
     "zod": "^4.6.2"
   },

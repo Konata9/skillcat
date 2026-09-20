@@ -146,7 +146,7 @@ export function computeOverlaps(records: SkillRecord[], threshold: number): Over
       const vectorA = vectors[i]!;
       const vectorB = vectors[j]!;
       // Skills in the same family (hyperframes ↔ hyperframes-cli) are expected
-      // to share triggers; not a conflict worth reporting.
+      // to share triggers; not an issue worth reporting.
       if (vectorA.name.startsWith(vectorB.name) || vectorB.name.startsWith(vectorA.name)) {
         continue;
       }

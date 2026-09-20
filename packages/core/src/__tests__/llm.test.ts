@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { FetchLike, FetchLikeInit } from '../cli/remote-search.js';
 import { sanitizeLlm } from '../config.js';
-import { getLlmPreset, LLM_PROVIDERS, testLlmConnection } from '../llm.js';
+import { getLlmPreset, isLlmConfigured, LLM_PROVIDERS, testLlmConnection } from '../llm.js';
 
 interface Call {
   url: string;
@@ -42,11 +42,34 @@ describe('LLM providers', () => {
   });
 });
 
+describe('isLlmConfigured', () => {
+  const base = {
+    enabled: true,
+    provider: 'openai' as const,
+    apiKey: 'sk-test',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-4o',
+  };
+
+  it('requires the enable flag, endpoint and model', () => {
+    expect(isLlmConfigured(base)).toBe(true);
+    expect(isLlmConfigured({ ...base, enabled: false })).toBe(false);
+    expect(isLlmConfigured({ ...base, baseUrl: '  ' })).toBe(false);
+    expect(isLlmConfigured({ ...base, model: '' })).toBe(false);
+  });
+
+  it('only requires a key for providers that need one', () => {
+    expect(isLlmConfigured({ ...base, apiKey: '' })).toBe(false);
+    expect(isLlmConfigured({ ...base, provider: 'ollama', apiKey: '' })).toBe(true);
+  });
+});
+
 describe('testLlmConnection', () => {
   it('posts to the OpenAI-compatible chat endpoint with a bearer token', async () => {
     const { impl, calls } = fakeFetch(200, '{"choices":[]}');
     const result = await testLlmConnection(
       {
+        enabled: true,
         provider: 'openai',
         apiKey: 'sk-test',
         baseUrl: 'https://api.openai.com/v1/',
@@ -64,6 +87,7 @@ describe('testLlmConnection', () => {
     const { impl, calls } = fakeFetch(200, '{"content":[]}');
     const result = await testLlmConnection(
       {
+        enabled: true,
         provider: 'anthropic',
         apiKey: 'k',
         baseUrl: 'https://api.anthropic.com',
@@ -81,6 +105,7 @@ describe('testLlmConnection', () => {
     const { impl } = fakeFetch(401, 'invalid api key');
     const result = await testLlmConnection(
       {
+        enabled: true,
         provider: 'deepseek',
         apiKey: 'x',
         baseUrl: 'https://api.deepseek.com/v1',
@@ -96,13 +121,13 @@ describe('testLlmConnection', () => {
   it('rejects an empty endpoint or model without sending a request', async () => {
     const { impl, calls } = fakeFetch(200, '{}');
     expect(
-      (await testLlmConnection({ provider: 'custom', apiKey: '', baseUrl: '', model: 'x' }, impl))
+      (await testLlmConnection({ enabled: true, provider: 'custom', apiKey: '', baseUrl: '', model: 'x' }, impl))
         .ok,
     ).toBe(false);
     expect(
       (
         await testLlmConnection(
-          { provider: 'custom', apiKey: '', baseUrl: 'https://x.example/v1', model: '' },
+          { enabled: true, provider: 'custom', apiKey: '', baseUrl: 'https://x.example/v1', model: '' },
           impl,
         )
       ).ok,
@@ -114,9 +139,14 @@ describe('testLlmConnection', () => {
 describe('sanitizeLlm', () => {
   it('falls back to provider presets for missing fields', () => {
     const llm = sanitizeLlm({ provider: 'deepseek' });
+    expect(llm.enabled).toBe(false);
     expect(llm.provider).toBe('deepseek');
     expect(llm.baseUrl).toBe(getLlmPreset('deepseek').baseUrl);
     expect(llm.model).toBe(getLlmPreset('deepseek').model);
+  });
+
+  it('preserves an explicit enable flag', () => {
+    expect(sanitizeLlm({ enabled: true, provider: 'openai' }).enabled).toBe(true);
   });
 
   it('ignores unknown providers and non-string values', () => {

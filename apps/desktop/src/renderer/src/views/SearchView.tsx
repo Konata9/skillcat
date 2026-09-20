@@ -8,6 +8,7 @@ import type { MessageKey } from '@renderer/lib/i18n';
 import { cn } from '@renderer/lib/utils';
 import { useLeaderboard } from '@renderer/hooks/useLeaderboard';
 import { EmptyState } from '../components/indicators';
+import { RemoteSkillDetailDrawer } from '../components/RemoteSkillDetailDrawer';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -57,10 +58,12 @@ function Sparkline({ values }: { values: number[] }): React.ReactElement {
 function ResultList({
   entries,
   showSparkline,
+  onSelect,
   onInstall,
 }: {
   entries: RemoteSkill[];
   showSparkline?: boolean;
+  onSelect: (skill: RemoteSkill) => void;
   onInstall: (skill: RemoteSkill) => void;
 }): React.ReactElement {
   const { t } = useI18n();
@@ -75,18 +78,24 @@ function ResultList({
             key={`${skill.source}@${skill.name}`}
             className="flex items-center gap-3 rounded-md px-2.5 py-2 transition-colors hover:bg-accent/60"
           >
-            <span className="w-5 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
-              {index + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-center gap-1.5">
-                <span className="truncate font-medium">{skill.name}</span>
-                {skill.isOfficial ? <Badge tone="accent">{t('search.official')}</Badge> : null}
+            <button
+              type="button"
+              className="focus-ring flex min-w-0 flex-1 items-center gap-3 rounded-sm text-left"
+              onClick={() => onSelect(skill)}
+            >
+              <span className="w-5 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+                {index + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate font-medium">{skill.name}</span>
+                  {skill.isOfficial ? <Badge tone="accent">{t('search.official')}</Badge> : null}
+                </div>
+                <div className="truncate font-mono text-[11px] text-muted-foreground">
+                  {skill.source}
+                </div>
               </div>
-              <div className="truncate font-mono text-[11px] text-muted-foreground">
-                {skill.source}
-              </div>
-            </div>
+            </button>
             {showSparkline && skill.weeklyInstalls ? (
               <Sparkline values={skill.weeklyInstalls} />
             ) : null}
@@ -129,6 +138,7 @@ export function SearchView({
   const [results, setResults] = useState<RemoteSkill[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<RemoteSkill | null>(null);
 
   useEffect(() => {
     void load('all-time');
@@ -255,10 +265,17 @@ export function SearchView({
           <ResultList
             entries={entries}
             showSparkline={mode === 'leaderboard' && kind === 'all-time'}
+            onSelect={setSelected}
             onInstall={onInstall}
           />
         )}
       </div>
+
+      <RemoteSkillDetailDrawer
+        skill={selected}
+        onInstall={onInstall}
+        onClose={() => setSelected(null)}
+      />
     </div>
   );
 }

@@ -30,6 +30,8 @@ export type LlmProvider =
   | 'custom';
 
 export interface LlmSettings {
+  /** Whether the language model is enabled; when off the config is ignored. */
+  enabled: boolean;
   provider: LlmProvider;
   /** API key, stored locally in config.json. Empty for keyless local servers. */
   apiKey: string;
