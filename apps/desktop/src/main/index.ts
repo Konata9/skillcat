@@ -1,6 +1,13 @@
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, net, session, shell } from 'electron';
-import { isValidProxyUrl, normalizeProxyUrl, SkillManager, type ProxySettings } from '@skillcat/core';
+import {
+  APP_NAME,
+  getConfigDir,
+  isValidProxyUrl,
+  normalizeProxyUrl,
+  SkillManager,
+  type ProxySettings,
+} from '@skillcat/core';
 import pkg from '../../package.json';
 import { bootstrap } from './bootstrap';
 import { registerIpc } from './ipc';
@@ -25,7 +32,22 @@ function githubSlug(): string {
 
 const UPDATE_REPO = githubSlug();
 
-const manager = new SkillManager();
+/**
+ * Config directory for this build.
+ *
+ * Packaged builds use the default per-user location (`~/Library/Application
+ * Support/skillcat`, `%APPDATA%\skillcat`, …) so app updates never touch a
+ * user's settings. Development builds get a sibling `skillcat-dev` directory
+ * so they can never read or overwrite the packaged config. An explicit
+ * SKILLCAT_CONFIG_DIR / SKILLMAN_CONFIG_DIR always takes precedence.
+ */
+function resolveConfigDir(): string | undefined {
+  if (process.env.SKILLCAT_CONFIG_DIR || process.env.SKILLMAN_CONFIG_DIR) return undefined;
+  if (app.isPackaged) return undefined;
+  return join(dirname(getConfigDir()), `${APP_NAME}-dev`);
+}
+
+const manager = new SkillManager({ configDir: resolveConfigDir() });
 
 /**
  * Node's global fetch ignores proxy env vars set after process start, so the

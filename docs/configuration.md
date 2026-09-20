@@ -10,7 +10,24 @@ SkillCat 的所有持久化数据都放在**配置目录**，不写入 skill 目
 | Windows | `%APPDATA%\skillcat\` |
 | Linux | `$XDG_CONFIG_HOME/skillcat/`（默认 `~/.config/skillcat/`） |
 
-可用环境变量覆盖：`SKILLCAT_CONFIG_DIR`。旧变量 `SKILLMAN_CONFIG_DIR` 仍然兼容。
+可用环境变量覆盖：`SKILLCAT_CONFIG_DIR`。旧变量 `SKILLMAN_CONFIG_DIR` 仍然兼容；设置后两种构建都使用该目录。
+
+### 开发版与正式版隔离
+
+开发版（`pnpm desktop`）使用独立的 `skillcat-dev` 目录，与正式产物完全隔离，因此开发时的配置
+不会被正式版读取，正式版的配置也不会被开发版覆盖：
+
+| 构建 | 目录 |
+| --- | --- |
+| 正式产物（`pnpm dist:*` 打出的 app） | 上表中的 `skillcat/` |
+| 开发版（`pnpm desktop`） | 同级的 `skillcat-dev/`（macOS 为 `~/Library/Application Support/skillcat-dev/`） |
+
+正式产物的配置目录在所有版本间保持稳定：**覆盖安装 / 更新应用不会清除或覆盖用户配置**。配置
+从不进入 app 包（`electron-builder` 只打包 `out/**` 与 `package.json`），release 流程还会运行
+`pnpm check:secrets` 校验产物不含配置或密钥。
+
+> 因此，新用户首次打开正式版时项目目录为空（`roots`/`projects` 默认空），只会扫描全局作用域；
+> 需要用户自行配置扫描根或添加项目。
 
 ## 文件
 

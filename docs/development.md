@@ -34,6 +34,9 @@ pnpm --filter @skillcat/desktop test
 开发模式下 `electron.vite.config.ts` 把 `@skillcat/core` 别名到源码，修改 core 会触发热更新 /
 重启，无需先构建 core。
 
+开发版使用独立的配置目录 `skillcat-dev`（正式产物为 `skillcat`），两者互不读写，详见
+[configuration.md](configuration.md#开发版与正式版隔离)。
+
 ## 项目结构
 
 ```

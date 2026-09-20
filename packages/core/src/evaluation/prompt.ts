@@ -50,7 +50,7 @@ function systemPrompt(locale: EvaluationLocale): string {
     '- Be strict but fair. Reserve scores of 90+ for genuinely excellent skills.',
     '- Grade mapping: A = 90-100, B = 75-89, C = 60-74, D = below 60.',
     '- Be concise: at most 2 sentences per summary, at most 3 strengths and 3 issues per skill, titles under 12 words.',
-    '- In every prose field, refer to skills by their `name` (e.g. "humanizer-zh"). Never mention catalog ids like "s1" or "s45".',
+    '- In every prose field, refer to skills by their `name` (e.g. "pdf-tools"). Never mention catalog ids like "s1" or "s45".',
     '- Reply with a single JSON object and nothing else. No markdown, no code fences, no commentary.',
     '- Always close every array and object so the JSON is complete.',
     `- Write every prose field (summary, strengths, issues, title, detail, suggestion) in ${languageName(locale)}.`,

@@ -47,7 +47,7 @@ skill 目录。标注按 `scope|project|name|contentHash` 存储，内容变化�
 3. **IDF 加权**：`idf(t) = log(1 + n / df(t))`。若两 skill 的共享 token 全部是高 df 的通用词
    （`df > max(2, 0.3n)`），则判定为无特异性共享，直接跳过。
 4. **重叠分**：`score = 0.7 × (共享权重 / min(L1)) + 0.3 × cosine`，与阈值比较。
-5. **同族跳过**：名称互为前缀的 skill（`hyperframes` ↔ `hyperframes-cli`）跳过重叠检测。
+5. **同族跳过**：名称互为前缀的 skill（`pdf` ↔ `pdf-tools`）跳过重叠检测。
 6. **正文重复**：4-gram shingle 的 Jaccard；先用 1-gram Jaccard < 0.2 快速剪枝。
 
 ## 阈值

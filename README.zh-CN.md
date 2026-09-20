@@ -80,10 +80,11 @@ agent 各自的原生目录里；彼此遮蔽；与锁文件记录的版本发�
   把 **SkillCat** 拖入 `/Applications`。
 - **Windows** —— `SkillCat-<version>-setup.exe`，运行安装程序即可。
 
-产物未签名。macOS 首次打开下载副本时请右键 → **打开**，或执行：
+产物未签名。macOS 上 Gatekeeper 会拦截首次打开，可右键 → **打开**，或清除隔离属性（应用位于
+`/Applications` 需要 `sudo`）：
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/SkillCat.app
+sudo xattr -dr com.apple.quarantine /Applications/SkillCat.app
 ```
 
 Windows 上 SmartScreen 可能提示未知发布者，选择 **更多信息 → 仍要运行**。

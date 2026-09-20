@@ -10,11 +10,11 @@ const RESET = '\u001B[0m';
 
 describe('stripAnsi', () => {
   it('removes the escape sequences the skills CLI emits', () => {
-    expect(stripAnsi(`${TEXT}Updating chinese-novelist…${RESET}`)).toBe(
-      'Updating chinese-novelist…',
+    expect(stripAnsi(`${TEXT}Updating demo-skill…${RESET}`)).toBe(
+      'Updating demo-skill…',
     );
-    expect(stripAnsi(`  ${DIM}✓${RESET} Updated chinese-novelist`)).toBe(
-      '  ✓ Updated chinese-novelist',
+    expect(stripAnsi(`  ${DIM}✓${RESET} Updated demo-skill`)).toBe(
+      '  ✓ Updated demo-skill',
     );
   });
 

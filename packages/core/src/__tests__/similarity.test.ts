@@ -49,13 +49,13 @@ describe('tokenize', () => {
 
 describe('computeOverlaps', () => {
   it('finds overlapping trigger terms', () => {
-    const a = record('humanize-plus', ['润色文章', '去AI味', '降噪处理']);
-    const b = record('humanizer-zh', ['润色文章', '去AI味', 'AI写作痕迹']);
+    const a = record('text-polish', ['润色文章', '去AI味', '降噪处理']);
+    const b = record('copy-edit', ['润色文章', '去AI味', 'AI写作痕迹']);
     const c = record('pdf-tools', ['合并PDF', '拆分PDF', '加水印']);
 
     const pairs = computeOverlaps([a, b, c], 0.2);
     expect(pairs.length).toBe(1);
-    expect([pairs[0]!.aName, pairs[0]!.bName].sort()).toEqual(['humanize-plus', 'humanizer-zh']);
+    expect([pairs[0]!.aName, pairs[0]!.bName].sort()).toEqual(['copy-edit', 'text-polish']);
     expect(pairs[0]!.shared.length).toBeGreaterThan(0);
   });
 

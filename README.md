@@ -84,11 +84,11 @@ Grab the latest build from the [Releases](https://github.com/Konata9/skillcat/re
   then drag **SkillCat** into `/Applications`.
 - **Windows** — `SkillCat-<version>-setup.exe`, then run the installer.
 
-The builds are unsigned. On macOS, the first launch of a downloaded copy needs right-click → **Open**,
-or run:
+The builds are unsigned. On macOS, Gatekeeper blocks the first launch of a downloaded copy — either
+right-click → **Open**, or clear the quarantine attribute (an app in `/Applications` requires `sudo`):
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/SkillCat.app
+sudo xattr -dr com.apple.quarantine /Applications/SkillCat.app
 ```
 
 On Windows, SmartScreen may warn about an unknown publisher — choose **More info → Run anyway**.

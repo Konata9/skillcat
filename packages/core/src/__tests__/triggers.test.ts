@@ -23,20 +23,20 @@ describe('splitList', () => {
 describe('extractTriggers', () => {
   it('extracts structured when_to_use and dispatch_intent', () => {
     const profile = extractTriggers({
-      name: 'health',
+      name: 'config-audit',
       description:
         'Runs a budget-aware audit. Use when users ask to audit config or check drift. Not for debugging application code.',
       frontmatter: {
-        when_to_use: '检查claude, 检查codex, AGENTS.md, 健康度, 配置检查',
-        dispatch_intent: 'agent config audit, hooks/MCP broken',
+        when_to_use: '检查配置, 检查漂移, AGENTS.md, 健康度, 配置检查',
+        dispatch_intent: 'config audit, hooks/MCP broken',
       },
       body: '',
     });
 
     const positives = profile.positive.map((term) => term.text);
-    expect(positives).toContain('检查claude');
+    expect(positives).toContain('检查配置');
     expect(positives).toContain('AGENTS.md');
-    expect(profile.intents).toContain('agent config audit');
+    expect(profile.intents).toContain('config audit');
 
     const negatives = profile.negative.map((term) => term.text);
     expect(negatives.join('|')).toContain('debugging application code');
@@ -49,9 +49,9 @@ describe('extractTriggers', () => {
 
   it('extracts quoted chinese trigger words from description', () => {
     const profile = extractTriggers({
-      name: 'humanize-plus',
+      name: 'text-polish',
       description:
-        '对中文文章进行深度润色，去除 AI 写作痕迹。当用户要求润色文章、去 AI 味、做发布前优化、降噪处理、或提到"润色""去AI味""降噪""优化文章""polish"时触发。',
+        '一个文本润色工具。当用户要求润色文章、去 AI 味、降噪处理、或提到"润色""去AI味""降噪""优化文章""polish"时触发。',
       frontmatter: {},
       body: '',
     });

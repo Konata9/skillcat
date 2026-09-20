@@ -13,12 +13,23 @@
 
 ## 常见问题
 
+### 正式版里出现了我开发时的配置或 API Key
+
+配置目录按构建类型隔离：正式版用 `skillcat`，开发版（`pnpm desktop`）用 `skillcat-dev`，
+两者互不读取。配置也从不进入安装包（只打包 `out/**` 与 `package.json`），release 流程还会运行
+`pnpm check:secrets` 校验产物不含配置或密钥。
+
+若你在旧版本（两者共用同一目录）之后升级，正式版可能读到旧配置。删除
+`~/Library/Application Support/skillcat`（Windows 为 `%APPDATA%\skillcat`）后重开，即为干净首启
+（`roots`/`projects` 为空，只扫描全局）。注意这会同时清除该目录下的设置，请按需先备份。
+
 ### 应用打不开，提示"已损坏"或"无法验证开发者"
 
-产物未签名。macOS 首次打开下载副本时右键 → **打开**，或执行：
+产物未签名。macOS 上 Gatekeeper 会拦截首次打开，可右键 → **打开**，或清除隔离属性（应用位于
+`/Applications` 需要 `sudo`）：
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/SkillCat.app
+sudo xattr -dr com.apple.quarantine /Applications/SkillCat.app
 ```
 
 Windows 上 SmartScreen 会提示未知发布者，选择 **更多信息 → 仍要运行**；企业环境可能还需要在

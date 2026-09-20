@@ -92,6 +92,11 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: pnpm ${{ matrix.script }}
 
+      # Refuse to publish anything that accidentally carries user config or a
+      # credential (the app stores those per-user, never in the bundle).
+      - name: Check artifacts for leaked config or secrets
+        run: pnpm check:secrets
+
       - name: Upload ${{ matrix.name }} artifacts
         uses: actions/upload-artifact@v4
         with:

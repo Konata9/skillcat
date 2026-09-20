@@ -449,9 +449,9 @@ describe('App', () => {
     const api = makeApi();
     vi.mocked(api.leaderboard).mockResolvedValue([
       {
-        name: 'find-skills',
-        slug: 'vercel-labs/skills/find-skills',
-        source: 'vercel-labs/skills',
+        name: 'pdf-tools',
+        slug: 'acme/skills/pdf-tools',
+        source: 'acme/skills',
         installs: 3_465_509,
         isOfficial: true,
       },
@@ -460,7 +460,7 @@ describe('App', () => {
 
     fireEvent.click(await screen.findByText('搜索'));
 
-    expect(await screen.findByText('find-skills')).toBeTruthy();
+    expect(await screen.findByText('pdf-tools')).toBeTruthy();
     expect(api.leaderboard).toHaveBeenCalledWith('all-time');
   });
 
@@ -468,22 +468,22 @@ describe('App', () => {
     const api = makeApi();
     vi.mocked(api.leaderboard).mockResolvedValue([
       {
-        name: 'find-skills',
-        slug: 'vercel-labs/skills/find-skills',
-        source: 'vercel-labs/skills',
+        name: 'pdf-tools',
+        slug: 'acme/skills/pdf-tools',
+        source: 'acme/skills',
         installs: 3_465_509,
       },
     ]);
     renderApp(api);
 
     fireEvent.click(await screen.findByText('搜索'));
-    expect(await screen.findByText('find-skills')).toBeTruthy();
+    expect(await screen.findByText('pdf-tools')).toBeTruthy();
     expect(api.leaderboard).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByText('Skills'));
     fireEvent.click(screen.getByText('搜索'));
 
-    expect(await screen.findByText('find-skills')).toBeTruthy();
+    expect(await screen.findByText('pdf-tools')).toBeTruthy();
     expect(api.leaderboard).toHaveBeenCalledTimes(1);
   });
 

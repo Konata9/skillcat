@@ -1,7 +1,7 @@
 {
   "name": "@skillcat/desktop",
   "productName": "SkillCat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "SkillCat desktop — local-first Agent SKILL manager",
   "author": "konata9",
   "license": "MIT",

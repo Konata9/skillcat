@@ -48,17 +48,17 @@ describe('fetchLeaderboardApi', () => {
     const { impl, calls } = fakeFetch({
       skills: [
         {
-          source: 'vercel-labs/skills',
-          skillId: 'find-skills',
-          name: 'find-skills',
+          source: 'acme/skills',
+          skillId: 'pdf-tools',
+          name: 'pdf-tools',
           installs: 3465509,
           weeklyInstalls: [1, 2, 3],
           isOfficial: true,
         },
         {
-          source: 'mattpocock/skills',
-          skillId: 'grill-me',
-          name: 'grill-me',
+          source: 'acme/devtools',
+          skillId: 'code-review',
+          name: 'code-review',
           installs: 1175111,
         },
       ],
@@ -68,21 +68,21 @@ describe('fetchLeaderboardApi', () => {
     expect(calls).toEqual(['https://skills.sh/api/skills/all-time/0']);
     expect(results).toHaveLength(2);
     expect(results[0]).toMatchObject({
-      name: 'find-skills',
-      source: 'vercel-labs/skills',
-      slug: 'vercel-labs/skills/find-skills',
+      name: 'pdf-tools',
+      source: 'acme/skills',
+      slug: 'acme/skills/pdf-tools',
       installs: 3465509,
       weeklyInstalls: [1, 2, 3],
       isOfficial: true,
     });
-    expect(results[1]).toMatchObject({ name: 'grill-me', installs: 1175111 });
+    expect(results[1]).toMatchObject({ name: 'code-review', installs: 1175111 });
     expect(results[1]?.weeklyInstalls).toBeUndefined();
     expect(results[1]?.isOfficial).toBeUndefined();
   });
 
   it('surfaces change for the hot leaderboard and rejects bad responses', async () => {
     const { impl } = fakeFetch({
-      skills: [{ source: 'op7418/humanizer-zh', skillId: 'humanizer-zh', installs: 6, change: 2 }],
+      skills: [{ source: 'acme/writing', skillId: 'copy-edit', installs: 6, change: 2 }],
     });
     const results = await fetchLeaderboardApi('hot', 0, impl);
     expect(results[0]?.change).toBe(2);
