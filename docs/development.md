@@ -117,6 +117,12 @@ electron-builder 读取它）、构建并发布 `v<version>`。
 `pnpm dist` 只构建当前平台。`@skillcat/core`、`zod`、`execa` 等会被 Vite 打进 main bundle，
 asar 仅含 `out/` 与 `package.json`。
 
+内置的 `skills` CLI（**仅 macOS**）通过 `scripts/bundle-skills-cli.mjs`
+（`pnpm --filter @skillcat/desktop bundle:cli`）暂存到 `apps/desktop/resources/skills-cli/`，再由
+`mac.extraResources` 打进产物；`dev` / `build` / `dist` / `dist:mac` 会先运行它，`dist:win` 不暂存
+（Windows 走系统 Node / `npx`）。升级内置 CLI：`pnpm --filter @skillcat/desktop update skills` 后
+重新构建。
+
 应用图标：`apps/desktop/build/icon.icns`（macOS）、`icon.ico`（Windows）、`icon.png`（Linux）。
 
 需要正式签名时：macOS 删除 `mac.identity: null` 并配置 Apple Developer 证书；Windows 配置

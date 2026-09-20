@@ -42,7 +42,7 @@ skillcat/
 │     ├─ similarity.ts    IDF 加权重叠 + 余弦 + Jaccard
 │     ├─ analysis.ts      规则引擎
 │     ├─ evaluation/      LLM 评估（evaluate / model / prompt / verdicts）
-│     ├─ cli/             npx skills 适配、代理、远程搜索
+│     ├─ cli/             skills CLI 适配、代理、远程搜索
 │     ├─ config.ts        config.json 持久化与净化
 │     ├─ sidecar.ts       annotations / state / evaluation sidecar
 │     ├─ paths.ts         跨平台路径布局
@@ -66,8 +66,11 @@ skillcat/
 3. **分析**（`core/analysis.ts`）：对全部记录运行确定性 + 启发式规则，得到 `baseFindings`；
    再把已保存的 AI 判定（verdicts）应用到 findings 上。
 4. **广播**：`SkillManager` 通过 `onChange` 通知订阅者；主进程把状态经 IPC 推给渲染进程。
-5. **操作**：所有变更（add / remove / update）由 `SkillManager` 构造参数并委托 `npx skills`，
-   以 `AsyncOp`（流式行 + 结果 Promise + cancel）形式返回给 UI 抽屉展示。
+5. **操作**：所有变更（add / remove / update）由 `SkillManager` 构造参数并委托官方 `skills` CLI，
+   以 `AsyncOp`（流式行 + 结果 Promise + cancel）形式返回给 UI 抽屉展示。macOS 正式版自带该 CLI
+   （`resources/skills-cli`，由 `scripts/bundle-skills-cli.mjs` 生成），用应用自身的 Electron
+   二进制以 `ELECTRON_RUN_AS_NODE` 运行，因此**不依赖宿主系统的 Node**；Windows 使用系统
+   Node / `npx`。
 
 ## 进程与安全
 
@@ -84,7 +87,7 @@ skillcat/
 
 Node 全局 `fetch` 会忽略进程启动后再设置的代理环境变量，因此：
 
-- **子进程**：`npx skills` 运行时注入 `HTTP(S)_PROXY` / `NO_PROXY`（`core/cli/proxy.ts`）。
+- **子进程**：`skills` CLI 运行时注入 `HTTP(S)_PROXY` / `NO_PROXY`（`core/cli/proxy.ts`）。
 - **进程内请求**：Electron 主进程配置 `session.defaultSession.setProxy`，并把绑定该 session 的
   `net.fetch` 注入 `SkillManager.setRemoteFetch`，供远程搜索、榜单、LLM 探测、更新检查使用。
 
@@ -95,6 +98,11 @@ Node 全局 `fetch` 会忽略进程启动后再设置的代理环境变量，因
 
 打包时 `@skillcat/core`、`zod`、`execa` 等全部被 Vite 打进 main bundle，renderer 也是打包产物，
 所以应用内不含 `node_modules`（asar 仅含 `out/` 与 `package.json`）。
+
+唯一的例外是内置的 `skills` CLI（**仅 macOS**）：`scripts/bundle-skills-cli.mjs` 把 `skills` 及其
+运行时依赖闭包（`tar` / `yaml` 等）拷贝到 `apps/desktop/resources/skills-cli/`，再由
+`electron-builder.yml` 中 `mac.extraResources` 放到应用的 `Resources/skills-cli/`（在 asar 之外，
+可直接执行）。Windows 暂不内置，运行时回退到系统 Node / `npx`。
 
 产物为未签名 macOS 应用（`electron-builder.yml` 中 `mac.identity: null`），输出到
 `apps/desktop/release/`（dmg + zip + `mac-arm64/SkillCat.app`）。

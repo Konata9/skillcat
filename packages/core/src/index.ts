@@ -33,7 +33,12 @@ export {
 } from './discovery.js';
 export { discoverProjects, type DiscoveredProject } from './projects.js';
 export { AGENTS, getAgentById, type AgentDef } from './agents.js';
-export { resolveSkillsCommand, type ResolvedCommand, type CommandSource } from './cli/env.js';
+export {
+  resolveSkillsCommand,
+  type ResolvedCommand,
+  type CommandSource,
+  type BundledCli,
+} from './cli/env.js';
 export { SkillsCli, SkillsCliError, type SkillsCliOptions } from './cli/skills-cli.js';
 export { stripAnsi, cleanOutputLine } from './cli/ansi.js';
 export {

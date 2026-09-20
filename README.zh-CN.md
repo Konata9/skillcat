@@ -2,7 +2,7 @@
   <img src="apps/desktop/src/renderer/src/assets/logo.png" alt="SkillCat" width="120" />
   <h1>SkillCat</h1>
   <p><strong>本地优先的 Agent SKILL 管理器。</strong><br />
-  盘点所有 skill，解释触发条件，发现安装态与语义问题，并通过 <code>npx skills</code> 安全管理它们。</p>
+  盘点所有 skill，解释触发条件，发现安装态与语义问题，并通过官方 <code>skills</code> CLI 安全管理它们。</p>
 
   <p>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
@@ -24,11 +24,11 @@ Agent skill（SKILL.md 资源包）装起来容易，理清楚很难。它们散
 agent 各自的原生目录里；彼此遮蔽；与锁文件记录的版本发生漂移；触发条件互相重叠，直到两个 skill
 抢同一个请求时才被发现。
 
-**SkillCat** 把它们全部扫出来，逐个解释，标出具体问题，并通过官方 `npx skills` CLI 完成
+**SkillCat** 把它们全部扫出来，逐个解释，标出具体问题，并通过官方 `skills` CLI（随应用内置）完成
 安装 / 更新 / 删除 / 搜索 —— 全程不背着你对文件做任何事。
 
 - **读取本地、离线可用。** 扫描只依赖文件系统与锁文件。
-- **写入全部委托。** 所有变更走 `npx skills`，只有一条安装路径，不重造逻辑。
+- **写入全部委托。** 所有变更走官方 `skills` CLI，只有一条安装路径，不重造逻辑。
 - **分析可解释。** 确定性规则与启发式规则分开标注，每条问题都附带证据。
 - **AI 可选。** 自带模型密钥即可为 skill 评分，并判定重复 / 冲突候选对。
 
@@ -69,7 +69,8 @@ agent 各自的原生目录里；彼此遮蔽；与锁文件记录的版本发�
 
 ### 环境要求
 
-- macOS 或 Windows（两者均提供预构建产物；代码本身跨平台）
+- **macOS** —— 自带运行时，内置 `skills` CLI，**无需安装 Node.js**
+- **Windows** —— 需要安装 [Node.js](https://nodejs.org/) ≥ 22（内置 CLI 目前仅 macOS）
 - 从源码构建需要 [Node.js](https://nodejs.org/) ≥ 22 与 [pnpm](https://pnpm.io/) 11
 
 ### 方式一 —— 下载应用
@@ -78,7 +79,8 @@ agent 各自的原生目录里；彼此遮蔽；与锁文件记录的版本发�
 
 - **macOS** —— `SkillCat-<version>-arm64.dmg` 或 `SkillCat-<version>-x64.dmg`（Apple Silicon / Intel），
   把 **SkillCat** 拖入 `/Applications`。
-- **Windows** —— `SkillCat-<version>-setup.exe`，运行安装程序即可。
+- **Windows** —— `SkillCat-<version>-setup.exe`，运行安装程序即可。安装 / 更新 skill 会使用系统
+  的 Node.js（见[环境要求](#环境要求)）。
 
 产物未签名。macOS 上 Gatekeeper 会拦截首次打开，可右键 → **打开**，或清除隔离属性（应用位于
 `/Applications` 需要 `sudo`）：

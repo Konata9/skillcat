@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, net, session, shell } from 'electron';
 import {
@@ -47,7 +48,35 @@ function resolveConfigDir(): string | undefined {
   return join(dirname(getConfigDir()), `${APP_NAME}-dev`);
 }
 
-const manager = new SkillManager({ configDir: resolveConfigDir() });
+/**
+ * The `skills` CLI staged by `scripts/bundle-skills-cli.mjs` and shipped as an
+ * extra resource. It is run with the app's own binary acting as Node
+ * (`ELECTRON_RUN_AS_NODE=1`), so the packaged app needs no system Node install.
+ *
+ * macOS only for now — Windows builds use the system Node/npx fallback.
+ */
+function resolveBundledCli(): { node: string; cli: string } | undefined {
+  if (process.platform === 'win32') return undefined;
+  const cli = app.isPackaged
+    ? join(process.resourcesPath, 'skills-cli', 'node_modules', 'skills', 'bin', 'cli.mjs')
+    : join(
+        __dirname,
+        '..',
+        '..',
+        'resources',
+        'skills-cli',
+        'node_modules',
+        'skills',
+        'bin',
+        'cli.mjs',
+      );
+  return existsSync(cli) ? { node: process.execPath, cli } : undefined;
+}
+
+const manager = new SkillManager({
+  configDir: resolveConfigDir(),
+  bundledCli: resolveBundledCli(),
+});
 
 /**
  * Node's global fetch ignores proxy env vars set after process start, so the

@@ -37,15 +37,26 @@ Windows 上 SmartScreen 会提示未知发布者，选择 **更多信息 → 仍
 
 ### 设置页显示 skills CLI 不可用
 
-SkillCat 通过 `npx skills` 执行所有变更操作。若你的 Node 由 fnm / nvm 等版本管理器提供，
-GUI 启动的应用可能拿不到正确的 `PATH`。解决方式：在设置页的 `skillsCommand` 覆盖里填完整命令，
-例如：
+变更操作（安装 / 更新 / 删除）由官方 `skills` CLI 执行：
+
+- **macOS 正式版自带该 CLI**（随包分发，用应用自身的 Electron 运行时以 `ELECTRON_RUN_AS_NODE`
+  执行），**无需用户安装 Node.js**。
+- **Windows 目前不自带**，改用系统的 Node.js / `npx`，因此需要用户安装 Node.js ≥ 22。
+
+解析顺序：配置覆盖 → 内置 CLI（仅 macOS）→ 当前 `PATH` 的 `npx` → 登录 shell（`$SHELL -lic`，用
+`whence -p` / `type -P` 跳过 alias 与函数，并取 `process.execPath` 得到稳定的 Node 路径，再把该
+目录并入子进程 `PATH`）。
+
+如果仍不可用（例如你希望使用自带的 npx 版本），可在设置页的 `skillsCommand` 覆盖里填完整命令：
 
 ```json
 ["/Users/you/.local/share/fnm/node-versions/v22.0.0/installation/bin/npx", "skills"]
 ```
 
 或在设置页的 doctor 中查看解析到的命令与错误。
+
+> 注意：登录 shell 回退会**跳过 `npx` 的 alias**（例如 `alias npx='https_proxy npx'`）。如果你
+> 依赖它走代理，请在设置页的"网络"里配置代理，应用会把它注入 CLI 子进程。
 
 ### 安装 / 更新 / 远程搜索失败（网络受限）
 

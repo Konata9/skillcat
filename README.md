@@ -2,7 +2,7 @@
   <img src="apps/desktop/src/renderer/src/assets/logo.png" alt="SkillCat" width="120" />
   <h1>SkillCat</h1>
   <p><strong>Local-first Agent SKILL manager.</strong><br />
-  Inventory every skill, explain what triggers it, find install and semantic problems, and manage them safely through <code>npx skills</code>.</p>
+  Inventory every skill, explain what triggers it, find install and semantic problems, and manage them safely through the official <code>skills</code> CLI.</p>
 
   <p>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
@@ -26,11 +26,11 @@ other; they drift from the version recorded in the lock file; and their trigger 
 ways no one notices until two skills both claim the same request.
 
 **SkillCat** scans all of them, explains each one, flags concrete problems, and performs
-install / update / remove / search through the official `npx skills` CLI — without ever taking over
-your files behind your back.
+install / update / remove / search through the official `skills` CLI (bundled with the app) — without
+ever taking over your files behind your back.
 
 - **Reads are local and offline.** Scanning uses the filesystem and lock files only.
-- **Writes are delegated.** Every mutation runs through `npx skills`, so there is one install path, not two.
+- **Writes are delegated.** Every mutation runs through the official `skills` CLI, so there is one install path, not two.
 - **Analysis is explainable.** Deterministic rules and heuristics are labeled separately; each finding ships with evidence.
 - **AI is optional.** Bring your own model key to score skills and judge duplicate/conflict candidates.
 
@@ -73,8 +73,9 @@ your files behind your back.
 
 ### Requirements
 
-- macOS or Windows (prebuilt artifacts for both; the codebase is cross-platform)
-- [Node.js](https://nodejs.org/) ≥ 22 and [pnpm](https://pnpm.io/) 11 for building from source
+- **macOS** — self-contained; the `skills` CLI is bundled, so **no Node.js install is required**
+- **Windows** — requires [Node.js](https://nodejs.org/) ≥ 22 (the bundled CLI is macOS-only for now)
+- [Node.js](https://nodejs.org/) ≥ 22 and [pnpm](https://pnpm.io/) 11 when building from source
 
 ### Option A — Download the app
 
@@ -82,7 +83,8 @@ Grab the latest build from the [Releases](https://github.com/Konata9/skillcat/re
 
 - **macOS** — `SkillCat-<version>-arm64.dmg` or `SkillCat-<version>-x64.dmg` (Apple Silicon / Intel),
   then drag **SkillCat** into `/Applications`.
-- **Windows** — `SkillCat-<version>-setup.exe`, then run the installer.
+- **Windows** — `SkillCat-<version>-setup.exe`, then run the installer. Installing / updating skills
+  uses your system Node.js (see [Requirements](#requirements)).
 
 The builds are unsigned. On macOS, Gatekeeper blocks the first launch of a downloaded copy — either
 right-click → **Open**, or clear the quarantine attribute (an app in `/Applications` requires `sudo`):

@@ -17,6 +17,13 @@ mac:
   identity: null
   icon: build/icon.icns
   artifactName: ${productName}-${version}-${arch}.${ext}
+  # The staged `skills` CLI (scripts/bundle-skills-cli.mjs) is shipped as a real
+  # directory outside the asar, so macOS builds run it with their own
+  # Electron-as-Node runtime and need no system Node install. Windows builds do
+  # not bundle it yet and use the system Node/npx fallback.
+  extraResources:
+    - from: resources/skills-cli
+      to: skills-cli
 win:
   target:
     - target: nsis

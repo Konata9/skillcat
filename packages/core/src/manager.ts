@@ -6,7 +6,7 @@
  * UI-agnostic: listeners receive change notifications, never rendered strings.
  */
 import { basename } from 'node:path';
-import { resolveSkillsCommand, type ResolvedCommand } from './cli/env.js';
+import { resolveSkillsCommand, type BundledCli, type ResolvedCommand } from './cli/env.js';
 import { buildProxyEnv, isValidProxyUrl, normalizeProxyUrl } from './cli/proxy.js';
 import {
   fetchLeaderboardApi,
@@ -110,11 +110,13 @@ export class SkillManager {
   private evaluationListeners = new Set<(event: EvaluationEvent) => void>();
   private copyHashCache = new Map<string, string>();
   private remoteFetch: FetchLike | null = null;
+  private readonly bundledCli: BundledCli | undefined;
 
-  constructor(options: { configDir?: string } = {}) {
+  constructor(options: { configDir?: string; bundledCli?: BundledCli } = {}) {
     const dir = options.configDir ?? getConfigDir();
     this.configStore = new ConfigStore(dir);
     this.sidecar = new SidecarStore(dir);
+    this.bundledCli = options.bundledCli;
   }
 
   async init(): Promise<void> {
@@ -176,10 +178,14 @@ export class SkillManager {
   }
 
   private async resolveCli(): Promise<void> {
-    this.resolved = await resolveSkillsCommand(this.configStore.value.skillsCommand);
+    this.resolved = await resolveSkillsCommand(this.configStore.value.skillsCommand, {
+      bundled: this.bundledCli,
+    });
     this.cli = this.resolved.command
       ? new SkillsCli(this.resolved.command, {
-          env: buildProxyEnv(this.configStore.value.proxy),
+          // Resolved env (PATH from a login shell) first, so the proxy vars
+          // cannot clobber it; the proxy vars never touch PATH anyway.
+          env: { ...this.resolved.env, ...buildProxyEnv(this.configStore.value.proxy) },
         })
       : null;
   }
