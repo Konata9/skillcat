@@ -89,9 +89,13 @@ pnpm test
 
 ## 版本与发布
 
-应用版本只有一处来源：`apps/desktop/package.json` 的 `version`。Electron 的 `app.getVersion()`
-读取它，electron-builder 也用它命名产物（`SkillCat-<version>-arm64.dmg`）。发版时改这一个字段，
-再打 tag（`v<version>`）并在 GitHub 创建对应 release 即可。
+项目版本只有一处来源：根 `package.json` 的 `version`。发版时改这一个字段并合并到 `main`，
+Release 工作流会自动同步到 `apps/desktop/package.json`（Electron 的 `app.getVersion()` 与
+electron-builder 读取它）、构建并发布 `v<version>`。
+
+同步由 `scripts/sync-app-version.mjs` 完成：`pnpm desktop` 与 `pnpm dist` 都会先运行它，也可单独
+执行 `pnpm sync-version`。因此应用内版本、产物名（`SkillCat-<version>-arm64.dmg`）与 release tag
+始终一致。
 
 应用内"检查更新"从 `apps/desktop/package.json` 的 `repository` 字段解析出 `owner/repo`，
 查询 GitHub 的 `releases/latest` 并与当前版本比较。仓库暂无 release 时不会报错，而是提示
@@ -106,3 +110,32 @@ asar 仅含 `out/` 与 `package.json`。
 应用图标：`apps/desktop/build/icon.icns`（macOS）、`icon.ico`（Windows）、`icon.png`（Linux）。
 
 需要正式签名 / 公证时，删除 `mac.identity: null` 并配置 Apple Developer 证书。
+
+## GitHub Actions
+
+仓库有两个工作流，辅助脚本放在 `scripts/`。
+
+### 依赖扫描（`.github/workflows/dependency-audit.yml`）
+
+- 触发：每次 `push`（以及手动 `workflow_dispatch`）。
+- `scripts/audit-fix.sh` 运行 `pnpm audit --audit-level=high`；发现 high/critical 时先
+  `pnpm audit --fix update` 更新锁文件，仍存在则 `pnpm audit --fix override` 添加 overrides，
+  并写出 `audit-report.md` 供 PR 正文使用。
+- 随后运行 `pnpm typecheck` 与 `pnpm test`。**只有全部通过**，且当前分支是默认分支时，才通过
+  `peter-evans/create-pull-request` 创建 PR（分支 `chore/dependency-audit`，已存在则更新）。
+- 工作流需要 `contents: write` 与 `pull-requests: write` 权限；`GITHUB_TOKEN` 推送不会再次触发
+  工作流，因此不会循环。
+- 仓库需在 Settings → Actions → General 中允许 GitHub Actions 创建 PR（"Allow GitHub Actions to
+  create and approve pull requests"），否则最后一步会被拒绝。
+
+### 发布（`.github/workflows/release.yml`）
+
+- 触发：`main` 分支上根 `package.json` 发生变化时（以及手动 `workflow_dispatch`，可传 `force`
+  忽略版本变化）。
+- `scripts/detect-version-change.sh` 比较当前 `version` 与本次 push 起点（`github.event.before`）
+  的 `version`，并检查 `v<version>` tag 是否已存在；只有版本变化且未发布时才继续。
+- 在 `macos-latest` 上 `pnpm install --frozen-lockfile` → `pnpm dist`（内含版本同步）→
+  `softprops/action-gh-release` 发布 `v<version>`，附带 dmg 与 zip，自动生成 release notes。
+
+发版流程：修改根 `package.json` 的 `version` 并合并到 `main`，工作流会自动构建并发布。若要补发
+当前版本（例如版本号已改但尚未发布），可手动运行该工作流并勾选 `force`。
