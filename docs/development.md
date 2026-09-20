@@ -128,10 +128,36 @@ asar 仅含 `out/` 与 `package.json`。
   并写出 `audit-report.md` 供 PR 正文使用。
 - 随后运行 `pnpm typecheck` 与 `pnpm test`。**只有全部通过**，且当前分支是默认分支时，才通过
   `peter-evans/create-pull-request` 创建 PR（分支 `chore/dependency-audit`，已存在则更新）。
-- 工作流需要 `contents: write` 与 `pull-requests: write` 权限；`GITHUB_TOKEN` 推送不会再次触发
-  工作流，因此不会循环。
-- 仓库需在 Settings → Actions → General 中允许 GitHub Actions 创建 PR（"Allow GitHub Actions to
-  create and approve pull requests"），否则最后一步会被拒绝。
+- 工作流需要 `contents: write` 与 `pull-requests: write` 权限。创建 PR 的 token 优先使用
+  `DEPENDENCY_AUDIT_TOKEN` secret，未配置时回退到 `GITHUB_TOKEN`。
+- `chore/dependency-audit` 分支被 `branches-ignore` 排除，避免用 PAT 时自我触发。
+
+#### 让工作流有权限创建 PR
+
+`GITHUB_TOKEN` 创建 PR 需要仓库开关；若组织策略不允许，改用 PAT。二选一即可。
+
+**方案 A：启用仓库设置（推荐）**
+
+1. 打开 `https://github.com/<owner>/<repo>/settings/actions`。
+2. 在 **Workflow permissions** 选择 **Read and write permissions**。
+3. 勾选 **Allow GitHub Actions to create and approve pull requests**。
+4. **Save**，然后在 Actions 页面 **Re-run** 失败的任务。
+
+> 若仓库属于组织，组织级设置可能覆盖仓库级；需让组织管理员在
+> `https://github.com/organizations/<org>/settings/actions` 一并允许。
+
+**方案 B：使用细粒度 PAT**
+
+1. 访问 `https://github.com/settings/personal-access-tokens/new`。
+2. **Resource owner** 选仓库所有者；**Repository access** 选 **Only select repositories** 并勾选本仓库。
+3. **Permissions** 设为 **Contents: Read and write** 与 **Pull requests: Read and write**。
+4. 生成并复制 token。
+5. 打开 `https://github.com/<owner>/<repo>/settings/secrets/actions` → **New repository secret**，
+   名称填 `DEPENDENCY_AUDIT_TOKEN`，粘贴 token 并保存。
+6. **Re-run** 失败的任务；工作流会自动使用该 secret。
+
+`couldn't find remote ref chore/dependency-audit` 属于首次创建分支时的正常提示；Node 的
+`url.parse()` 弃用告警与失败无关。
 
 ### 发布（`.github/workflows/release.yml`）
 

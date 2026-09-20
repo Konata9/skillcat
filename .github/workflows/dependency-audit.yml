@@ -4,6 +4,11 @@ name: Dependency audit
 # advisories, and opens a pull request only when the full test suite passes.
 on:
   push:
+    # The PR branch is pushed by this same workflow; skip it to avoid a
+    # redundant run (relevant when a PAT is used, since PAT pushes do trigger
+    # workflows unlike GITHUB_TOKEN pushes).
+    branches-ignore:
+      - chore/dependency-audit
   workflow_dispatch:
 
 concurrency:
@@ -47,11 +52,17 @@ jobs:
 
       # Only on the default branch, and only if every step above succeeded —
       # i.e. the fixes applied by the audit step keep typecheck and tests green.
+      #
+      # GITHUB_TOKEN can open the PR only when the repository setting
+      # "Allow GitHub Actions to create and approve pull requests" is enabled.
+      # When that is not an option, set a DEPENDENCY_AUDIT_TOKEN secret (a
+      # fine-grained PAT with Contents + Pull requests: Read and write) and it
+      # is used automatically instead.
       - name: Create pull request
         if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.DEPENDENCY_AUDIT_TOKEN || secrets.GITHUB_TOKEN }}
           branch: chore/dependency-audit
           delete-branch: true
           commit-message: 'chore(deps): fix high/critical advisories'
