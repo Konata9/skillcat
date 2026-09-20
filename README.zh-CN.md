@@ -32,6 +32,20 @@ agent 各自的原生目录里；彼此遮蔽；与锁文件记录的版本发�
 - **分析可解释。** 确定性规则与启发式规则分开标注，每条问题都附带证据。
 - **AI 可选。** 自带模型密钥即可为 skill 评分，并判定重复 / 冲突候选对。
 
+## 界面截图
+
+**Skills** —— 全局与项目级 skill 盘点，含真实链接状态、触发画像与文件详情。
+
+![Skills 界面](docs/images/skills.png)
+
+| 分析 | 远程搜索 |
+| --- | --- |
+| ![分析界面](docs/images/analysis.png) | ![远程搜索](docs/images/search.png) |
+
+| 项目 | 设置与更新 |
+| --- | --- |
+| ![项目界面](docs/images/projects.png) | ![更新设置](docs/images/settings-updates.png) |
+
 ## 功能
 
 - **库存盘点** —— 覆盖 90+ 已知 agent（Claude Code、Codex、Cursor、OpenCode、Gemini CLI、

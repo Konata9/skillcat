@@ -34,6 +34,20 @@ your files behind your back.
 - **Analysis is explainable.** Deterministic rules and heuristics are labeled separately; each finding ships with evidence.
 - **AI is optional.** Bring your own model key to score skills and judge duplicate/conflict candidates.
 
+## Screenshots
+
+**Skills** — global and per-project inventory, with real link state, trigger profiles and file details.
+
+![Skills view](docs/images/skills.png)
+
+| Analysis | Remote search |
+| --- | --- |
+| ![Analysis view](docs/images/analysis.png) | ![Remote search](docs/images/search.png) |
+
+| Projects | Settings & updates |
+| --- | --- |
+| ![Projects view](docs/images/projects.png) | ![Update settings](docs/images/settings-updates.png) |
+
 ## Features
 
 - **Inventory** — global and per-project skills across 90+ known agents (Claude Code, Codex, Cursor,
