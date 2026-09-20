@@ -278,6 +278,8 @@ export const en: Record<MessageKey, MessageValue> = {
   'settings.updateLatest': 'Up to date',
   'settings.updateAvailable': 'New version {version}',
   'settings.updateUnconfigured': 'No update source configured yet',
+  'settings.updateSource': 'Update source:',
+  'settings.updateNoRelease': 'No releases published yet',
   'settings.updateFailed': 'Check failed: {message}',
   'settings.updateOpen': 'Open download page',
   'settings.languageLabel': 'Language',

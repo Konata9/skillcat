@@ -651,6 +651,18 @@ export function SettingsView({
                 <span className="text-muted-foreground">
                   {t('settings.updateVersion', { version: appVersion })}
                 </span>
+                {update?.repo ? (
+                  <span className="text-[11px] text-muted-foreground">
+                    {t('settings.updateSource')}{' '}
+                    <button
+                      type="button"
+                      className="focus-ring rounded-sm text-primary hover:underline"
+                      onClick={() => void onOpenExternal(`https://github.com/${update.repo}`)}
+                    >
+                      {update.repo}
+                    </button>
+                  </span>
+                ) : null}
                 <div className="flex flex-wrap items-center gap-2">
                   <Button size="sm" onClick={() => void runUpdateCheck()} disabled={updateChecking}>
                     {updateChecking ? t('settings.updateChecking') : t('settings.updateCheck')}
@@ -668,8 +680,12 @@ export function SettingsView({
                       <Badge tone="warn">
                         {t('settings.updateAvailable', { version: update.latest ?? '' })}
                       </Badge>
-                    ) : (
+                    ) : update.latest ? (
                       <Badge tone="success">{t('settings.updateLatest')}</Badge>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">
+                        {t('settings.updateNoRelease')}
+                      </span>
                     )
                   ) : null}
                 </div>

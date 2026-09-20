@@ -62,6 +62,13 @@ AI 评估需要先在设置页启用 LLM 并填写端点与模型（需要密钥
 评估保存时记录了输入签名（模型 + 每个 skill 的内容哈希）。扫描结果或模型变化后签名不匹配，
 即提示过期，重新运行即可。语言不匹配（保存时的语言与当前界面语言不同）也会提示。
 
+### 检查更新显示"暂无发布版本"
+
+更新源由 `apps/desktop/package.json` 的 `repository` 字段解析得到（当前为 `Konata9/skillcat`），
+应用版本则通过 Electron 的 `app.getVersion()` 读取同一个 package.json 的 `version`，两者都只有
+一处来源。公开仓库尚未发布 release 时，GitHub 的 `releases/latest` 返回 404，界面显示
+"暂无发布版本"并给出发布页链接；发布第一个 release 后即可检测到新版本。
+
 ### 修改了配置文件但不生效
 
 设置页的"重新加载配置"会重新读取 `config.json`、重新解析 CLI 并重新扫描。外部编辑保存后点一下

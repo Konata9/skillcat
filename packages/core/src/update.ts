@@ -8,10 +8,12 @@ import type { FetchLike } from './cli/remote-search.js';
 export interface UpdateCheckResult {
   /** False when no repository is configured yet. */
   configured: boolean;
+  /** `owner/repo` of the update source, empty when unconfigured. */
+  repo: string;
   current: string;
   latest: string | null;
   hasUpdate: boolean;
-  /** Release page URL for the latest version, when available. */
+  /** Release page URL for the latest version, or the releases page when none exists. */
   url: string | null;
   publishedAt: string | null;
   error?: string;
@@ -49,6 +51,7 @@ export async function checkForUpdate(
   const slug = repo.trim().replace(/^\/+|\/+$/g, '');
   const base: UpdateCheckResult = {
     configured: Boolean(slug),
+    repo: slug,
     current: currentVersion,
     latest: null,
     hasUpdate: false,
@@ -65,6 +68,11 @@ export async function checkForUpdate(
       },
       signal: AbortSignal.timeout(15_000),
     });
+    // A public repository with no published releases returns 404 for
+    // `releases/latest`; that is a normal state, not a failed check.
+    if (response.status === 404) {
+      return { ...base, url: `https://github.com/${slug}/releases` };
+    }
     if (!response.ok) return { ...base, error: `HTTP ${response.status}` };
 
     const data = (await response.json()) as {

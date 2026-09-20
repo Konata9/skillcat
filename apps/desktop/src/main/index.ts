@@ -1,15 +1,29 @@
 import { join } from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, net, session, shell } from 'electron';
 import { isValidProxyUrl, normalizeProxyUrl, SkillManager, type ProxySettings } from '@skillcat/core';
+import pkg from '../../package.json';
 import { bootstrap } from './bootstrap';
 import { registerIpc } from './ipc';
 
 app.setName('SkillCat');
 
 /**
- * GitHub repository used for the in-app update check, in `owner/repo` form.
+ * `owner/repo` for the in-app update check, parsed from this package's
+ * `repository` field so the release source has a single source of truth.
  */
-const UPDATE_REPO = 'Konata9/skillcat';
+function githubSlug(): string {
+  const field = (pkg as { repository?: unknown }).repository;
+  const url =
+    typeof field === 'string'
+      ? field
+      : field && typeof field === 'object' && 'url' in field
+        ? String((field as { url: unknown }).url ?? '')
+        : '';
+  const match = /github\.com[/:]([^/]+)\/([^/#?]+)/i.exec(url);
+  return match ? `${match[1]}/${match[2]!.replace(/\.git$/, '')}` : '';
+}
+
+const UPDATE_REPO = githubSlug();
 
 const manager = new SkillManager();
 
@@ -92,6 +106,8 @@ app.whenReady().then(async () => {
       const result = await dialog.showOpenDialog({ properties: ['openDirectory'] });
       return result.canceled ? null : (result.filePaths[0] ?? null);
     },
+    // `app.getVersion()` reads `version` from package.json, the same value
+    // electron-builder uses for the artifact names — one source of truth.
     appVersion: app.getVersion(),
     checkUpdate: () => manager.checkUpdate(UPDATE_REPO, app.getVersion()),
     openExternal: async (url) => {

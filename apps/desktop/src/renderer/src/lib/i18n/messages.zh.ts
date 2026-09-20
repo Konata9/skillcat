@@ -263,6 +263,8 @@ export const zh = {
   'settings.updateLatest': '已是最新版本',
   'settings.updateAvailable': '有新版本 {version}',
   'settings.updateUnconfigured': '暂未配置更新源',
+  'settings.updateSource': '更新源：',
+  'settings.updateNoRelease': '暂无发布版本',
   'settings.updateFailed': '检查失败：{message}',
   'settings.updateOpen': '前往下载',
   'settings.languageLabel': '界面语言',

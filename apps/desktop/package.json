@@ -4,6 +4,13 @@
   "version": "0.1.0",
   "description": "SkillCat desktop — local-first Agent SKILL manager",
   "author": "konata9",
+  "license": "MIT",
+  "homepage": "https://github.com/Konata9/skillcat",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Konata9/skillcat.git"
+  },
+  "bugs": "https://github.com/Konata9/skillcat/issues",
   "private": true,
   "main": "./out/main/index.js",
   "scripts": {

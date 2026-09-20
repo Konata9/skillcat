@@ -29,6 +29,7 @@ describe('checkForUpdate', () => {
     const { impl, calls } = fakeFetch(200, {});
     const result = await checkForUpdate('', '1.0.0', impl);
     expect(result.configured).toBe(false);
+    expect(result.repo).toBe('');
     expect(result.hasUpdate).toBe(false);
     expect(calls).toHaveLength(0);
   });
@@ -41,15 +42,25 @@ describe('checkForUpdate', () => {
     });
     const result = await checkForUpdate('o/r', '1.0.0', impl);
     expect(calls[0]).toBe('https://api.github.com/repos/o/r/releases/latest');
+    expect(result.repo).toBe('o/r');
     expect(result.hasUpdate).toBe(true);
     expect(result.latest).toBe('1.1.0');
     expect(result.url).toBe('https://github.com/o/r/releases/tag/v1.1.0');
   });
 
-  it('reports an error for non-ok responses', async () => {
+  it('treats a repository without releases as having none', async () => {
     const { impl } = fakeFetch(404, {});
     const result = await checkForUpdate('o/r', '1.0.0', impl);
     expect(result.hasUpdate).toBe(false);
-    expect(result.error).toBe('HTTP 404');
+    expect(result.latest).toBeNull();
+    expect(result.error).toBeUndefined();
+    expect(result.url).toBe('https://github.com/o/r/releases');
+  });
+
+  it('reports an error for other non-ok responses', async () => {
+    const { impl } = fakeFetch(500, {});
+    const result = await checkForUpdate('o/r', '1.0.0', impl);
+    expect(result.hasUpdate).toBe(false);
+    expect(result.error).toBe('HTTP 500');
   });
 });

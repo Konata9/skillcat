@@ -172,6 +172,7 @@ function makeApi(): SkillCatApi {
     testLlm: vi.fn(async () => ({ ok: true, status: 200, message: 'ok' })),
     checkUpdate: vi.fn(async () => ({
       configured: false,
+      repo: '',
       current: '0.1.0',
       latest: null,
       hasUpdate: false,

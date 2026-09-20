@@ -271,6 +271,7 @@ describe('SettingsView LLM', () => {
           onTestLlm={onTestLlm}
           onCheckUpdate={async () => ({
             configured: false,
+            repo: '',
             current: '0.1.0',
             latest: null,
             hasUpdate: false,
@@ -371,6 +372,7 @@ describe('SettingsView proxy', () => {
         onTestLlm={async () => ({ ok: true, status: 200, message: 'ok' })}
         onCheckUpdate={async () => ({
           configured: false,
+          repo: '',
           current: '0.1.0',
           latest: null,
           hasUpdate: false,

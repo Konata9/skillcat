@@ -88,6 +88,7 @@ beforeAll(async () => {
     appVersion: '0.1.0',
     checkUpdate: async () => ({
       configured: false,
+      repo: '',
       current: '0.1.0',
       latest: null,
       hasUpdate: false,

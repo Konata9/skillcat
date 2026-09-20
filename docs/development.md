@@ -87,6 +87,16 @@ pnpm typecheck
 pnpm test
 ```
 
+## 版本与发布
+
+应用版本只有一处来源：`apps/desktop/package.json` 的 `version`。Electron 的 `app.getVersion()`
+读取它，electron-builder 也用它命名产物（`SkillCat-<version>-arm64.dmg`）。发版时改这一个字段，
+再打 tag（`v<version>`）并在 GitHub 创建对应 release 即可。
+
+应用内"检查更新"从 `apps/desktop/package.json` 的 `repository` 字段解析出 `owner/repo`，
+查询 GitHub 的 `releases/latest` 并与当前版本比较。仓库暂无 release 时不会报错，而是提示
+"暂无发布版本"。
+
 ## 打包
 
 `pnpm dist` 使用 electron-builder 产出未签名应用（`mac.identity: null`），输出到
