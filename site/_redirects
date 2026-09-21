@@ -1,0 +1,5 @@
+# Canonicalise the Chinese route so /zh and /zh/ are one URL.
+/zh  /zh/  301
+
+# Short link to the download page.
+/download  https://github.com/Konata9/skillcat/releases  302

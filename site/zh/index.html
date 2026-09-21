@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SkillCat — 本地优先的 agent skill 管理器</title>
+    <meta
+      name="description"
+      content="SkillCat 清点你机器上跨 90+ 个 agent 安装的每一个 skill，说明它们的触发条件，把具体问题连同证据一起指出来，并通过官方 skills CLI 管理安装。"
+    />
+    <meta name="generator" content="SkillCat site" />
+    <link rel="canonical" href="https://skillcat.pages.dev/zh/" />
+    <link rel="alternate" hreflang="en" href="https://skillcat.pages.dev/" />
+    <link rel="alternate" hreflang="zh-CN" href="https://skillcat.pages.dev/zh/" />
+    <link rel="alternate" hreflang="x-default" href="https://skillcat.pages.dev/" />
+    <link rel="alternate" type="text/plain" href="https://skillcat.pages.dev/llms.txt" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SkillCat" />
+    <meta property="og:title" content="SkillCat — 本地优先的 agent skill 管理器" />
+    <meta
+      property="og:description"
+      content="清点每一个 agent skill，找出问题，安全地管理它们。免费、MIT 开源、离线读取。"
+    />
+    <meta property="og:url" content="https://skillcat.pages.dev/zh/" />
+    <meta property="og:image" content="https://skillcat.pages.dev/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SkillCat — 本地优先的 agent skill 管理器" />
+    <meta
+      name="twitter:description"
+      content="清点每一个 agent skill，找出问题，安全地管理它们。"
+    />
+    <meta name="twitter:image" content="https://skillcat.pages.dev/og.jpg" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png" />
+    <link rel="apple-touch-icon" href="../assets/img/logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../assets/css/tokens.css" />
+    <link rel="stylesheet" href="../assets/css/site.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "SkillCat",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Windows",
+        "softwareVersion": "1.1.0",
+        "inLanguage": "zh-CN",
+        "description": "本地优先的 agent skill 管理器。清点机器上的每一个 SKILL.md，说明每个 skill 的触发条件，指出具体问题，并把所有写入委托给官方 skills CLI。",
+        "url": "https://skillcat.pages.dev/zh/",
+        "license": "https://opensource.org/license/mit",
+        "isAccessibleForFree": true,
+        "author": { "@type": "Person", "name": "konata9", "url": "https://github.com/Konata9" },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到正文</a>
+
+    <!-- ============ 导航 · N1b ============ -->
+    <header class="nav">
+      <div class="container nav__inner">
+        <a class="brand" href="/zh/">
+          <img src="../assets/img/logo.png" alt="" width="24" height="24" />
+          SkillCat
+        </a>
+
+        <nav class="nav__links" aria-label="页面章节">
+          <a class="nav__link" href="#tour">界面导览</a>
+          <a class="nav__link" href="#features">能力</a>
+          <a class="nav__link" href="#install">安装</a>
+        </nav>
+
+        <div class="nav__right">
+          <a class="lang-switch" href="/" hreflang="en" lang="en" data-set-locale="en">EN</a>
+          <a
+            class="btn btn--primary nav__download"
+            href="https://github.com/Konata9/skillcat/releases"
+            >下载</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ============ 主视觉 · H2 双栏 ============ -->
+      <section class="hero">
+        <div class="container hero__grid">
+          <div>
+            <p class="hero__eyebrow mono-label">本地优先的 agent skill 管理器</p>
+            <h1 class="hero__h1">你机器上的每一个 agent skill，都在一个地方。</h1>
+            <p class="hero__lede">
+              清点你机器上的每一个 agent skill，找出问题，安全地管理它们。SkillCat 说明每个
+              skill 的触发条件，并在两个 skill 抢同一个请求之前把问题指出来。
+            </p>
+            <div class="hero__ctas">
+              <a class="btn btn--primary btn--lg" href="https://github.com/Konata9/skillcat/releases">
+                <svg class="btn__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 1v9m0 0 3.5-3.5M8 10 4.5 6.5M2.5 12.5h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                下载 macOS 版
+              </a>
+              <a class="btn btn--ghost btn--lg" href="https://github.com/Konata9/skillcat">
+                查看 GitHub
+              </a>
+            </div>
+            <ul class="hero__facts">
+              <li>免费 · MIT 许可</li>
+              <li>macOS + Windows</li>
+              <li>v1.1.0</li>
+              <li>离线读取</li>
+              <li>90+ 个 agent</li>
+              <li>无需账号</li>
+            </ul>
+          </div>
+
+          <div class="code-card">
+            <div class="code-card__bar">
+              <span class="code-card__file">SKILL.md</span>
+              <span class="chip chip--ok">0 个问题</span>
+            </div>
+            <div class="code-card__body">
+<pre><code><span class="tok-dim">---</span>
+<span class="tok-key">name</span><span class="tok-punct">:</span> release-notes
+<span class="tok-key">description</span><span class="tok-punct">:</span> <span class="tok-str" data-type="根据已合并的 PR 生成发布说明">根据已合并的 PR 生成发布说明</span><span class="type-caret" hidden></span>
+<span class="tok-key">when_to_use</span><span class="tok-punct">:</span> 起草发布说明, changelog
+<span class="tok-dim">---</span>
+
+<span class="tok-dim">## When to Use</span>
+起草发布说明时，或把已合并的 PR
+整理成面向用户的说明时使用。</code></pre>
+            </div>
+            <ul class="code-card__foot">
+              <li>~/.agents/skills</li>
+              <li>符号链接正常</li>
+              <li>1.2 KB · 1 个文件</li>
+              <li>sha 3f9a1c07</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ agent 条 · T2 ============ -->
+      <section class="agents" aria-label="支持的 agent">
+        <div class="container agents__inner">
+          <p class="agents__label mono-label">覆盖 90+ 个已知 agent 目录</p>
+          <ul class="agents__list">
+            <li>Claude Code</li>
+            <li>Codex</li>
+            <li>Cursor</li>
+            <li>OpenCode</li>
+            <li>Gemini CLI</li>
+            <li>Windsurf</li>
+            <li>Trae</li>
+            <li>GitHub Copilot</li>
+            <li>Cline</li>
+            <li>Continue</li>
+            <li>Goose</li>
+            <li>Amp</li>
+            <li>Droid</li>
+            <li>Zed</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============ 01 · 界面导览 · 横向滑动截图轮播 ============ -->
+      <section class="section" id="tour">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">看清你实际装了什么。</h2>
+              <p class="lede">
+                skill 会堆积在全局目录、项目目录和十几个 agent 专属位置里；它们互相遮蔽，也会与锁文件
+                记录的版本脱节。SkillCat 把这些全部读一遍，展示真实状态。
+              </p>
+            </div>
+          </div>
+
+          <div class="carousel" data-carousel>
+            <div class="carousel__viewport">
+              <div class="carousel__track" data-carousel-track tabindex="0" aria-label="产品截图">
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">01</span>
+                    <div>
+                      <h3 class="carousel__title">Skills</h3>
+                      <p class="carousel__desc">
+                        全局与项目级的 skill 清单，以及每个 skill 真实的链接状态：符号链接、悬空，或副本漂移。
+                        详情面板同时展示触发画像、文件清单与内容哈希。
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="../assets/img/zh/skills.png"
+                      alt="SkillCat 的 Skills 视图：左侧是已安装 skill 的列表，右侧详情面板展示描述、触发画像、链接状态与正文。"
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">02</span>
+                    <div>
+                      <h3 class="carousel__title">分析</h3>
+                      <p class="carousel__desc">
+                        确定性规则与启发式分析给出的问题，每一条都附带产生它的证据。两者分开标注，你始终
+                        清楚哪一条是磁盘事实，哪一条只是推测。
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="../assets/img/zh/analysis.png"
+                      alt="SkillCat 的分析视图：左侧是按严重程度着色的 findings 列表，右侧是评估总览与每个 skill 的评分。"
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">03</span>
+                    <div>
+                      <h3 class="carousel__title">搜索</h3>
+                      <p class="carousel__desc">
+                        浏览 skills.sh 榜单与公共索引，安装前先读一遍 SKILL.md，然后直接装进当前作用域。
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="../assets/img/zh/search.png"
+                      alt="SkillCat 的搜索视图：skills.sh 榜单，提供全部时间、趋势、热门三个标签页，以及搜索框和安装操作。"
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">04</span>
+                    <div>
+                      <h3 class="carousel__title">项目</h3>
+                      <p class="carousel__desc">
+                        根据扫描根下的 agent 标记自动发现项目，把常回访的钉住。注册表只存路径，删除条目
+                        不会删除任何文件。
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="../assets/img/zh/projects.png"
+                      alt="SkillCat 的项目视图：自动发现的本地项目列表，附带各自的 skill 数量与路径。"
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">05</span>
+                    <div>
+                      <h3 class="carousel__title">设置与更新</h3>
+                      <p class="carousel__desc">
+                        浅色 / 深色主题、中英文界面（跟随系统语言）、代理支持、可调的相似度阈值，以及
+                        诊断用的 <span class="code-inline">doctor</span>。
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="../assets/img/zh/settings-updates.png"
+                      alt="SkillCat 的设置视图：主题、语言、代理、阈值与更新相关控件。"
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+              </div>
+            </div>
+            <div class="carousel__pager">
+              <div class="carousel__arrows">
+                <button class="carousel__btn" type="button" data-carousel-prev aria-label="上一张截图">
+                  <svg viewBox="0 0 16 16" width="18" height="18" fill="none" aria-hidden="true"><path d="M10.5 3.5 6 8l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </button>
+                <button class="carousel__btn" type="button" data-carousel-next aria-label="下一张截图">
+                  <svg viewBox="0 0 16 16" width="18" height="18" fill="none" aria-hidden="true"><path d="M5.5 3.5 10 8l-4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </button>
+              </div>
+              <div class="carousel__dots" role="group" aria-label="选择截图">
+                <button class="carousel__dot" type="button" data-carousel-goto="0" aria-current="true" aria-label="查看第 1 张：Skills"></button>
+                <button class="carousel__dot" type="button" data-carousel-goto="1" aria-label="查看第 2 张：分析"></button>
+                <button class="carousel__dot" type="button" data-carousel-goto="2" aria-label="查看第 3 张：搜索"></button>
+                <button class="carousel__dot" type="button" data-carousel-goto="3" aria-label="查看第 4 张：项目"></button>
+                <button class="carousel__dot" type="button" data-carousel-goto="4" aria-label="查看第 5 张：设置与更新"></button>
+              </div>
+              <p class="carousel__counter">
+                <span data-carousel-current>01</span>
+                <span aria-hidden="true">/</span>
+                <span>05</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 02 · 能力 ============ -->
+      <section class="section" id="features">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">它做什么，以及该信到什么程度。</h2>
+              <p class="lede">
+                每一项能力都标注了它的判断来自哪里。磁盘事实是确定性的，相似度结果是启发式的，
+                并且明确说明这一点。
+              </p>
+            </div>
+          </div>
+
+          <div class="spec">
+            <div class="spec__head" aria-hidden="true">
+              <span>功能</span><span>做什么</span><span>来源</span>
+            </div>
+
+            <article class="spec__row">
+              <h3 class="spec__name">清单<span class="spec__sub">覆盖 90+ 已知 agent</span></h3>
+              <p class="spec__desc">
+                扫描全局、项目级与自定义目录，报告每个 skill 的来源、锁元数据，以及真实的链接状态：
+                符号链接、悬空，或副本漂移。
+              </p>
+              <span class="spec__mode">core</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">触发画像<span class="spec__sub">正向与负向</span></h3>
+              <p class="spec__desc">
+                从 <span class="code-inline">when_to_use</span>、<span class="code-inline">dispatch_intent</span>、description 和
+                「When to Use」小节中提取每个 skill 的触发条件。你可以在 sidecar 里手工标注触发词，
+                skill 文件永远不会被改写。
+              </p>
+              <span class="spec__mode">core</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">分析<span class="spec__sub">确定性与启发式</span></h3>
+              <p class="spec__desc">
+                确定性规则读取磁盘事实：悬空链接、锁记录缺失、副本漂移、本地改动、跨作用域遮蔽与
+                来源冲突。启发式则提示触发词重叠、负向矛盾与正文重复，并给出置信度与造成命中的共享词。
+              </p>
+              <span class="spec__mode">rules</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">AI 评估<span class="spec__sub">可选，自带密钥</span></h3>
+              <p class="spec__desc">
+                用你自己的模型为每个 skill 评分，并判定预筛选出的重复与冲突候选对。结果带签名保存，
+                界面据此提示评估是否已经过期。
+              </p>
+              <span class="spec__mode">ai</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">项目<span class="spec__sub">自动发现</span></h3>
+              <p class="spec__desc">
+                根据扫描根下的 agent 标记发现项目，把常回访的钉住。注册表只存路径，删除条目不会
+                删除任何文件。
+              </p>
+              <span class="spec__mode">core</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">远程搜索<span class="spec__sub">skills.sh 榜单</span></h3>
+              <p class="spec__desc">
+                浏览公共索引与全部时间、趋势、热门三个榜单，安装前先读一遍 SKILL.md，然后直接装进
+                当前作用域。
+              </p>
+              <span class="spec__mode">online</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">安全操作<span class="spec__sub">唯一安装路径</span></h3>
+              <p class="spec__desc">
+                每次变更都把进度流式展示在抽屉里，有确认步骤，也可以取消。写入一律委托官方
+                <span class="code-inline">skills</span> CLI，因此只有一条安装路径，而不是两条。
+              </p>
+              <span class="spec__mode">cli</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 03 · 工作原理 · 石墨色区段 ============ -->
+      <section class="section band" id="how">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">扫描、分析、执行。</h2>
+              <p class="lede">
+                三步，其中只有第三步可能改动磁盘上的内容。
+              </p>
+            </div>
+          </div>
+
+          <div class="steps">
+            <article class="step">
+              <p class="step__idx">01</p>
+              <h3 class="step__title">扫描</h3>
+              <p class="step__desc">
+                读取全局与项目锁文件，枚举 canonical 目录、每一个已知 agent 目录和你的自定义目录，
+                再对每个 skill 的内容做哈希。
+              </p>
+            </article>
+            <article class="step">
+              <p class="step__idx">02</p>
+              <h3 class="step__title">分析</h3>
+              <p class="step__desc">
+                对全部记录运行规则引擎，提取触发画像，在开销低的地方计算相似度，并合并你保存的标注。
+                整个过程不会向 skill 写回任何内容。
+              </p>
+            </article>
+            <article class="step">
+              <p class="step__idx">03</p>
+              <h3 class="step__title">执行</h3>
+              <p class="step__desc">
+                安装、更新或卸载 —— 每一步都经过确认、流式展示、可取消，并且由官方
+                <span class="code-inline">skills</span> CLI 执行，而不是由 SkillCat 自己执行。
+              </p>
+            </article>
+          </div>
+
+          <div class="split">
+            <div class="split__col">
+              <p class="split__label">读取</p>
+              <h3 class="split__title">本地且离线</h3>
+              <p class="split__desc">
+                扫描只使用文件系统与锁文件，清点与分析 skill 不需要任何网络请求。
+              </p>
+            </div>
+            <div class="split__col">
+              <p class="split__label">写入</p>
+              <h3 class="split__title">委托给 CLI</h3>
+              <p class="split__desc">
+                每一次变更都走官方 <span class="code-inline">skills</span> CLI。SkillCat 不会成为第二个事实来源，
+                也不会背着你改动文件。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 04 · 原则 ============ -->
+      <section class="section" id="principles">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">它不会打破的规则。</h2>
+            </div>
+          </div>
+
+          <div class="principles">
+            <article class="principle">
+              <p class="principle__idx">P1</p>
+              <h3 class="principle__title">读取本地且离线</h3>
+              <p class="principle__desc">
+                扫描只使用文件系统与锁文件，清点与分析 skill 不需要任何网络请求。
+              </p>
+            </article>
+            <article class="principle">
+              <p class="principle__idx">P2</p>
+              <h3 class="principle__title">写入一律委托</h3>
+              <p class="principle__desc">
+                每一次安装、更新与卸载都走官方 <span class="code-inline">skills</span> CLI。SkillCat 不会成为第二个
+                事实来源。
+              </p>
+            </article>
+            <article class="principle">
+              <p class="principle__idx">P3</p>
+              <h3 class="principle__title">分析可解释</h3>
+              <p class="principle__desc">
+                确定性规则与启发式分开标注，每一条问题都附带触发它的证据。
+              </p>
+            </article>
+            <article class="principle">
+              <p class="principle__idx">P4</p>
+              <h3 class="principle__title">可选且显式的 AI 评估</h3>
+              <p class="principle__desc">
+                评分与重复判定只在你要它跑的时候运行，用你自己的密钥与端点。默认情况下没有任何
+                数据离开你的机器。
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 05 · 安装 ============ -->
+      <section class="section" id="install">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">下载使用，或从源码构建。</h2>
+              <p class="lede">
+                从 Releases 页面获取最新构建，或者克隆仓库以开发模式运行。
+              </p>
+            </div>
+          </div>
+
+          <div class="install">
+            <div class="os">
+              <p class="os__label">macOS</p>
+              <h3 class="os__title">自包含</h3>
+              <ul class="os__list">
+                <li>提供 Apple Silicon 与 Intel 构建（dmg 或 zip）。</li>
+                <li>内置 <span class="code-inline">skills</span> CLI，无需安装 Node.js。</li>
+                <li>把 SkillCat 拖进 /Applications 即可。</li>
+              </ul>
+              <span class="os__cmd">SkillCat-1.1.0-arm64.dmg</span>
+            </div>
+
+            <div class="os">
+              <p class="os__label">Windows</p>
+              <h3 class="os__title">需要 Node.js</h3>
+              <ul class="os__list">
+                <li>x64 NSIS 安装包。</li>
+                <li>安装 / 更新使用系统 Node.js，版本 22 或更高。</li>
+                <li>内置 CLI 目前仅支持 macOS。</li>
+              </ul>
+              <span class="os__cmd">SkillCat-1.1.0-setup.exe</span>
+            </div>
+          </div>
+
+          <div class="note">
+            <span class="note__label">未签名构建</span>
+            这些构建没有代码签名。在 macOS 上，Gatekeeper 会拦截下载副本的首次启动 —— 右键 →
+            <strong>打开</strong>，或清除隔离属性：
+            <span class="code-inline">sudo xattr -dr com.apple.quarantine /Applications/SkillCat.app</span>。在
+            Windows 上，SmartScreen 可能提示未知发布者，选择
+            <strong>更多信息 → 仍要运行</strong>。
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 06 · 常见问题 ============ -->
+      <section class="section" id="faq">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">值得问的问题。</h2>
+            </div>
+          </div>
+
+          <div class="faq">
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q1</span>
+                它和直接用 skills CLI 有什么区别？
+              </summary>
+              <p class="faq__a">
+                CLI 负责安装 skill。SkillCat 让你看清已经装好的东西处于什么状态：它读取 CLI 与
+                各个 agent 写到磁盘上的内容，解释每个 skill，并在问题爆发前把具体问题指出来。
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q2</span>
+                需要 API 密钥吗？
+              </summary>
+              <p class="faq__a">
+                不需要。清单、触发画像与规则引擎都不依赖模型。只有开启可选的 AI 评估时才需要密钥。
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q3</span>
+                它认识哪些 agent？
+              </summary>
+              <p class="faq__a">
+                超过 90 个已知 agent 目录，包括 Claude Code、Codex、Cursor、OpenCode、Gemini CLI、
+                Windsurf 与 Trae，也可以自己添加 skill 目录。
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q4</span>
+                它会改动我的 skill 吗？
+              </summary>
+              <p class="faq__a">
+                不会悄悄改。扫描是只读的，标注保存在配置目录的 sidecar 文件里。对 skill 目录的
+                任何改动都要经过官方 <span class="code-inline">skills</span> CLI，并带确认步骤。
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q5</span>
+                能离线使用吗？
+              </summary>
+              <p class="faq__a">
+                可以。扫描与分析只用文件系统与锁文件。联网只用于可选的远程搜索、榜单与 AI 评估。
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q6</span>
+                它是免费的吗？
+              </summary>
+              <p class="faq__a">
+                免费。SkillCat 基于 MIT 许可开源，没有账号、没有订阅，也没有遥测。
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q7</span>
+                运行它需要什么环境？
+              </summary>
+              <p class="faq__a">
+                macOS 版是自包含的：内置 <span class="code-inline">skills</span> CLI，无需安装 Node.js。Windows 需要
+                Node.js 22 或更高版本。
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 末尾行动区 ============ -->
+      <section class="section">
+        <div class="container cta">
+          <div>
+            <h2 class="cta__title">把它指向你的工作区，看看你到底装了什么。</h2>
+            <p class="cta__lede">免费、开源，在你开口之前一直保持只读。</p>
+          </div>
+          <div class="cta__actions">
+            <a class="btn btn--primary btn--lg" href="https://github.com/Konata9/skillcat/releases">
+              下载 macOS 版
+            </a>
+            <a class="btn btn--ghost btn--lg" href="https://github.com/Konata9/skillcat">
+              查看 GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============ 页脚 · Ft1 ============ -->
+    <footer class="footer" id="footer">
+      <div class="container">
+        <div class="footer__top">
+          <div>
+            <a class="brand" href="/zh/">
+              <img src="../assets/img/logo.png" alt="" width="24" height="24" />
+              SkillCat
+            </a>
+            <p class="footer__tagline">本地优先。默认只读。唯一安装路径。</p>
+          </div>
+          <nav class="footer__links" aria-label="链接">
+            <a class="footer__link" href="https://github.com/Konata9/skillcat">GitHub</a>
+            <a class="footer__link" href="https://github.com/Konata9/skillcat/releases">发布版本</a>
+            <a class="footer__link" href="https://github.com/Konata9/skillcat/tree/main/docs">文档</a>
+            <a class="footer__link" href="https://github.com/Konata9/skillcat/issues">问题反馈</a>
+            <a class="footer__link" href="https://github.com/Konata9/skillcat/blob/main/LICENSE">MIT 许可</a>
+          </nav>
+        </div>
+        <div class="footer__bottom">
+          <span>MIT © 2026 konata9</span>
+          <span>v1.1.0</span>
+          <span>与任何 agent 厂商均无关联。</span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- ============ 吸底行动条 · C4 ============ -->
+    <aside class="sticky-cta" data-visible="false" aria-label="下载 SkillCat">
+      <span class="sticky-cta__text">SkillCat v1.1.0 · 免费开源</span>
+      <a class="btn btn--primary" href="https://github.com/Konata9/skillcat/releases">下载</a>
+      <button class="sticky-cta__close" type="button" aria-label="关闭">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+          <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+        </svg>
+      </button>
+    </aside>
+
+    <script src="../assets/js/site.js" defer></script>
+  </body>
+</html>

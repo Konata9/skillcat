@@ -1,0 +1,157 @@
+{
+  "type": "landing-page",
+  "lang": "zh",
+  "brief": {
+    "audience": "在 Claude Code、Codex、Cursor、OpenCode 等工具里装了大量 SKILL.md 的开发者与 agent 重度用户",
+    "job": "说服开发者下载 SkillCat 桌面端，并打开 GitHub 仓库",
+    "template": "landing-page",
+    "formats": ["html"],
+    "page_target": 1,
+    "narrative": "先讲品类，再带看真实界面，然后讲安全模型，最后是安装与常见问题",
+    "required_facts": ["许可", "平台", "版本", "agent 数量"],
+    "required_assets": [
+      "assets/img/zh/skills.png",
+      "assets/img/zh/analysis.png",
+      "assets/img/zh/search.png",
+      "assets/img/zh/projects.png",
+      "assets/img/zh/settings-updates.png",
+      "assets/img/logo.png"
+    ],
+    "acceptance_checks": [
+      "每一条说法都能追溯到 README 或 docs",
+      "没有编造的指标、logo 或推荐语",
+      "在 320 / 375 / 414 / 768 / 1280 px 下渲染正常"
+    ],
+    "preserve": [],
+    "explicit_deviations": [
+      "使用 Hallmark Cobalt 视觉系统，而非 Kami 羊皮纸模板（用户已确认方案 A）"
+    ]
+  },
+  "content": {
+    "category": "agent skill 管理器",
+    "product_name": "SkillCat",
+    "tagline": "清点你机器上的每一个 agent skill，找出问题，安全地管理它们。",
+    "facts": [
+      "免费 · MIT 许可",
+      "macOS + Windows",
+      "v1.1.0",
+      "离线读取",
+      "90+ 个 agent",
+      "无需账号"
+    ],
+    "cta": {
+      "primary": "下载 macOS 版",
+      "secondary": "查看 GitHub"
+    },
+    "gallery": [
+      {
+        "image": "assets/img/zh/skills.png",
+        "caption": "全局与项目级的 skill 清单，以及每个 skill 真实的链接状态：符号链接、悬空，或副本漂移。"
+      },
+      {
+        "image": "assets/img/zh/analysis.png",
+        "caption": "确定性规则与启发式分析给出的问题，每一条都附带产生它的证据。"
+      },
+      {
+        "image": "assets/img/zh/search.png",
+        "caption": "浏览 skills.sh 榜单与公共索引，安装前先读一遍 SKILL.md，然后直接装进当前作用域。"
+      },
+      {
+        "image": "assets/img/zh/projects.png",
+        "caption": "根据扫描根下的 agent 标记自动发现项目，把常回访的钉住。注册表只存路径，删除条目不会删除任何文件。"
+      },
+      {
+        "image": "assets/img/zh/settings-updates.png",
+        "caption": "浅色 / 深色主题、中英文界面（跟随系统语言）、代理支持、可调的相似度阈值，以及诊断用的 doctor。"
+      }
+    ],
+    "features": [
+      {
+        "name": "清单",
+        "subtitle": "覆盖 90+ 已知 agent",
+        "description": "扫描全局、项目级与自定义目录，报告每个 skill 的来源、锁元数据，以及真实的链接状态：符号链接、悬空，或副本漂移。"
+      },
+      {
+        "name": "触发画像",
+        "subtitle": "正向与负向",
+        "description": "从 when_to_use、dispatch_intent、description 和「When to Use」小节中提取每个 skill 的触发条件。你可以在 sidecar 里手工标注触发词，skill 文件永远不会被改写。"
+      },
+      {
+        "name": "分析",
+        "subtitle": "确定性与启发式",
+        "description": "确定性规则读取磁盘事实：悬空链接、锁记录缺失、副本漂移、本地改动、跨作用域遮蔽与来源冲突。启发式则提示触发词重叠、负向矛盾与正文重复，并给出置信度与造成命中的共享词。"
+      },
+      {
+        "name": "AI 评估",
+        "subtitle": "可选，自带密钥",
+        "description": "用你自己的模型为每个 skill 评分，并判定预筛选出的重复与冲突候选对。结果带签名保存，界面据此提示评估是否已经过期。"
+      },
+      {
+        "name": "项目",
+        "subtitle": "自动发现",
+        "description": "根据扫描根下的 agent 标记发现项目，把常回访的钉住。注册表只存路径，删除条目不会删除任何文件。"
+      },
+      {
+        "name": "远程搜索",
+        "subtitle": "skills.sh 榜单",
+        "description": "浏览公共索引与全部时间、趋势、热门三个榜单，安装前先读一遍 SKILL.md，然后直接装进当前作用域。"
+      },
+      {
+        "name": "安全操作",
+        "subtitle": "唯一安装路径",
+        "description": "每次变更都把进度流式展示在抽屉里，有确认步骤，也可以取消。写入一律委托官方 skills CLI，因此只有一条安装路径，而不是两条。"
+      }
+    ],
+    "principles": [
+      {
+        "title": "读取本地且离线",
+        "description": "扫描只使用文件系统与锁文件，清点与分析 skill 不需要任何网络请求。"
+      },
+      {
+        "title": "写入一律委托",
+        "description": "每一次安装、更新与卸载都走官方 skills CLI。SkillCat 不会成为第二个事实来源。"
+      },
+      {
+        "title": "分析可解释",
+        "description": "确定性规则与启发式分开标注，每一条问题都附带触发它的证据。"
+      },
+      {
+        "title": "可选且显式的 AI 评估",
+        "description": "评分与重复判定只在你要它跑的时候运行，用你自己的密钥与端点。默认情况下没有任何数据离开你的机器。"
+      }
+    ],
+    "faq": [
+      {
+        "q": "它和直接用 skills CLI 有什么区别？",
+        "a": "CLI 负责安装 skill。SkillCat 让你看清已经装好的东西处于什么状态：它读取 CLI 与各个 agent 写到磁盘上的内容，解释每个 skill，并在问题爆发前把具体问题指出来。"
+      },
+      {
+        "q": "需要 API 密钥吗？",
+        "a": "不需要。清单、触发画像与规则引擎都不依赖模型。只有开启可选的 AI 评估时才需要密钥。"
+      },
+      {
+        "q": "它认识哪些 agent？",
+        "a": "超过 90 个已知 agent 目录，包括 Claude Code、Codex、Cursor、OpenCode、Gemini CLI、Windsurf 与 Trae，也可以自己添加 skill 目录。"
+      },
+      {
+        "q": "它会改动我的 skill 吗？",
+        "a": "不会悄悄改。扫描是只读的，标注保存在配置目录的 sidecar 文件里。对 skill 目录的任何改动都要经过官方 skills CLI，并带确认步骤。"
+      },
+      {
+        "q": "能离线使用吗？",
+        "a": "可以。扫描与分析只用文件系统与锁文件。联网只用于可选的远程搜索、榜单与 AI 评估。"
+      },
+      {
+        "q": "它是免费的吗？",
+        "a": "免费。SkillCat 基于 MIT 许可开源，没有账号、没有订阅，也没有遥测。"
+      },
+      {
+        "q": "运行它需要什么环境？",
+        "a": "macOS 版是自包含的：内置 skills CLI，无需安装 Node.js。Windows 需要 Node.js 22 或更高版本。"
+      }
+    ],
+    "footer": {
+      "ethos": "本地优先。默认只读。唯一安装路径。"
+    }
+  }
+}

@@ -1,0 +1,119 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt
+ * enrichment: real product screenshots (scroll-snap carousel) + graphite code card · nav: N1b · footer: Ft1
+ * Hallmark · pre-emit critique: P5 H5 E5 S4 R5 V5
+ * Diversification: first Hallmark run for this project (no prior .hallmark/log.json entry)
+ * Paper band: cool light · Display: grotesk-sans · Accent: electric cobalt
+ *   contrast: pass (40–41, computed WCAG) · nav/footer/slop: pass (42–45)
+ *   honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49)
+ *   mobile: pass (34, 49, 50–57) · icons: pass (30) · families: 3 (37)
+ *
+ * Kami production rules applied: content IR (content.en/zh.json) validated with
+ * `build.py --check-content` (49/49 EN, 67/67 ZH atomic values present); no
+ * placeholders; hreflang + JSON-LD + companion assets (sitemap, robots,
+ * llms.txt, llms-full.txt, _headers, _redirects).
+ *
+ * Cobalt is a LIGHT theme with ONE dark beat. No dark-mode variant by design.
+ * Scroll reveals are intentionally absent (modern-minimal: "the page is composed").
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Paper — cool engineered near-white, never #fff */
+  --color-paper: oklch(98.5% 0.004 250);
+  --color-paper-2: oklch(96.8% 0.005 250);
+  --color-paper-3: oklch(94.4% 0.007 252);
+
+  /* Ink — cool charcoal, never #000 */
+  --color-ink: oklch(24% 0.02 258);
+  --color-ink-2: oklch(34% 0.018 257);
+  --color-ink-3: oklch(52% 0.016 256);
+  --color-ink-4: oklch(64% 0.014 256);
+
+  /* Rules — hairlines carry the structure */
+  --color-rule: oklch(91% 0.008 255);
+  --color-rule-2: oklch(85% 0.01 255);
+  --color-rule-3: oklch(78% 0.012 255);
+
+  /* The one signal — electric cobalt */
+  --color-accent: oklch(58% 0.2 256);
+  --color-accent-2: oklch(50% 0.19 256);
+  --color-accent-ink: oklch(99% 0.004 250);
+  --color-accent-soft: oklch(95.5% 0.028 256);
+  --color-accent-line: oklch(87% 0.055 256);
+
+  /* Graphite — the page's one dark beat */
+  --color-graphite: oklch(22% 0.016 260);
+  --color-graphite-2: oklch(26% 0.018 260);
+  --color-graphite-3: oklch(32% 0.02 260);
+  --color-graphite-ink: oklch(91% 0.01 252);
+  --color-graphite-ink-2: oklch(82% 0.014 254);
+  --color-graphite-muted: oklch(78% 0.018 255);
+  --color-graphite-rule: oklch(34% 0.02 260);
+
+  /* Status — only inside the code card and finding rows */
+  --color-ok: oklch(74% 0.16 152);
+  --color-warn: oklch(80% 0.13 78);
+  --color-err: oklch(70% 0.18 25);
+  --color-err-soft: oklch(95% 0.03 25);
+
+  /* Focus */
+  --color-focus: oklch(58% 0.2 256);
+
+  /* Signal lifted for the graphite band (the accent needs light on dark) */
+  --color-accent-on-dark: oklch(75% 0.14 256);
+
+  /* Shadows — named so no literal colour appears in site.css */
+  --shadow-card: 0 1px 2px oklch(24% 0.02 258 / 0.06);
+  --shadow-panel: 0 16px 44px oklch(24% 0.02 258 / 0.18);
+
+  /* Type — all-sans, no serif anywhere */
+  --font-display:
+    'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  --font-body:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  --font-mono:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'PingFang SC',
+    monospace;
+
+  /* Type scale */
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.5rem;
+  --text-2xl: clamp(1.5rem, 1.15rem + 1.4vw, 2rem);
+  --text-3xl: clamp(1.875rem, 1.3rem + 2.2vw, 2.75rem);
+  --text-display: clamp(2.25rem, 1.35rem + 3.9vw, 4.25rem);
+
+  /* Spacing — 4pt scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 8rem;
+
+  /* Radii — drawn with a ruler */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 10px;
+
+  /* Layout */
+  --measure: 66ch;
+  --container: 74rem;
+  --pad-inline: clamp(1rem, 4vw, 1.5rem);
+  --nav-h: 3.75rem;
+
+  /* Motion */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur: 600ms;
+  --dur-fast: 160ms;
+}

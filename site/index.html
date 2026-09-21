@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SkillCat — local-first agent skill manager</title>
+    <meta
+      name="description"
+      content="SkillCat inventories every agent skill on your machine across 90+ agents, explains what triggers each one, flags concrete problems with evidence, and manages installs through the official skills CLI."
+    />
+    <meta name="generator" content="SkillCat site" />
+    <!-- Update the origin below if you attach a custom domain on Cloudflare Pages. -->
+    <link rel="canonical" href="https://skillcat.pages.dev/" />
+    <link rel="alternate" hreflang="en" href="https://skillcat.pages.dev/" />
+    <link rel="alternate" hreflang="zh-CN" href="https://skillcat.pages.dev/zh/" />
+    <link rel="alternate" hreflang="x-default" href="https://skillcat.pages.dev/" />
+    <link rel="alternate" type="text/plain" href="https://skillcat.pages.dev/llms.txt" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SkillCat" />
+    <meta property="og:title" content="SkillCat — local-first agent skill manager" />
+    <meta
+      property="og:description"
+      content="Inventory every agent skill, find what's wrong, and manage it safely. Free, MIT-licensed, reads offline."
+    />
+    <meta property="og:url" content="https://skillcat.pages.dev/" />
+    <meta property="og:image" content="https://skillcat.pages.dev/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SkillCat — local-first agent skill manager" />
+    <meta
+      name="twitter:description"
+      content="Inventory every agent skill, find what's wrong, and manage it safely."
+    />
+    <meta name="twitter:image" content="https://skillcat.pages.dev/og.jpg" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="apple-touch-icon" href="assets/img/logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/tokens.css" />
+    <link rel="stylesheet" href="assets/css/site.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "SkillCat",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Windows",
+        "softwareVersion": "1.1.0",
+        "description": "Local-first agent skill manager. Inventories every SKILL.md bundle on your machine, explains what triggers each skill, flags concrete problems, and delegates every write to the official skills CLI.",
+        "url": "https://skillcat.pages.dev/",
+        "license": "https://opensource.org/license/mit",
+        "isAccessibleForFree": true,
+        "author": { "@type": "Person", "name": "konata9", "url": "https://github.com/Konata9" },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <!-- ============ Nav · N1b bordered bar ============ -->
+    <header class="nav">
+      <div class="container nav__inner">
+        <a class="brand" href="/">
+          <img src="assets/img/logo.png" alt="" width="24" height="24" />
+          SkillCat
+        </a>
+
+        <nav class="nav__links" aria-label="Sections">
+          <a class="nav__link" href="#tour">Tour</a>
+          <a class="nav__link" href="#features">Capabilities</a>
+          <a class="nav__link" href="#install">Install</a>
+        </nav>
+
+        <div class="nav__right">
+          <a class="lang-switch" href="/zh/" hreflang="zh-CN" lang="zh-CN" data-set-locale="zh">中文</a>
+          <a
+            class="btn btn--primary nav__download"
+            href="https://github.com/Konata9/skillcat/releases"
+            >Download</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ============ Hero · H2 split diptych ============ -->
+      <section class="hero">
+        <div class="container hero__grid">
+          <div>
+            <p class="hero__eyebrow mono-label">Local-first agent skill manager</p>
+            <h1 class="hero__h1">Every agent skill on your machine, in one place.</h1>
+            <p class="hero__lede">
+              Inventory every agent skill, find what's wrong, and manage it safely. SkillCat
+              reads what you have installed across 90+ agents and shows the evidence behind every
+              finding.
+            </p>
+            <div class="hero__ctas">
+              <a class="btn btn--primary btn--lg" href="https://github.com/Konata9/skillcat/releases">
+                <svg class="btn__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 1v9m0 0 3.5-3.5M8 10 4.5 6.5M2.5 12.5h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                Download for macOS
+              </a>
+              <a class="btn btn--ghost btn--lg" href="https://github.com/Konata9/skillcat">
+                View on GitHub
+              </a>
+            </div>
+            <ul class="hero__facts">
+              <li>Free · MIT licensed</li>
+              <li>macOS + Windows</li>
+              <li>v1.1.0</li>
+              <li>Reads offline</li>
+              <li>90+ agents</li>
+              <li>No account needed</li>
+            </ul>
+          </div>
+
+          <!-- Code card: the file SkillCat reads, plus its real link state -->
+          <div class="code-card">
+            <div class="code-card__bar">
+              <span class="code-card__file">SKILL.md</span>
+              <span class="chip chip--ok">0 problems</span>
+            </div>
+            <div class="code-card__body">
+<pre><code><span class="tok-dim">---</span>
+<span class="tok-key">name</span><span class="tok-punct">:</span> release-notes
+<span class="tok-key">description</span><span class="tok-punct">:</span> <span class="tok-str" data-type="Generate release notes from merged PRs">Generate release notes from merged PRs</span><span class="type-caret" hidden></span>
+<span class="tok-key">when_to_use</span><span class="tok-punct">:</span> drafting a release, changelog
+<span class="tok-dim">---</span>
+
+<span class="tok-dim">## When to Use</span>
+Use when drafting a release, or turning
+merged pull requests into user-facing notes.</code></pre>
+            </div>
+            <ul class="code-card__foot">
+              <li>~/.agents/skills</li>
+              <li>symlink ok</li>
+              <li>1.2 KB · 1 file</li>
+              <li>sha 3f9a1c07</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Agents strip · T2 hairline ============ -->
+      <section class="agents" aria-label="Supported agents">
+        <div class="container agents__inner">
+          <p class="agents__label mono-label">Works across 90+ known agent directories</p>
+          <ul class="agents__list">
+            <li>Claude Code</li>
+            <li>Codex</li>
+            <li>Cursor</li>
+            <li>OpenCode</li>
+            <li>Gemini CLI</li>
+            <li>Windsurf</li>
+            <li>Trae</li>
+            <li>GitHub Copilot</li>
+            <li>Cline</li>
+            <li>Continue</li>
+            <li>Goose</li>
+            <li>Amp</li>
+            <li>Droid</li>
+            <li>Zed</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============ 01 · Tour · scroll-snap screenshot carousel ============ -->
+      <section class="section" id="tour">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">See what you actually have installed.</h2>
+              <p class="lede">
+                Skills pile up in global directories, per-project directories and a dozen
+                agent-specific locations. They shadow each other and drift from the version in the
+                lock file. SkillCat reads all of it and shows the real state.
+              </p>
+            </div>
+          </div>
+
+          <div class="carousel" data-carousel>
+            <div class="carousel__viewport">
+              <div class="carousel__track" data-carousel-track tabindex="0" aria-label="Product screenshots">
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">01</span>
+                    <div>
+                      <h3 class="carousel__title">Skills</h3>
+                      <p class="carousel__desc">
+                        Global and per-project inventory with the real link state for each skill:
+                        symlink, dangling, or a drifted copy. The detail panel shows the trigger
+                        profile, the file inventory and the content hash.
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="assets/img/en/skills.png"
+                      alt="SkillCat Skills view: a list of installed skills on the left with a detail panel on the right showing description, trigger profile, link state and body."
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">02</span>
+                    <div>
+                      <h3 class="carousel__title">Analysis</h3>
+                      <p class="carousel__desc">
+                        Findings from deterministic rules and heuristics, each shipped with the
+                        evidence that produced it. Deterministic and heuristic results are labelled
+                        separately, so you always know which is a disk fact and which is a guess.
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="assets/img/en/analysis.png"
+                      alt="SkillCat Analysis view: a findings list on the left, colour-coded by severity, with an evaluation summary and per-skill scores on the right."
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">03</span>
+                    <div>
+                      <h3 class="carousel__title">Search</h3>
+                      <p class="carousel__desc">
+                        Browse the skills.sh leaderboard and the public index, read a SKILL.md before
+                        you commit, then install straight into the current scope.
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="assets/img/en/search.png"
+                      alt="SkillCat Search view: the skills.sh leaderboard with tabs for all-time, trending and hot, a search field, and an install action."
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">04</span>
+                    <div>
+                      <h3 class="carousel__title">Projects</h3>
+                      <p class="carousel__desc">
+                        Projects discovered automatically from the agent markers under your scan
+                        roots. Pin the ones you revisit. The registry stores paths only, and removing
+                        an entry never deletes a file.
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="assets/img/en/projects.png"
+                      alt="SkillCat Projects view: a list of discovered projects with their skill counts and paths."
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">05</span>
+                    <div>
+                      <h3 class="carousel__title">Settings &amp; updates</h3>
+                      <p class="carousel__desc">
+                        Light and dark themes, English or Chinese (following the system language),
+                        proxy support, adjustable similarity thresholds, and a diagnostic
+                        <span class="code-inline">doctor</span>.
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="assets/img/en/settings-updates.png"
+                      alt="SkillCat Settings view: theme, language, proxy, threshold and update controls."
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
+              </div>
+            </div>
+            <div class="carousel__pager">
+              <div class="carousel__arrows">
+                <button class="carousel__btn" type="button" data-carousel-prev aria-label="Previous screenshot">
+                  <svg viewBox="0 0 16 16" width="18" height="18" fill="none" aria-hidden="true"><path d="M10.5 3.5 6 8l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </button>
+                <button class="carousel__btn" type="button" data-carousel-next aria-label="Next screenshot">
+                  <svg viewBox="0 0 16 16" width="18" height="18" fill="none" aria-hidden="true"><path d="M5.5 3.5 10 8l-4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </button>
+              </div>
+              <div class="carousel__dots" role="group" aria-label="Choose a screenshot">
+                <button class="carousel__dot" type="button" data-carousel-goto="0" aria-current="true" aria-label="Show screenshot 1: Skills"></button>
+                <button class="carousel__dot" type="button" data-carousel-goto="1" aria-label="Show screenshot 2: Analysis"></button>
+                <button class="carousel__dot" type="button" data-carousel-goto="2" aria-label="Show screenshot 3: Search"></button>
+                <button class="carousel__dot" type="button" data-carousel-goto="3" aria-label="Show screenshot 4: Projects"></button>
+                <button class="carousel__dot" type="button" data-carousel-goto="4" aria-label="Show screenshot 5: Settings &amp; updates"></button>
+              </div>
+              <p class="carousel__counter">
+                <span data-carousel-current>01</span>
+                <span aria-hidden="true">/</span>
+                <span>05</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 02 · Capabilities · F3 tabular spec sheet ============ -->
+      <section class="section" id="features">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">What it does, and how far to trust it.</h2>
+              <p class="lede">
+                Every capability is labelled by how it knows what it knows. Disk facts are
+                deterministic. Similarity results are heuristic and say so.
+              </p>
+            </div>
+          </div>
+
+          <div class="spec">
+            <div class="spec__head" aria-hidden="true">
+              <span>Feature</span><span>What it does</span><span>Source</span>
+            </div>
+
+            <article class="spec__row">
+              <h3 class="spec__name">Inventory<span class="spec__sub">Across 90+ known agents</span></h3>
+              <p class="spec__desc">
+                Scans global, per-project and custom directories, then reports the source, the
+                lock metadata and the real link state of every skill: symlinked, dangling, or a
+                drifted copy.
+              </p>
+              <span class="spec__mode">core</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">Trigger profiling<span class="spec__sub">Positive and negative</span></h3>
+              <p class="spec__desc">
+                Extracts what dispatches each skill from <span class="code-inline">when_to_use</span>,
+                <span class="code-inline">dispatch_intent</span>, descriptions and “When to Use” sections. Annotate
+                triggers by hand in a sidecar; skill files are never rewritten.
+              </p>
+              <span class="spec__mode">core</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">Analysis<span class="spec__sub">Deterministic and heuristic</span></h3>
+              <p class="spec__desc">
+                Deterministic rules read disk facts: dangling links, missing lock records, copy
+                drift, local edits, cross-scope shadowing and source conflicts. Heuristics surface
+                trigger overlap, negative contradictions and body duplication, each with a
+                confidence score and the shared terms that caused it.
+              </p>
+              <span class="spec__mode">rules</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">AI evaluation<span class="spec__sub">Optional, your own key</span></h3>
+              <p class="spec__desc">
+                Score every skill with your own model, then judge the pre-filtered duplicate and
+                conflict candidates. Results are saved with a signature, so the UI can tell you
+                when an evaluation has gone stale.
+              </p>
+              <span class="spec__mode">ai</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">Projects<span class="spec__sub">Auto-discovered</span></h3>
+              <p class="spec__desc">
+                Finds projects under your scan roots by their agent markers. Pin the ones you
+                revisit. The registry stores paths only, and removing an entry never deletes a
+                file.
+              </p>
+              <span class="spec__mode">core</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">Remote search<span class="spec__sub">skills.sh leaderboard</span></h3>
+              <p class="spec__desc">
+                Browse the public index and the all-time, trending and hot leaderboards, read a
+                SKILL.md before you commit, then install straight into the current scope.
+              </p>
+              <span class="spec__mode">online</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">Safe operations<span class="spec__sub">One install path</span></h3>
+              <p class="spec__desc">
+                Every change streams progress into a drawer with a confirmation step and can be
+                cancelled. Writes are delegated to the official <span class="code-inline">skills</span> CLI, so there
+                is one install path, not two.
+              </p>
+              <span class="spec__mode">cli</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 03 · How it works · graphite band + F4 steps ============ -->
+      <section class="section band" id="how">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">Scan, analyze, act.</h2>
+              <p class="lede">
+                Three steps, and the third one is the only one that can change anything on disk.
+              </p>
+            </div>
+          </div>
+
+          <div class="steps">
+            <article class="step">
+              <p class="step__idx">01</p>
+              <h3 class="step__title">Scan</h3>
+              <p class="step__desc">
+                Read the global and project lock files, enumerate the canonical directory, every
+                known agent directory and your custom directories, then hash the content of each
+                skill.
+              </p>
+            </article>
+            <article class="step">
+              <p class="step__idx">02</p>
+              <h3 class="step__title">Analyze</h3>
+              <p class="step__desc">
+                Run the rule engine over every record, extract trigger profiles, compute
+                similarity where it is cheap, and attach your saved annotations. Nothing is
+                written back to a skill.
+              </p>
+            </article>
+            <article class="step">
+              <p class="step__idx">03</p>
+              <h3 class="step__title">Act</h3>
+              <p class="step__desc">
+                Install, update or remove — each one confirmed, streamed and cancellable, and each
+                one executed by the official <span class="code-inline">skills</span> CLI rather than by SkillCat
+                itself.
+              </p>
+            </article>
+          </div>
+
+          <div class="split">
+            <div class="split__col">
+              <p class="split__label">Reads</p>
+              <h3 class="split__title">Local and offline</h3>
+              <p class="split__desc">
+                Scanning uses the filesystem and lock files only. No network call is required to
+                inventory or analyze your skills.
+              </p>
+            </div>
+            <div class="split__col">
+              <p class="split__label">Writes</p>
+              <h3 class="split__title">Delegated to the CLI</h3>
+              <p class="split__desc">
+                Every mutation runs through the official <span class="code-inline">skills</span> CLI. SkillCat never
+                becomes a second source of truth, and never edits your files behind your back.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 04 · Principles ============ -->
+      <section class="section" id="principles">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">The rules it will not break.</h2>
+            </div>
+          </div>
+
+          <div class="principles">
+            <article class="principle">
+              <p class="principle__idx">P1</p>
+              <h3 class="principle__title">Reads are local and offline</h3>
+              <p class="principle__desc">
+                Scanning uses the filesystem and lock files only. No network call is required to
+                inventory or analyze your skills.
+              </p>
+            </article>
+            <article class="principle">
+              <p class="principle__idx">P2</p>
+              <h3 class="principle__title">Writes are delegated</h3>
+              <p class="principle__desc">
+                Every install, update and removal runs through the official <span class="code-inline">skills</span>
+                CLI. SkillCat never becomes a second source of truth.
+              </p>
+            </article>
+            <article class="principle">
+              <p class="principle__idx">P3</p>
+              <h3 class="principle__title">Analysis is explainable</h3>
+              <p class="principle__desc">
+                Deterministic rules and heuristics are labelled separately, and every finding
+                ships with the evidence that triggered it.
+              </p>
+            </article>
+            <article class="principle">
+              <p class="principle__idx">P4</p>
+              <h3 class="principle__title">AI is optional and explicit</h3>
+              <p class="principle__desc">
+                Scoring and duplicate judgement run only when you ask, with your own key and
+                endpoint. Nothing leaves your machine by default.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 05 · Install ============ -->
+      <section class="section" id="install">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">Download it, or build it.</h2>
+              <p class="lede">
+                Grab the latest build from the releases page, or clone the repo and run it in
+                development mode.
+              </p>
+            </div>
+          </div>
+
+          <div class="install">
+            <div class="os">
+              <p class="os__label">macOS</p>
+              <h3 class="os__title">Self-contained</h3>
+              <ul class="os__list">
+                <li>Apple Silicon and Intel builds (dmg or zip).</li>
+                <li>The <span class="code-inline">skills</span> CLI is bundled — no Node.js install required.</li>
+                <li>Drag SkillCat into /Applications.</li>
+              </ul>
+              <span class="os__cmd">SkillCat-1.1.0-arm64.dmg</span>
+            </div>
+
+            <div class="os">
+              <p class="os__label">Windows</p>
+              <h3 class="os__title">Needs Node.js</h3>
+              <ul class="os__list">
+                <li>x64 NSIS installer.</li>
+                <li>Install / update uses your system Node.js, version 22 or newer.</li>
+                <li>The bundled CLI is macOS-only for now.</li>
+              </ul>
+              <span class="os__cmd">SkillCat-1.1.0-setup.exe</span>
+            </div>
+          </div>
+
+          <div class="note">
+            <span class="note__label">Unsigned builds</span>
+            The builds are not code-signed. On macOS, Gatekeeper blocks the first launch of a
+            downloaded copy — right-click → <strong>Open</strong>, or clear the quarantine
+            attribute: <span class="code-inline">sudo xattr -dr com.apple.quarantine /Applications/SkillCat.app</span>.
+            On Windows, SmartScreen may warn about an unknown publisher; choose
+            <strong>More info → Run anyway</strong>.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 06 · FAQ ============ -->
+      <section class="section" id="faq">
+        <div class="container">
+          <div class="sec-head">
+            <div class="sec-head__body">
+              <h2 class="sec-head__title">Questions worth asking.</h2>
+            </div>
+          </div>
+
+          <div class="faq">
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q1</span>
+                How is this different from running the skills CLI on its own?
+              </summary>
+              <p class="faq__a">
+                The CLI installs skills. SkillCat shows you the state of everything you have
+                already installed: it reads what the CLI and your agents wrote to disk, explains
+                each skill, and flags concrete problems before they bite.
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q2</span>
+                Does it need an API key?
+              </summary>
+              <p class="faq__a">
+                No. Inventory, trigger profiling and the rule engine all run without a model. An
+                API key is only needed if you switch on the optional AI evaluation.
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q3</span>
+                Which agents does it know about?
+              </summary>
+              <p class="faq__a">
+                Over 90 known agent directories, including Claude Code, Codex, Cursor, OpenCode,
+                Gemini CLI, Windsurf and Trae. You can add your own skill directories as well.
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q4</span>
+                Does it modify my skills?
+              </summary>
+              <p class="faq__a">
+                Not silently. Scanning is read-only, and annotations live in a sidecar file in the
+                config directory. Any change to a skill directory goes through the official
+                <span class="code-inline">skills</span> CLI, with an explicit confirmation step.
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q5</span>
+                Does it work offline?
+              </summary>
+              <p class="faq__a">
+                Yes. Scanning and analysis use only the filesystem and lock files. Network access
+                is limited to the optional remote search, leaderboard and AI evaluation.
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q6</span>
+                Is it free?
+              </summary>
+              <p class="faq__a">
+                Yes. SkillCat is MIT-licensed and open source, with no account, no subscription
+                and no telemetry.
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q7</span>
+                What do I need to run it?
+              </summary>
+              <p class="faq__a">
+                macOS is self-contained: the <span class="code-inline">skills</span> CLI is bundled, so no Node.js
+                install is required. On Windows, install Node.js 22 or newer.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Final CTA ============ -->
+      <section class="section">
+        <div class="container cta">
+          <div>
+            <h2 class="cta__title">Point it at your workspace and see what you have.</h2>
+            <p class="cta__lede">
+              Free, open source, and read-only until you say otherwise.
+            </p>
+          </div>
+          <div class="cta__actions">
+            <a class="btn btn--primary btn--lg" href="https://github.com/Konata9/skillcat/releases">
+              Download for macOS
+            </a>
+            <a class="btn btn--ghost btn--lg" href="https://github.com/Konata9/skillcat">
+              View on GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============ Footer · Ft1 mast-headed ============ -->
+    <footer class="footer" id="footer">
+      <div class="container">
+        <div class="footer__top">
+          <div>
+            <a class="brand" href="/">
+              <img src="assets/img/logo.png" alt="" width="24" height="24" />
+              SkillCat
+            </a>
+            <p class="footer__tagline">
+              Local-first. Read-only by default. One install path.
+            </p>
+          </div>
+          <nav class="footer__links" aria-label="Links">
+            <a class="footer__link" href="https://github.com/Konata9/skillcat">GitHub</a>
+            <a class="footer__link" href="https://github.com/Konata9/skillcat/releases">Releases</a>
+            <a class="footer__link" href="https://github.com/Konata9/skillcat/tree/main/docs">Docs</a>
+            <a class="footer__link" href="https://github.com/Konata9/skillcat/issues">Issues</a>
+            <a class="footer__link" href="https://github.com/Konata9/skillcat/blob/main/LICENSE">MIT License</a>
+          </nav>
+        </div>
+        <div class="footer__bottom">
+          <span>MIT © 2026 konata9</span>
+          <span>v1.1.0</span>
+          <span>Not affiliated with any agent vendor.</span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- ============ Sticky CTA · C4 ============ -->
+    <aside class="sticky-cta" data-visible="false" aria-label="Download SkillCat">
+      <span class="sticky-cta__text">SkillCat v1.1.0 · free &amp; open source</span>
+      <a class="btn btn--primary" href="https://github.com/Konata9/skillcat/releases">Download</a>
+      <button class="sticky-cta__close" type="button" aria-label="Dismiss">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+          <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+        </svg>
+      </button>
+    </aside>
+
+    <script src="assets/js/site.js" defer></script>
+  </body>
+</html>

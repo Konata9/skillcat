@@ -59,3 +59,5 @@ lerna-debug.log*
 .Spotlight-V100
 .Trashes
 Thumbs.db
+
+.hallmark/

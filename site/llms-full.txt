@@ -1,0 +1,99 @@
+# SkillCat — full reference for AI assistants
+
+> SkillCat is a local-first agent skill manager for macOS and Windows. It inventories every SKILL.md bundle installed across 90+ agents, explains what triggers each skill, flags concrete problems with the evidence that produced them, and delegates every write to the official `skills` CLI.
+
+Canonical page: https://skillcat.pages.dev/
+Chinese page: https://skillcat.pages.dev/zh/
+Source: https://github.com/Konata9/skillcat
+License: MIT
+Current version: 1.1.0
+
+## Overview
+
+Agent skills are folders containing a `SKILL.md` file. Coding agents (Claude Code, Codex, Cursor, OpenCode, Gemini CLI and many more) load them from global directories, per-project directories, and their own agent-specific locations. The same skill can be installed more than once, symlinked in some agents and copied into others, and the copy can drift from the canonical version without anyone noticing. Two skills can also claim the same request, which makes agent behaviour unpredictable.
+
+SkillCat is a desktop app that reads all of those locations and shows the true state of what is installed. It is read-only by default: scanning uses the filesystem and lock files only, and no network call is required to inventory or analyze your skills. Every mutation — install, update, remove — is delegated to the official `skills` CLI, so there is one install path rather than two.
+
+SkillCat is not a package registry and not a CLI replacement. It is the inventory, explanation and diagnostics layer on top of the skills you already have.
+
+## Pricing
+
+Free. Open source under the MIT license. No account, no subscription and no telemetry. There is no paid tier.
+
+## Platforms and requirements
+
+- macOS: self-contained. The `skills` CLI is bundled with the app, so no Node.js install is required. Builds are provided for Apple Silicon and Intel as `.dmg` or `.zip`.
+- Windows: x64 NSIS installer. Installing and updating skills uses your system Node.js, version 22 or newer, because the bundled CLI is macOS-only for now.
+- The builds are not code-signed. On macOS, Gatekeeper blocks the first launch of a downloaded copy; right-click → Open, or clear the quarantine attribute with `sudo xattr -dr com.apple.quarantine /Applications/SkillCat.app`. On Windows, SmartScreen may warn about an unknown publisher; choose More info → Run anyway.
+
+## Features
+
+### Inventory
+
+Scans the global canonical directory, per-project directories, every known agent directory and any custom directories you configure. For each skill it reports the source, the lock metadata, the content hash and the real link state per agent: symlinked, dangling, or a copy that has drifted from the canonical content. Over 90 agent directories are known, including Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Windsurf and Trae.
+
+### Trigger profiling
+
+Extracts what dispatches each skill from `when_to_use`, `dispatch_intent`, the description, and "When to Use" sections in the body, each with a different weight. Positive and negative triggers are separated. You can annotate triggers by hand in a sidecar file; skill files are never rewritten.
+
+### Analysis
+
+Deterministic rules read disk facts: dangling links, missing lock records, copy drift, local edits, cross-scope shadowing and source conflicts. Heuristic rules surface trigger overlap, negative contradictions and body duplication, each with a confidence score and the shared terms that caused the match. Deterministic and heuristic findings are labelled separately so you always know which is a fact and which is a guess. Thresholds are configurable (trigger overlap defaults to 0.3, body duplication to 0.5).
+
+### AI evaluation (optional)
+
+Scoring and duplicate/conflict judgement only run when you ask, using your own API key and endpoint. Built-in provider presets include Claude, ChatGPT, Gemini, DeepSeek, Qwen, GLM, Kimi, MiniMax, Mimo and a local Ollama option. Results are saved with a signature, so the app can tell you when an evaluation has gone stale. Inventory, trigger profiling and the rule engine all work without a model.
+
+### Projects
+
+Discovers projects under your scan roots by their agent markers, and lets you pin the ones you revisit. The registry stores paths only, and removing an entry never deletes a file.
+
+### Remote search and leaderboard
+
+Browses the skills.sh public index and the all-time, trending and hot leaderboards. You can read a SKILL.md before installing, then install straight into the current scope.
+
+### Safe operations
+
+Every change streams progress into a drawer with a confirmation step and can be cancelled. Writes are delegated to the official `skills` CLI.
+
+### Desktop polish
+
+Light and dark themes, English and Chinese UI following the system language, proxy support, and a diagnostic `doctor`.
+
+## Comparison
+
+- **The `skills` CLI on its own**: the CLI installs skills. SkillCat shows you the state of everything you have already installed — what is symlinked, dangling or drifted — and explains each skill. It uses the same CLI for writes.
+- **Manual inspection of `~/.agents/skills` and each agent directory**: SkillCat enumerates 90+ known agent directories plus your own, computes the real link state for each, and runs a rule engine over the result.
+- **General-purpose file search or a text editor**: SkillCat understands SKILL.md frontmatter, trigger extraction and cross-scope shadowing, and labels every finding by how it was derived.
+
+## FAQ
+
+**How is this different from running the skills CLI on its own?**
+The CLI installs skills. SkillCat shows you the state of everything you have already installed: it reads what the CLI and your agents wrote to disk, explains each skill, and flags concrete problems before they bite.
+
+**Does it need an API key?**
+No. Inventory, trigger profiling and the rule engine all run without a model. An API key is only needed if you switch on the optional AI evaluation.
+
+**Which agents does it know about?**
+Over 90 known agent directories, including Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Windsurf and Trae. You can add your own skill directories as well.
+
+**Does it modify my skills?**
+Not silently. Scanning is read-only, and annotations live in a sidecar file in the config directory. Any change to a skill directory goes through the official `skills` CLI, with an explicit confirmation step.
+
+**Does it work offline?**
+Yes. Scanning and analysis use only the filesystem and lock files. Network access is limited to the optional remote search, leaderboard and AI evaluation.
+
+**Is it free?**
+Yes. SkillCat is MIT-licensed and open source, with no account, no subscription and no telemetry.
+
+**What do I need to run it?**
+macOS is self-contained: the `skills` CLI is bundled, so no Node.js install is required. On Windows, install Node.js 22 or newer.
+
+## Links
+
+- Website: https://skillcat.pages.dev
+- Website (Chinese): https://skillcat.pages.dev/zh/
+- Source: https://github.com/Konata9/skillcat
+- Releases: https://github.com/Konata9/skillcat/releases
+- Documentation: https://github.com/Konata9/skillcat/tree/main/docs
+- License: https://github.com/Konata9/skillcat/blob/main/LICENSE

@@ -1,0 +1,48 @@
+# SkillCat
+
+> SkillCat is a local-first agent skill manager for macOS and Windows: it inventories every SKILL.md bundle you have installed across 90+ agents, explains what triggers each one, flags concrete problems with evidence, and manages installs through the official skills CLI.
+
+## Author
+
+- Name: konata9
+- Site: https://github.com/Konata9
+
+## What is SkillCat
+
+SkillCat is a desktop app for developers who have installed agent skills (SKILL.md bundles) across multiple coding agents. Agent skills are easy to install and easy to lose track of: they pile up in global directories, per-project directories and a dozen agent-specific locations; they shadow each other; they drift from the version recorded in the lock file; and their trigger conditions overlap in ways nobody notices until two skills both claim the same request. SkillCat scans all of those locations, explains each skill, flags concrete problems, and performs install / update / remove / search through the official `skills` CLI. It runs on macOS (self-contained, the CLI is bundled) and Windows (requires Node.js 22 or newer).
+
+## How it differs
+
+- vs the `skills` CLI alone: the CLI installs skills. SkillCat shows you the state of everything you have already installed — what is symlinked, dangling or drifted — and explains each skill's trigger profile.
+- vs manually inspecting `~/.agents/skills` and every agent directory by hand: SkillCat enumerates 90+ known agent directories plus your own, computes the real link state for each, and runs a rule engine over the result.
+- vs general-purpose file search: SkillCat understands SKILL.md frontmatter, trigger extraction and cross-scope shadowing, and labels every finding as a deterministic disk fact or a heuristic guess.
+
+## Pricing
+
+Free. Open source under the MIT license. No account, no subscription, no telemetry.
+
+## Features
+
+- Inventory across 90+ known agents, with source, lock metadata and real link state (symlink / dangling / copy drift)
+- Trigger profiling from `when_to_use`, `dispatch_intent`, descriptions and "When to Use" sections, with manual annotation in a sidecar that never rewrites skill files
+- Deterministic analysis: dangling links, missing lock records, copy drift, local edits, cross-scope shadowing, source conflicts
+- Heuristic analysis: trigger overlap, negative contradictions, body duplication — each with a confidence score and the shared terms
+- Optional AI evaluation: score skills and judge duplicate/conflict candidates with your own model key
+- Project discovery from agent markers under your scan roots
+- Remote search and the skills.sh leaderboard (all-time / trending / hot)
+- Safe operations: every change is confirmed, streamed and cancellable, and delegated to the official skills CLI
+
+## Key pages
+
+- [Website](https://skillcat.pages.dev/): product overview, screenshots and install instructions
+- [Website (Chinese)](https://skillcat.pages.dev/zh/): 简体中文版本
+- [Full knowledge base](https://skillcat.pages.dev/llms-full.txt): feature-level detail for AI assistants
+- [Source](https://github.com/Konata9/skillcat): the repository
+- [Releases](https://github.com/Konata9/skillcat/releases): downloads for macOS and Windows
+
+## Links
+
+- Website: https://skillcat.pages.dev
+- Website (Chinese): https://skillcat.pages.dev/zh/
+- Source: https://github.com/Konata9/skillcat
+- License: https://github.com/Konata9/skillcat/blob/main/LICENSE
