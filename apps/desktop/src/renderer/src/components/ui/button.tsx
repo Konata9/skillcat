@@ -14,6 +14,8 @@ export const buttonVariants = cva(
         outline: 'border-input bg-transparent enabled:hover:border-primary',
         ghost:
           'border-transparent text-muted-foreground enabled:hover:bg-accent enabled:hover:text-foreground',
+        'ghost-destructive':
+          'border-transparent text-destructive enabled:hover:bg-destructive/10',
         destructive: 'border-destructive/50 text-destructive enabled:hover:bg-destructive/10',
       },
       size: {
