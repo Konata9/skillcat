@@ -301,7 +301,7 @@ describe('SettingsView LLM', () => {
       target: { value: 'deepseek' },
     });
     expect(screen.getByDisplayValue('https://api.deepseek.com/v1')).toBeTruthy();
-    expect(screen.getByDisplayValue('deepseek-chat')).toBeTruthy();
+    expect(screen.getByDisplayValue('deepseek-flash')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '测试连接' }));
     await waitFor(() => {
@@ -310,7 +310,7 @@ describe('SettingsView LLM', () => {
         provider: 'deepseek',
         apiKey: '',
         baseUrl: 'https://api.deepseek.com/v1',
-        model: 'deepseek-chat',
+        model: 'deepseek-flash',
       });
     });
     expect(await screen.findByText(/连接成功/)).toBeTruthy();

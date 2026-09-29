@@ -282,7 +282,13 @@ export const zh = {
   'settings.reloadingConfig': '重新加载中…',
   'settings.configFileHint': '外部编辑保存后，点「重新加载配置」生效',
   'settings.overlapLabel': '触发词重叠阈值（0–1，默认 0.3）',
+  'settings.overlapTooltip':
+    '触发画像相似度 = 0.7 × 共享权重占比 + 0.3 × 余弦相似度，达到该值即提示「触发词重叠」。阈值越小越敏感：会提示更多可能相似的 skill，但误报也更多；阈值越大越宽松：只提示高度重合的 skill。默认 0.3。',
+  'settings.overlapTooltipLabel': '触发词重叠阈值说明',
   'settings.duplicateLabel': '正文重复阈值（0–1，默认 0.5）',
+  'settings.duplicateTooltip':
+    '两个 skill 正文 4-gram shingle 的 Jaccard 相似度达到该值即提示「正文重复」。阈值越小越敏感：轻微重复也会被标记，误报更多；阈值越大越严格：只标记几乎雷同的正文。默认 0.5。',
+  'settings.duplicateTooltipLabel': '正文重复阈值说明',
   'settings.commandLabel': 'skills CLI 命令覆盖（留空则自动探测 npx）',
   'settings.proxyLabel': '网络代理（用于 npx skills 的下载与更新）',
   'settings.proxyEnable': '启用代理',
@@ -303,6 +309,8 @@ export const zh = {
   'settings.llmProviderLabel': '服务商',
   'settings.llmApiKeyLabel': 'API Key',
   'settings.llmApiKeyOptional': '本地服务通常无需填写',
+  'settings.llmApiKeyShow': '显示 API Key',
+  'settings.llmApiKeyHide': '隐藏 API Key',
   'settings.llmKeyHint': '密钥仅存本地，不会上传。',
   'settings.llmBaseUrlLabel': '接口地址（Base URL）',
   'settings.llmModelLabel': '模型',

@@ -46,7 +46,7 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
     label: 'DeepSeek',
     style: 'openai',
     baseUrl: 'https://api.deepseek.com/v1',
-    model: 'deepseek-chat',
+    model: 'deepseek-flash',
     requiresKey: true,
   },
   {

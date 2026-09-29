@@ -297,7 +297,13 @@ export const en: Record<MessageKey, MessageValue> = {
   'settings.reloadingConfig': 'Reloading…',
   'settings.configFileHint': 'After editing externally, click Reload config',
   'settings.overlapLabel': 'Trigger overlap threshold (0–1, default 0.3)',
+  'settings.overlapTooltip':
+    'Trigger-profile similarity = 0.7 × shared-weight ratio + 0.3 × cosine similarity; reaching this value flags a trigger overlap. Lower is more sensitive — more possibly similar skills are surfaced, but with more false positives. Higher is stricter — only heavily overlapping skills are flagged. Default 0.3.',
+  'settings.overlapTooltipLabel': 'About the trigger overlap threshold',
   'settings.duplicateLabel': 'Body duplicate threshold (0–1, default 0.5)',
+  'settings.duplicateTooltip':
+    'Jaccard similarity between the two skills’ body 4-gram shingles; reaching this value flags duplicate content. Lower is more sensitive — even slight duplication is flagged, with more false positives. Higher is stricter — only near-identical bodies are flagged. Default 0.5.',
+  'settings.duplicateTooltipLabel': 'About the body duplicate threshold',
   'settings.commandLabel': 'skills CLI command override (blank = auto-detect npx)',
   'settings.proxyLabel': 'Network proxy (for npx skills downloads and updates)',
   'settings.proxyEnable': 'Enable proxy',
@@ -318,6 +324,8 @@ export const en: Record<MessageKey, MessageValue> = {
   'settings.llmProviderLabel': 'Provider',
   'settings.llmApiKeyLabel': 'API key',
   'settings.llmApiKeyOptional': 'Usually not needed for local servers',
+  'settings.llmApiKeyShow': 'Show API key',
+  'settings.llmApiKeyHide': 'Hide API key',
   'settings.llmKeyHint': 'Stored locally and never uploaded.',
   'settings.llmBaseUrlLabel': 'Base URL',
   'settings.llmModelLabel': 'Model',

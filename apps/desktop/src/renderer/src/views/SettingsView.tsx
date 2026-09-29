@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { Eye, EyeOff, CircleHelp } from 'lucide-react';
 import type {
   AppConfig,
   DoctorReport,
@@ -18,6 +19,7 @@ import { Input } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import { Textarea } from '../components/ui/textarea';
+import { Tooltip } from '../components/ui/tooltip';
 
 const LLM_PROVIDER_LABEL: Record<LlmProvider, MessageKey> = {
   anthropic: 'settings.llmProvider.anthropic',
@@ -50,12 +52,12 @@ function Field({
   label,
   children,
 }: {
-  label: string;
+  label: React.ReactNode;
   children: React.ReactNode;
 }): React.ReactElement {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-muted-foreground">{label}</label>
+      <label className="flex items-center gap-1 text-muted-foreground">{label}</label>
       {children}
     </div>
   );
@@ -118,6 +120,7 @@ export function SettingsView({
   const [llmEnabled, setLlmEnabled] = useState(config.llm.enabled);
   const [llmProvider, setLlmProvider] = useState<LlmProvider>(config.llm.provider);
   const [llmApiKey, setLlmApiKey] = useState(config.llm.apiKey);
+  const [showApiKey, setShowApiKey] = useState(false);
   const [llmBaseUrl, setLlmBaseUrl] = useState(config.llm.baseUrl);
   const [llmModel, setLlmModel] = useState(config.llm.model);
   const [llmResult, setLlmResult] = useState<LlmTestResult | null>(null);
@@ -372,7 +375,19 @@ export function SettingsView({
                   </span>
                 </Field>
 
-                <Field label={t('settings.overlapLabel')}>
+                <Field
+                  label={
+                    <>
+                      {t('settings.overlapLabel')}
+                      <Tooltip
+                        triggerLabel={t('settings.overlapTooltipLabel')}
+                        content={t('settings.overlapTooltip')}
+                      >
+                        <CircleHelp className="size-3.5" aria-hidden="true" />
+                      </Tooltip>
+                    </>
+                  }
+                >
                   <Input
                     type="number"
                     min={0}
@@ -387,7 +402,19 @@ export function SettingsView({
                   />
                 </Field>
 
-                <Field label={t('settings.duplicateLabel')}>
+                <Field
+                  label={
+                    <>
+                      {t('settings.duplicateLabel')}
+                      <Tooltip
+                        triggerLabel={t('settings.duplicateTooltipLabel')}
+                        content={t('settings.duplicateTooltip')}
+                      >
+                        <CircleHelp className="size-3.5" aria-hidden="true" />
+                      </Tooltip>
+                    </>
+                  }
+                >
                   <Input
                     type="number"
                     min={0}
@@ -577,16 +604,37 @@ export function SettingsView({
                       <span className="text-[11px] text-muted-foreground">
                         {t('settings.llmApiKeyLabel')}
                       </span>
-                      <Input
-                        type="password"
-                        autoComplete="off"
-                        value={llmApiKey}
-                        onChange={(event) => {
-                          setDirty(true);
-                          setLlmApiKey(event.target.value);
-                        }}
-                        placeholder={llmPreset.requiresKey ? 'sk-…' : t('settings.llmApiKeyOptional')}
-                      />
+                      <div className="relative">
+                        <Input
+                          type={showApiKey ? 'text' : 'password'}
+                          autoComplete="off"
+                          className="pr-9"
+                          value={llmApiKey}
+                          onChange={(event) => {
+                            setDirty(true);
+                            setLlmApiKey(event.target.value);
+                          }}
+                          placeholder={
+                            llmPreset.requiresKey ? 'sk-…' : t('settings.llmApiKeyOptional')
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowApiKey((visible) => !visible)}
+                          aria-label={
+                            showApiKey
+                              ? t('settings.llmApiKeyHide')
+                              : t('settings.llmApiKeyShow')
+                          }
+                          className="focus-ring absolute inset-y-0 right-0 flex w-9 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {showApiKey ? (
+                            <EyeOff className="size-4" aria-hidden="true" />
+                          ) : (
+                            <Eye className="size-4" aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
                       <span className="text-[11px] text-muted-foreground">
                         {t('settings.llmKeyHint')}
                       </span>

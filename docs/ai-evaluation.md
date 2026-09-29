@@ -12,7 +12,7 @@ skill 评分，并让模型判定重复 / 冲突候选对。
 | Claude | `claude-sonnet-4-5` | Anthropic Messages API |
 | ChatGPT | `gpt-4o` | OpenAI |
 | Gemini | `gemini-2.5-flash` | Google OpenAI 兼容端点 |
-| DeepSeek | `deepseek-chat` | |
+| DeepSeek | `deepseek-flash` | |
 | Qwen | `qwen-plus` | DashScope 兼容模式 |
 | GLM | `glm-4-plus` | 智谱 |
 | Kimi | `moonshot-v1-8k` | Moonshot |
