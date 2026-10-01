@@ -40,10 +40,10 @@ const UPDATE_REPO = githubSlug();
  * Support/skillcat`, `%APPDATA%\skillcat`, …) so app updates never touch a
  * user's settings. Development builds get a sibling `skillcat-dev` directory
  * so they can never read or overwrite the packaged config. An explicit
- * SKILLCAT_CONFIG_DIR / SKILLMAN_CONFIG_DIR always takes precedence.
+ * SKILLCAT_CONFIG_DIR always takes precedence.
  */
 function resolveConfigDir(): string | undefined {
-  if (process.env.SKILLCAT_CONFIG_DIR || process.env.SKILLMAN_CONFIG_DIR) return undefined;
+  if (process.env.SKILLCAT_CONFIG_DIR) return undefined;
   if (app.isPackaged) return undefined;
   return join(dirname(getConfigDir()), `${APP_NAME}-dev`);
 }

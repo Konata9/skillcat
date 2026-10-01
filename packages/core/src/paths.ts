@@ -7,9 +7,6 @@ import { isAbsolute, join, resolve, sep } from 'node:path';
 
 export const APP_NAME = 'skillcat';
 
-/** Previous product name; used once to migrate an existing config dir. */
-export const LEGACY_APP_NAME = 'skillman';
-
 export function expandHome(input: string): string {
   if (input === '~') return homedir();
   if (input.startsWith(`~${sep}`)) return join(homedir(), input.slice(2));
@@ -44,14 +41,9 @@ function defaultConfigDirFor(name: string): string {
 }
 
 export function getConfigDir(): string {
-  // `SKILLMAN_CONFIG_DIR` is still honored for setups from before the rename.
-  const override = process.env.SKILLCAT_CONFIG_DIR ?? process.env.SKILLMAN_CONFIG_DIR;
+  const override = process.env.SKILLCAT_CONFIG_DIR;
   if (override) return resolve(expandHome(override));
   return defaultConfigDirFor(APP_NAME);
-}
-
-export function getLegacyConfigDir(): string {
-  return defaultConfigDirFor(LEGACY_APP_NAME);
 }
 
 export function getGlobalSkillsDir(): string {

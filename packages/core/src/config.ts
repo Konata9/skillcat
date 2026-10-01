@@ -3,11 +3,10 @@
  * Sanitizing keeps a hand-edited or partially corrupted file from crashing the
  * app — unknown fields fall back to defaults.
  */
-import { cp } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { atomicWriteFile, ensureDir, pathExists, readJsonSafe } from './fs-utils.js';
 import { defaultLlmSettings, getLlmPreset, LLM_PROVIDERS } from './llm.js';
-import { configFilePath, getConfigDir, getLegacyConfigDir } from './paths.js';
+import { configFilePath, getConfigDir } from './paths.js';
 import type { AppConfig, LlmProvider, LlmSettings } from './types.js';
 
 export function defaultConfig(): AppConfig {
@@ -141,26 +140,9 @@ export class ConfigStore {
   }
 
   async load(): Promise<AppConfig> {
-    await this.migrateLegacyDir();
     const raw = await readJsonSafe<unknown>(this.filePath);
     this.config = sanitize(raw);
     return this.config;
-  }
-
-  /**
-   * One-time migration for the Skillman → SkillCat rename: when the default
-   * config dir has no config yet and the legacy dir has one, copy it over
-   * (settings, annotations and scan state included). Custom `configDir`
-   * overrides are never migrated.
-   */
-  private async migrateLegacyDir(): Promise<void> {
-    if (this.dir !== getConfigDir()) return;
-    const legacyDir = getLegacyConfigDir();
-    if (legacyDir === this.dir) return;
-    if (await pathExists(this.filePath)) return;
-    if (!(await pathExists(configFilePath(legacyDir)))) return;
-    await ensureDir(this.dir);
-    await cp(legacyDir, this.dir, { recursive: true, force: false, errorOnExist: false });
   }
 
   async save(): Promise<void> {

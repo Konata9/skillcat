@@ -10,7 +10,7 @@ SkillCat 的所有持久化数据都放在**配置目录**，不写入 skill 目
 | Windows | `%APPDATA%\skillcat\` |
 | Linux | `$XDG_CONFIG_HOME/skillcat/`（默认 `~/.config/skillcat/`） |
 
-可用环境变量覆盖：`SKILLCAT_CONFIG_DIR`。旧变量 `SKILLMAN_CONFIG_DIR` 仍然兼容；设置后两种构建都使用该目录。
+可用环境变量覆盖：`SKILLCAT_CONFIG_DIR`；设置后开发版与正式版都使用该目录。
 
 ### 开发版与正式版隔离
 
@@ -81,12 +81,6 @@ SkillCat 不会上传。
 
 设置页提供"打开配置文件 / 在文件夹中显示 / 重新加载配置"。外部编辑保存后点"重新加载配置"
 即生效（会重新读取配置、重新解析 CLI 并重新扫描）。
-
-## 从 Skillman 升级
-
-首次启动时，如果默认配置目录下还没有 `config.json`，而旧的 `skillman` 目录里存在配置，
-SkillCat 会复制整个旧目录（设置、标注、扫描状态）。自定义 `configDir` 不会被迁移。
-`SKILLMAN_CONFIG_DIR` 环境变量仍然兼容。
 
 ## 相关路径
 
