@@ -21,6 +21,10 @@
     "./llm": {
       "types": "./dist/llm.d.ts",
       "default": "./dist/llm.js"
+    },
+    "./activity": {
+      "types": "./dist/bridge/limits.d.ts",
+      "default": "./dist/bridge/limits.js"
     }
   },
   "files": [

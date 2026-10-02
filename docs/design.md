@@ -55,8 +55,8 @@ import 进浏览器包（renderer 不引入 Node 依赖）。
   跨作用域遮蔽）。无需人工判断。
 - **heuristic（启发式）**：来自文本相似度（触发词重叠、负向矛盾、正文重复）。带置信度与共享词
   证据，允许误报，UI 会展示证据供人判断。
-- **ai**：LLM 判定。附加在规则 findings 上，可为 `confirmed` / `false-positive` / `uncertain`，
-  默认不覆盖规则本身，只做标注。
+- **ai**：LLM 判定。可为 `confirmed` / `false-positive` / `uncertain`。命中已有规则时只做标注，
+  不覆盖规则本身；模型确认但无任何规则命中的候选对会生成独立的 `ai-*` finding。
 
 阈值可配置：触发词重叠默认 `0.3`，正文重复默认 `0.5`。同名前缀家族
 （`pdf` ↔ `pdf-tools`）会自动跳过重叠检测，避免把同一家族的子命令误判为冲突。

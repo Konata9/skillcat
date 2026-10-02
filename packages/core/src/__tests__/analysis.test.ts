@@ -61,6 +61,40 @@ describe('analyzeSkills', () => {
     expect(findings[0]!.severity).toBe('error');
   });
 
+  it('flags a declared agent link that is missing (id vs display name)', () => {
+    const findings = analyzeSkills({
+      records: [
+        record({
+          name: 'demo',
+          lock: { source: 'owner/repo', sourceType: 'github' },
+          agentsDeclared: ['claude-code'],
+          links: [link({ agentId: 'claude-code', display: 'Claude Code', state: 'missing' })],
+        }),
+      ],
+      orphans: [],
+      lastSeen: {},
+      thresholds,
+    });
+    expect(rules(findings)).toContain('declared-link-missing');
+  });
+
+  it('ignores a missing link that was never declared', () => {
+    const findings = analyzeSkills({
+      records: [
+        record({
+          name: 'demo',
+          lock: { source: 'owner/repo', sourceType: 'github' },
+          agentsDeclared: [],
+          links: [link({ agentId: 'claude-code', display: 'Claude Code', state: 'missing' })],
+        }),
+      ],
+      orphans: [],
+      lastSeen: {},
+      thresholds,
+    });
+    expect(rules(findings)).not.toContain('declared-link-missing');
+  });
+
   it('flags manual skills without lock entries', () => {
     const findings = analyzeSkills({
       records: [record({ name: 'demo' })],

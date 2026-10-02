@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SkillManager } from '@skillcat/core';
-import { bootstrap } from './bootstrap';
+import { bootstrap } from '../bootstrap';
 
 const originalHome = process.env.HOME;
 const originalConfig = process.env.SKILLCAT_CONFIG_DIR;

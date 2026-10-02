@@ -8,6 +8,7 @@ import type {
   FindingMessage,
   FindingParam,
 } from '@skillcat/core';
+import { projectName } from '@renderer/lib/format';
 import { en } from './messages.en';
 import { zh, type MessageKey } from './messages.zh';
 import type { Locale, MessageParams, MessageValue } from './types';
@@ -137,7 +138,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }): React
       relativeTime: (iso) => relativeTimeIn(locale, iso),
       scopeLabel: (scope, projectPath) => {
         if (scope === 'global') return translate(locale, 'scope.global');
-        const name = projectPath?.split('/').filter(Boolean).pop() ?? '';
+        const name = projectPath ? projectName(projectPath) : '';
         return translate(locale, 'scope.project', { name });
       },
     }),

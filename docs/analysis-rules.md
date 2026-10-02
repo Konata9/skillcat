@@ -9,6 +9,7 @@ SkillCat 的规则引擎（`packages/core/src/analysis.ts`）对全部扫描记�
 | --- | --- | --- | --- | --- |
 | `dangling-link` | error | 确定性 | 某 agent 目录下的链接是**悬空符号链接**（指向的目标不存在） | 链接路径 |
 | `lock-missing-dir` | error | 确定性 | 锁文件声明了某 skill，但 canonical 目录下没有对应文件夹（孤儿锁记录） | 期望路径、source |
+| `dir-missing-lock` | info | 确定性 | canonical 目录下存在某 skill，但锁文件没有对应记录 | skill 路径 |
 | `copy-drift` | warn | 确定性 | agent 目录下是**副本**（非符号链接），且副本哈希 ≠ canonical 内容哈希 | 副本路径 |
 | `local-modified` | warn / info | 确定性 | canonical 内容与安装时不一致。锁哈希是 sha256 时精确比对（warn）；GitHub 来源的 git tree hash 无法本地比对，退化为"自上次扫描后变化"（info） | lock/local 哈希前缀 |
 | `declared-link-missing` | info | 确定性 | CLI 声明某 agent 安装了该 skill，但对应 agent 目录缺少链接（按 agent + 作用域聚合） | 受影响 skill 列表 |
@@ -29,13 +30,14 @@ SkillCat 的规则引擎（`packages/core/src/analysis.ts`）对全部扫描记�
 | 来源 | 权重 |
 | --- | --- |
 | frontmatter `when_to_use` | 1.0 |
-| frontmatter `dispatch_intent` | 0.8 |
 | `description`（中英模式） | 0.7 |
 | 正文 "When to Use / 触发" 小节 | 0.5 |
 | skill 名称 | 0.3 |
 
-负向词从 "Do NOT / 不适用 / 不要" 等模式提取。人工标注（sidecar）以最高优先级合并，且不修改
-skill 目录。标注按 `scope|project|name|contentHash` 存储，内容变化即失效。
+`dispatch_intent` 不产出触发词，而是作为 **intent** 参与相似度向量（权重 ×0.6）。
+负向词从 description/正文中匹配 `/not (?:for|when)/`、`/不(?:适用|用于|适合)/` 等模式，以及
+引号包裹的词语提取。人工标注（sidecar）以最高优先级合并，且不修改 skill 目录。标注按
+`scope|project|name|contentHash` 存储，内容变化即失效。
 
 ## 相似度算法
 
@@ -68,5 +70,8 @@ skill 目录。标注按 `scope|project|name|contentHash` 存储，内容变化�
 - `false-positive` —— 判定为误报（可在 UI 中一键隐藏）
 - `uncertain` —— 无法确定
 
-AI 判定不新增规则，只标注已有规则（`negative-contradiction`、`duplicate-content` 等），
-避免把模型的不确定性变成事实。详见 [ai-evaluation.md](ai-evaluation.md)。
+匹配到已有启发式 finding 的判定只做标注（`negative-contradiction`、`duplicate-content` 等）。
+此外，模型**确认但没有任何启发式规则命中**的候选对会生成新的 finding，规则 id 为
+`ai-duplicate` / `ai-conflict` / `ai-trigger` / `ai-boundary` / `ai-quality`（`severity` 由模型
+给出，`confidence: 'ai'`）；`false-positive` / `uncertain` 不会生成新 finding，避免把模型的不确定性
+变成事实。详见 [ai-evaluation.md](ai-evaluation.md)。

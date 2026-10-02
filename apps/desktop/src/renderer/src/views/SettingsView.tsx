@@ -1,43 +1,53 @@
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Eye, EyeOff, CircleHelp } from 'lucide-react';
+import { CircleHelp } from 'lucide-react';
 import type {
+  ActivitySettings,
   AppConfig,
+  BridgeStatus,
   DoctorReport,
   LlmProvider,
   LlmSettings,
   LlmTestResult,
   UpdateCheckResult,
 } from '@skillcat/core';
-import { getLlmPreset, LLM_PROVIDERS } from '@skillcat/core/llm';
+import {
+  ACTIVITY_PHRASE_MAX,
+  ACTIVITY_PHRASE_MIN,
+  ACTIVITY_RETENTION_MAX,
+  ACTIVITY_RETENTION_MIN,
+} from '@skillcat/core/activity';
+import { getLlmPreset } from '@skillcat/core/llm';
 import { isValidProxyUrl, normalizeProxyUrl } from '@skillcat/core/proxy';
+import { useAsyncAction } from '@renderer/hooks/useAsyncAction';
+import { useReportError } from '@renderer/hooks/useReportError';
+import { errorMessage } from '@renderer/lib/format';
 import { useI18n, type Locale, type MessageKey } from '@renderer/lib/i18n';
 import { cn } from '@renderer/lib/utils';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { Field } from '../components/ui/field';
 import { Input } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import { Textarea } from '../components/ui/textarea';
 import { Tooltip } from '../components/ui/tooltip';
+import { DoctorPanel } from './settings/DoctorPanel';
+import { IntegrationsSection, type ActivityForm } from './settings/IntegrationsSection';
+import { LlmSection, type LlmForm } from './settings/LlmSection';
+import { UpdatesSection } from './settings/UpdatesSection';
 
-const LLM_PROVIDER_LABEL: Record<LlmProvider, MessageKey> = {
-  anthropic: 'settings.llmProvider.anthropic',
-  openai: 'settings.llmProvider.openai',
-  gemini: 'settings.llmProvider.gemini',
-  deepseek: 'settings.llmProvider.deepseek',
-  qwen: 'settings.llmProvider.qwen',
-  glm: 'settings.llmProvider.glm',
-  kimi: 'settings.llmProvider.kimi',
-  minimax: 'settings.llmProvider.minimax',
-  mimo: 'settings.llmProvider.mimo',
-  ollama: 'settings.llmProvider.ollama',
-  custom: 'settings.llmProvider.custom',
-};
+type SettingsCategory = 'general' | 'scanning' | 'cli' | 'network' | 'llm' | 'integrations' | 'updates';
 
-type SettingsCategory = 'general' | 'scanning' | 'cli' | 'network' | 'llm' | 'updates';
-
-const CATEGORY_ORDER: SettingsCategory[] = ['general', 'scanning', 'cli', 'network', 'llm', 'updates'];
+const CATEGORY_ORDER: SettingsCategory[] = [
+  'general',
+  'scanning',
+  'cli',
+  'network',
+  'llm',
+  'integrations',
+  'updates',
+];
 
 const CATEGORY_LABEL: Record<SettingsCategory, MessageKey> = {
   general: 'settings.category.general',
@@ -45,23 +55,9 @@ const CATEGORY_LABEL: Record<SettingsCategory, MessageKey> = {
   cli: 'settings.category.cli',
   network: 'settings.category.network',
   llm: 'settings.category.llm',
+  integrations: 'settings.category.integrations',
   updates: 'settings.category.updates',
 };
-
-function Field({
-  label,
-  children,
-}: {
-  label: React.ReactNode;
-  children: React.ReactNode;
-}): React.ReactElement {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="flex items-center gap-1 text-muted-foreground">{label}</label>
-      {children}
-    </div>
-  );
-}
 
 export function SettingsView({
   config,
@@ -80,6 +76,9 @@ export function SettingsView({
   onTestLlm,
   onCheckUpdate,
   onOpenExternal,
+  onListBridges,
+  onInstallBridge,
+  onUninstallBridge,
 }: {
   config: AppConfig;
   configPath: string;
@@ -95,7 +94,8 @@ export function SettingsView({
     showInternal: boolean;
     customSkillDirs: string[];
     llm: LlmSettings;
-  }) => Promise<void>;
+    activity: ActivitySettings;
+  }) => Promise<boolean>;
   onStatus: (message: string) => void;
   onPickDirectory: () => Promise<string | null>;
   onOpenConfig: () => Promise<void>;
@@ -105,8 +105,12 @@ export function SettingsView({
   onTestLlm: (settings: LlmSettings) => Promise<LlmTestResult>;
   onCheckUpdate: () => Promise<UpdateCheckResult>;
   onOpenExternal: (url: string) => Promise<void>;
+  onListBridges: () => Promise<BridgeStatus[]>;
+  onInstallBridge: (id: string) => Promise<void>;
+  onUninstallBridge: (id: string) => Promise<void>;
 }): React.ReactElement {
-  const { t, formatMessage, locale, setLocale } = useI18n();
+  const { t, locale, setLocale } = useI18n();
+  const reportError = useReportError(onStatus);
   const [category, setCategory] = useState<SettingsCategory>('general');
   const [roots, setRoots] = useState(config.roots.join('\n'));
   const [skillDirs, setSkillDirs] = useState(config.customSkillDirs.join('\n'));
@@ -124,13 +128,17 @@ export function SettingsView({
   const [llmBaseUrl, setLlmBaseUrl] = useState(config.llm.baseUrl);
   const [llmModel, setLlmModel] = useState(config.llm.model);
   const [llmResult, setLlmResult] = useState<LlmTestResult | null>(null);
-  const [llmTesting, setLlmTesting] = useState(false);
   const [update, setUpdate] = useState<UpdateCheckResult | null>(null);
-  const [updateChecking, setUpdateChecking] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [doctor, setDoctor] = useState<DoctorReport | null>(null);
-  const [doctorLoading, setDoctorLoading] = useState(false);
-  const [reloadingConfig, setReloadingConfig] = useState(false);
+  const [activityEnabled, setActivityEnabled] = useState(config.activity.enabled);
+  const [activityStorePhrase, setActivityStorePhrase] = useState(config.activity.storePhrase);
+  const [activityRetention, setActivityRetention] = useState(String(config.activity.retentionDays));
+  const [activityPhraseChars, setActivityPhraseChars] = useState(
+    String(config.activity.maxPhraseChars),
+  );
+  const [bridges, setBridges] = useState<BridgeStatus[]>([]);
+  const [bridgeBusy, setBridgeBusy] = useState<string | null>(null);
   const updateRequested = useRef(false);
 
   useEffect(() => {
@@ -152,12 +160,22 @@ export function SettingsView({
     setLlmBaseUrl(config.llm.baseUrl);
     setLlmModel(config.llm.model);
     setLlmResult(null);
+    setActivityEnabled(config.activity.enabled);
+    setActivityStorePhrase(config.activity.storePhrase);
+    setActivityRetention(String(config.activity.retentionDays));
+    setActivityPhraseChars(String(config.activity.maxPhraseChars));
   }, [config, dirty]);
+
+  useEffect(() => {
+    if (category !== 'integrations') return;
+    void onListBridges().then(setBridges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
 
   useEffect(() => {
     if (category === 'updates' && !updateRequested.current) {
       updateRequested.current = true;
-      void runUpdateCheck();
+      void updateCheck.run();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
@@ -165,7 +183,9 @@ export function SettingsView({
   const save = () => {
     const overlapValue = Number.parseFloat(overlap);
     const duplicateValue = Number.parseFloat(duplicate);
-    void onSave({
+    const retentionValue = Number.parseInt(activityRetention, 10);
+    const phraseValue = Number.parseInt(activityPhraseChars, 10);
+    onSave({
       roots: roots
         .split('\n')
         .map((line) => line.trim())
@@ -190,7 +210,26 @@ export function SettingsView({
         baseUrl: llmBaseUrl.trim(),
         model: llmModel.trim(),
       },
-    }).then(() => setDirty(false));
+      activity: {
+        enabled: activityEnabled,
+        storePhrase: activityStorePhrase,
+        retentionDays: Number.isFinite(retentionValue)
+          ? Math.min(
+              ACTIVITY_RETENTION_MAX,
+              Math.max(ACTIVITY_RETENTION_MIN, retentionValue),
+            )
+          : config.activity.retentionDays,
+        maxPhraseChars: Number.isFinite(phraseValue)
+          ? Math.min(ACTIVITY_PHRASE_MAX, Math.max(ACTIVITY_PHRASE_MIN, phraseValue))
+          : config.activity.maxPhraseChars,
+      },
+    })
+      .then((ok) => {
+        if (ok) setDirty(false);
+      })
+      .catch(() => {
+        // Errors are surfaced by the caller's status message.
+      });
   };
 
   const changeProvider = (provider: LlmProvider) => {
@@ -202,32 +241,20 @@ export function SettingsView({
     setLlmResult(null);
   };
 
-  const runLlmTest = async () => {
-    setLlmTesting(true);
+  const llmTest = useAsyncAction(async () => {
     setLlmResult(null);
-    try {
-      setLlmResult(
-        await onTestLlm({
-          enabled: llmEnabled,
-          provider: llmProvider,
-          apiKey: llmApiKey.trim(),
-          baseUrl: llmBaseUrl.trim(),
-          model: llmModel.trim(),
-        }),
-      );
-    } finally {
-      setLlmTesting(false);
-    }
-  };
+    setLlmResult(
+      await onTestLlm({
+        enabled: llmEnabled,
+        provider: llmProvider,
+        apiKey: llmApiKey.trim(),
+        baseUrl: llmBaseUrl.trim(),
+        model: llmModel.trim(),
+      }),
+    );
+  });
 
-  const runUpdateCheck = async () => {
-    setUpdateChecking(true);
-    try {
-      setUpdate(await onCheckUpdate());
-    } finally {
-      setUpdateChecking(false);
-    }
-  };
+  const updateCheck = useAsyncAction(async () => setUpdate(await onCheckUpdate()));
 
   const pickDirectory = async () => {
     const picked = await onPickDirectory();
@@ -236,32 +263,100 @@ export function SettingsView({
     setRoots((current) => (current.trim() ? `${current.trim()}\n${picked}` : picked));
   };
 
-  const runDoctor = async () => {
-    setDoctorLoading(true);
+  const doctorCheck = useAsyncAction(async () => {
+    const report = await onDoctor();
+    setDoctor(report);
+    onStatus(
+      report.ok ? t('status.doctorOk') : t('status.doctorWarnings', { n: report.warnings.length }),
+    );
+  });
+
+  const configReload = useAsyncAction(() => onReloadConfig());
+
+  const reloadBridges = async () => {
+    setBridges(await onListBridges());
+  };
+
+  const installBridge = async (bridge: BridgeStatus) => {
+    setBridgeBusy(bridge.id);
     try {
-      const report = await onDoctor();
-      setDoctor(report);
-      onStatus(
-        report.ok
-          ? t('status.doctorOk')
-          : t('status.doctorWarnings', { n: report.warnings.length }),
-      );
+      await onInstallBridge(bridge.id);
+      await reloadBridges();
+      onStatus(t('status.bridgeInstalled', { agent: bridge.display }));
+    } catch (error) {
+      reportError(error);
     } finally {
-      setDoctorLoading(false);
+      setBridgeBusy(null);
     }
   };
 
-  const reloadConfig = async () => {
-    setReloadingConfig(true);
+  const uninstallBridge = async (bridge: BridgeStatus) => {
+    setBridgeBusy(bridge.id);
     try {
-      await onReloadConfig();
+      await onUninstallBridge(bridge.id);
+      await reloadBridges();
+      onStatus(t('status.bridgeUninstalled', { agent: bridge.display }));
+    } catch (error) {
+      const blocked = /not removed: (.+)$/.exec(errorMessage(error));
+      if (blocked) onStatus(t('settings.integration.uninstallBlocked', { path: blocked[1] ?? '' }));
+      else reportError(error);
     } finally {
-      setReloadingConfig(false);
+      setBridgeBusy(null);
     }
   };
 
-  const llmPreset = getLlmPreset(llmProvider);
-  const releaseUrl = update?.url ?? null;
+  const markDirty = () => setDirty(true);
+
+  const activityForm: ActivityForm = {
+    enabled: activityEnabled,
+    storePhrase: activityStorePhrase,
+    retention: activityRetention,
+    phraseChars: activityPhraseChars,
+    setEnabled: (value) => {
+      markDirty();
+      setActivityEnabled(value);
+    },
+    setStorePhrase: (value) => {
+      markDirty();
+      setActivityStorePhrase(value);
+    },
+    setRetention: (value) => {
+      markDirty();
+      setActivityRetention(value);
+    },
+    setPhraseChars: (value) => {
+      markDirty();
+      setActivityPhraseChars(value);
+    },
+  };
+
+  const llmForm: LlmForm = {
+    enabled: llmEnabled,
+    provider: llmProvider,
+    apiKey: llmApiKey,
+    baseUrl: llmBaseUrl,
+    model: llmModel,
+    showApiKey,
+    result: llmResult,
+    setEnabled: (value) => {
+      markDirty();
+      setLlmEnabled(value);
+    },
+    setApiKey: (value) => {
+      markDirty();
+      setLlmApiKey(value);
+    },
+    setBaseUrl: (value) => {
+      markDirty();
+      setLlmBaseUrl(value);
+    },
+    setModel: (value) => {
+      markDirty();
+      setLlmModel(value);
+    },
+    setShowApiKey,
+    changeProvider,
+  };
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -327,8 +422,8 @@ export function SettingsView({
                     <Button size="sm" onClick={() => onRevealConfig()}>
                       {t('settings.revealConfig')}
                     </Button>
-                    <Button size="sm" onClick={() => void reloadConfig()} disabled={reloadingConfig}>
-                      {reloadingConfig ? t('settings.reloadingConfig') : t('settings.reloadConfig')}
+                    <Button size="sm" onClick={() => void configReload.run()} disabled={configReload.pending}>
+                      {configReload.pending ? t('settings.reloadingConfig') : t('settings.reloadConfig')}
                     </Button>
                     <span className="text-[11px] text-muted-foreground">
                       {t('settings.configFileHint')}
@@ -453,51 +548,12 @@ export function SettingsView({
                 </Field>
 
                 <div className="flex items-center gap-2">
-                  <Button onClick={() => void runDoctor()} disabled={doctorLoading}>
-                    {doctorLoading ? t('settings.runningDoctor') : t('settings.runDoctor')}
+                  <Button onClick={() => void doctorCheck.run()} disabled={doctorCheck.pending}>
+                    {doctorCheck.pending ? t('settings.runningDoctor') : t('settings.runDoctor')}
                   </Button>
                 </div>
 
-                {doctor ? (
-                  <>
-                    <h2 className="section-label">{t('settings.doctorHeading')}</h2>
-                    <div className="flex flex-col gap-1">
-                      <div>
-                        {doctor.cli.version
-                          ? t('settings.doctorCliVersion', {
-                              command: doctor.cli.command?.join(' ') ?? '',
-                              version: doctor.cli.version,
-                            })
-                          : t('settings.doctorCli', {
-                              command: doctor.cli.command?.join(' ') ?? t('settings.doctorCliUnset'),
-                            })}
-                      </div>
-                      <div className="text-muted-foreground">
-                        {t('settings.doctorConfigDir', { path: doctor.configDir })}
-                      </div>
-                      <div className="text-muted-foreground">
-                        {doctor.proxy
-                          ? t('settings.doctorProxy', { url: doctor.proxy })
-                          : t('settings.doctorProxyNone')}
-                      </div>
-                      {doctor.lockFiles.map((lock) => (
-                        <div
-                          key={lock.path}
-                          // deslop-ignore-next-line 34: 锁文件路径是数据值
-                          className="font-mono text-[11px] text-muted-foreground"
-                        >
-                          {lock.ok ? '✓' : '✗'} {lock.path}{' '}
-                          {lock.count !== undefined ? `(${lock.count})` : ''}
-                        </div>
-                      ))}
-                      {doctor.warnings.map((warning) => (
-                        <div key={warning.code} className="text-warning">
-                          {formatMessage(warning)}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : null}
+                <DoctorPanel doctor={doctor} />
               </>
             ) : null}
 
@@ -559,192 +615,25 @@ export function SettingsView({
               </Field>
             ) : null}
 
-            {category === 'llm' ? (
-              <Field label={t('settings.llmHeading')}>
-                <span className="text-[11px] text-muted-foreground">{t('settings.llmHint')}</span>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={llmEnabled}
-                    onCheckedChange={(enabled) => {
-                      setDirty(true);
-                      setLlmEnabled(enabled);
-                    }}
-                    aria-label={t('settings.llmEnable')}
-                  />
-                  <span className="text-muted-foreground">{t('settings.llmEnable')}</span>
-                </div>
-                {llmEnabled ? (
-                  <div className="flex flex-col gap-3 pt-1">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[11px] text-muted-foreground">
-                        {t('settings.llmProviderLabel')}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Select
-                          aria-label={t('settings.llmProviderLabel')}
-                          className="w-52"
-                          value={llmProvider}
-                          onChange={(event) => changeProvider(event.target.value as LlmProvider)}
-                        >
-                          {LLM_PROVIDERS.map((preset) => (
-                            <option key={preset.id} value={preset.id}>
-                              {t(LLM_PROVIDER_LABEL[preset.id])}
-                            </option>
-                          ))}
-                        </Select>
-                        {llmPreset.requiresKey ? null : (
-                          <span className="text-[11px] text-muted-foreground">
-                            {t('settings.llmNoKey')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+            {category === 'llm' ? <LlmSection form={llmForm} test={llmTest} /> : null}
 
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[11px] text-muted-foreground">
-                        {t('settings.llmApiKeyLabel')}
-                      </span>
-                      <div className="relative">
-                        <Input
-                          type={showApiKey ? 'text' : 'password'}
-                          autoComplete="off"
-                          className="pr-9"
-                          value={llmApiKey}
-                          onChange={(event) => {
-                            setDirty(true);
-                            setLlmApiKey(event.target.value);
-                          }}
-                          placeholder={
-                            llmPreset.requiresKey ? 'sk-…' : t('settings.llmApiKeyOptional')
-                          }
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowApiKey((visible) => !visible)}
-                          aria-label={
-                            showApiKey
-                              ? t('settings.llmApiKeyHide')
-                              : t('settings.llmApiKeyShow')
-                          }
-                          className="focus-ring absolute inset-y-0 right-0 flex w-9 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                          {showApiKey ? (
-                            <EyeOff className="size-4" aria-hidden="true" />
-                          ) : (
-                            <Eye className="size-4" aria-hidden="true" />
-                          )}
-                        </button>
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">
-                        {t('settings.llmKeyHint')}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[11px] text-muted-foreground">
-                        {t('settings.llmBaseUrlLabel')}
-                      </span>
-                      <Input
-                        value={llmBaseUrl}
-                        onChange={(event) => {
-                          setDirty(true);
-                          setLlmBaseUrl(event.target.value);
-                        }}
-                        placeholder="https://api.openai.com/v1"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[11px] text-muted-foreground">
-                        {t('settings.llmModelLabel')}
-                      </span>
-                      <Input
-                        value={llmModel}
-                        onChange={(event) => {
-                          setDirty(true);
-                          setLlmModel(event.target.value);
-                        }}
-                        placeholder="gpt-4o"
-                      />
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => void runLlmTest()}
-                        disabled={llmTesting || !llmBaseUrl.trim() || !llmModel.trim()}
-                      >
-                        {llmTesting ? t('settings.llmTesting') : t('settings.llmTest')}
-                      </Button>
-                      {llmResult ? (
-                        <Badge tone={llmResult.ok ? 'success' : 'error'}>
-                          {llmResult.ok
-                            ? t('settings.llmTestOk', { model: llmModel.trim() })
-                            : t('settings.llmTestFail', { status: llmResult.status ?? '—' })}
-                        </Badge>
-                      ) : null}
-                    </div>
-                    {llmResult && !llmResult.ok ? (
-                      <span className="font-mono text-[11px] break-all text-destructive">
-                        {llmResult.message}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
-              </Field>
+            {category === 'integrations' ? (
+              <IntegrationsSection
+                bridges={bridges}
+                bridgeBusy={bridgeBusy}
+                onInstall={installBridge}
+                onUninstall={uninstallBridge}
+                activity={activityForm}
+              />
             ) : null}
 
             {category === 'updates' ? (
-              <div className="flex flex-col gap-3">
-                <span className="text-muted-foreground">
-                  {t('settings.updateVersion', { version: appVersion })}
-                </span>
-                {update?.repo ? (
-                  <span className="text-[11px] text-muted-foreground">
-                    {t('settings.updateSource')}{' '}
-                    <button
-                      type="button"
-                      className="focus-ring rounded-sm text-primary hover:underline"
-                      onClick={() => void onOpenExternal(`https://github.com/${update.repo}`)}
-                    >
-                      {update.repo}
-                    </button>
-                  </span>
-                ) : null}
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" onClick={() => void runUpdateCheck()} disabled={updateChecking}>
-                    {updateChecking ? t('settings.updateChecking') : t('settings.updateCheck')}
-                  </Button>
-                  {update ? (
-                    !update.configured ? (
-                      <span className="text-[11px] text-muted-foreground">
-                        {t('settings.updateUnconfigured')}
-                      </span>
-                    ) : update.error ? (
-                      <Badge tone="error">
-                        {t('settings.updateFailed', { message: update.error })}
-                      </Badge>
-                    ) : update.hasUpdate ? (
-                      <Badge tone="warn">
-                        {t('settings.updateAvailable', { version: update.latest ?? '' })}
-                      </Badge>
-                    ) : update.latest ? (
-                      <Badge tone="success">{t('settings.updateLatest')}</Badge>
-                    ) : (
-                      <span className="text-[11px] text-muted-foreground">
-                        {t('settings.updateNoRelease')}
-                      </span>
-                    )
-                  ) : null}
-                </div>
-                {releaseUrl ? (
-                  <div>
-                    <Button size="sm" onClick={() => void onOpenExternal(releaseUrl)}>
-                      {t('settings.updateOpen')}
-                    </Button>
-                  </div>
-                ) : null}
-              </div>
+              <UpdatesSection
+                appVersion={appVersion}
+                update={update}
+                updateCheck={updateCheck}
+                onOpenExternal={onOpenExternal}
+              />
             ) : null}
           </div>
         </div>

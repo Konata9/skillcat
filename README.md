@@ -50,7 +50,7 @@ ever taking over your files behind your back.
 
 ## Features
 
-- **Inventory** — global and per-project skills across 90+ known agents (Claude Code, Codex, Cursor,
+- **Inventory** — global and per-project skills across 79 known agents (Claude Code, Codex, Cursor,
   OpenCode, Gemini CLI, Windsurf, Trae, …), with source, lock metadata, and real link state
   (symlink / dangling / copy drift).
 - **Trigger profiling** — extract positive and negative triggers from `when_to_use`, `dispatch_intent`,
@@ -64,6 +64,8 @@ ever taking over your files behind your back.
   The registry stores paths only; removing an entry never deletes files.
 - **Remote search & leaderboard** — browse the skills.sh leaderboard (all-time / trending / hot) and
   search the public index, then install straight into the current scope.
+- **Runtime activity** *(optional)* — install an agent bridge (OpenCode today) to record which skills
+  actually fire, with trigger phrase, task and per-agent/per-day charts.
 - **Safe operations** — every change streams progress into a drawer with a confirmation step and can
   be cancelled.
 - **Desktop polish** — light/dark themes, Chinese/English UI (follows system language), proxy support,
@@ -141,6 +143,7 @@ Architecture, design decisions and reference material live in [`docs/`](docs/):
 | [docs/analysis-rules.md](docs/analysis-rules.md) | The full deterministic and heuristic rule table |
 | [docs/ai-evaluation.md](docs/ai-evaluation.md) | LLM scoring, pair verdicts, providers, and the remote leaderboard |
 | [docs/configuration.md](docs/configuration.md) | Config/data locations, `config.json` fields, proxy, migration |
+| [docs/integrations.md](docs/integrations.md) | Runtime activity monitoring: adapter model, OpenCode integration, privacy |
 | [docs/development.md](docs/development.md) | Dev commands, project structure, tests, adding a new agent |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Known limitations and common issues |
 

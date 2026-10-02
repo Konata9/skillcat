@@ -6,6 +6,7 @@ import { formatBytes } from '@renderer/lib/format';
 import { useI18n } from '@renderer/lib/i18n';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { Section } from './ui/section';
 import { Table, TableBody, TableCell, TableRow } from './ui/table';
 import { TriggersPanel } from './TriggersPanel';
 
@@ -15,21 +16,6 @@ export interface SkillDetailActions {
   onEditTriggers: (record: SkillRecord) => void;
   onUpdate: (record: SkillRecord) => void;
   onRemove: (record: SkillRecord) => void;
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}): React.ReactElement {
-  return (
-    <section className="mt-5">
-      <h2 className="section-label mb-2">{title}</h2>
-      {children}
-    </section>
-  );
 }
 
 function MetaDatum({
@@ -49,12 +35,13 @@ function MetaDatum({
 
 export function SkillDetail({
   record,
+  triggerCount,
   onOpen,
   onReveal,
   onEditTriggers,
   onUpdate,
   onRemove,
-}: { record: SkillRecord } & SkillDetailActions): React.ReactElement {
+}: { record: SkillRecord; triggerCount?: number } & SkillDetailActions): React.ReactElement {
   const { t, relativeTime, scopeLabel } = useI18n();
 
   const linkCounts = record.links.reduce<Record<string, number>>((acc, link) => {
@@ -148,6 +135,16 @@ export function SkillDetail({
             n: record.files.length,
           })}
         </MetaDatum>
+        {triggerCount ? (
+          <>
+            <span className="text-border" aria-hidden="true">
+              ·
+            </span>
+            <MetaDatum label={t('detail.metaTriggers')}>
+              {t('detail.triggerCount', { n: triggerCount })}
+            </MetaDatum>
+          </>
+        ) : null}
       </div>
 
       <Section title={t('detail.description')}>

@@ -23,20 +23,12 @@ function fakeFetch(status: number, body: string): { impl: FetchLike; calls: Call
 }
 
 describe('LLM providers', () => {
-  it('exposes the expected presets', () => {
-    expect(LLM_PROVIDERS.map((preset) => preset.id)).toEqual([
-      'anthropic',
-      'openai',
-      'gemini',
-      'deepseek',
-      'qwen',
-      'glm',
-      'kimi',
-      'minimax',
-      'mimo',
-      'ollama',
-      'custom',
-    ]);
+  it('exposes unique ids with a resolvable preset per provider', () => {
+    const ids = LLM_PROVIDERS.map((preset) => preset.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const preset of LLM_PROVIDERS) {
+      expect(getLlmPreset(preset.id)).toMatchObject({ id: preset.id, style: preset.style });
+    }
     expect(getLlmPreset('ollama').requiresKey).toBe(false);
     expect(getLlmPreset('anthropic').style).toBe('anthropic');
   });

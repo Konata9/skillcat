@@ -3,23 +3,14 @@
  * model: the user supplies their own key, endpoint and model. Everything except
  * Anthropic speaks the OpenAI-compatible chat-completions API.
  */
-import type { LlmProvider, LlmSettings } from './types.js';
-import type { FetchLike } from './cli/remote-search.js';
+import type { LlmSettings } from './types.js';
+import { toErrorMessage } from './errors.js';
+import { fetchResponse } from './http.js';
+import type { FetchLike, FetchLikeInit } from './cli/remote-search.js';
 
-export interface LlmProviderPreset {
-  id: LlmProvider;
-  label: string;
-  /** Wire format: Anthropic Messages, or OpenAI-compatible chat completions. */
-  style: 'anthropic' | 'openai';
-  baseUrl: string;
-  model: string;
-  requiresKey: boolean;
-}
-
-export const LLM_PROVIDERS: LlmProviderPreset[] = [
+export const LLM_PROVIDERS = [
   {
     id: 'anthropic',
-    label: 'Claude',
     style: 'anthropic',
     baseUrl: 'https://api.anthropic.com',
     model: 'claude-sonnet-4-5',
@@ -27,7 +18,6 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
   },
   {
     id: 'openai',
-    label: 'ChatGPT',
     style: 'openai',
     baseUrl: 'https://api.openai.com/v1',
     model: 'gpt-4o',
@@ -35,7 +25,6 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
   },
   {
     id: 'gemini',
-    label: 'Gemini',
     style: 'openai',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     model: 'gemini-2.5-flash',
@@ -43,7 +32,6 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
   },
   {
     id: 'deepseek',
-    label: 'DeepSeek',
     style: 'openai',
     baseUrl: 'https://api.deepseek.com/v1',
     model: 'deepseek-flash',
@@ -51,7 +39,6 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
   },
   {
     id: 'qwen',
-    label: 'Qwen',
     style: 'openai',
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     model: 'qwen-plus',
@@ -59,7 +46,6 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
   },
   {
     id: 'glm',
-    label: 'GLM',
     style: 'openai',
     baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
     model: 'glm-4-plus',
@@ -67,7 +53,6 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
   },
   {
     id: 'kimi',
-    label: 'Kimi',
     style: 'openai',
     baseUrl: 'https://api.moonshot.cn/v1',
     model: 'moonshot-v1-8k',
@@ -75,7 +60,6 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
   },
   {
     id: 'minimax',
-    label: 'MiniMax',
     style: 'openai',
     baseUrl: 'https://api.minimax.chat/v1',
     model: 'MiniMax-Text-01',
@@ -83,7 +67,6 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
   },
   {
     id: 'mimo',
-    label: 'Mimo',
     style: 'openai',
     baseUrl: 'https://api.xiaomimimo.com/v1',
     model: 'mimo-v2.5-pro',
@@ -91,7 +74,6 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
   },
   {
     id: 'ollama',
-    label: 'Ollama',
     style: 'openai',
     baseUrl: 'http://localhost:11434/v1',
     model: 'llama3.2',
@@ -99,16 +81,21 @@ export const LLM_PROVIDERS: LlmProviderPreset[] = [
   },
   {
     id: 'custom',
-    label: 'Custom',
     style: 'openai',
     baseUrl: '',
     model: '',
     requiresKey: false,
   },
-];
+] as const;
+
+/** A provider preset entry. `style` is the wire format. */
+export type LlmProviderPreset = (typeof LLM_PROVIDERS)[number];
+
+/** Supported LLM vendors. Single source of truth: derived from the presets. */
+export type LlmProvider = LlmProviderPreset['id'];
 
 export function getLlmPreset(provider: LlmProvider): LlmProviderPreset {
-  return LLM_PROVIDERS.find((preset) => preset.id === provider) ?? LLM_PROVIDERS[0]!;
+  return LLM_PROVIDERS.find((preset) => preset.id === provider) ?? LLM_PROVIDERS[0];
 }
 
 /**
@@ -158,28 +145,31 @@ export async function testLlmConnection(
     messages: [{ role: 'user', content: 'ping' }],
   });
 
+  const init: FetchLikeInit =
+    style === 'anthropic'
+      ? {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'anthropic-version': '2023-06-01',
+            'x-api-key': apiKey,
+          },
+          body,
+        }
+      : {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
+          },
+          body,
+        };
+
   try {
-    const response =
-      style === 'anthropic'
-        ? await fetchImpl(joinAnthropic(base), {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-              'anthropic-version': '2023-06-01',
-              'x-api-key': apiKey,
-            },
-            body,
-            signal: AbortSignal.timeout(20_000),
-          })
-        : await fetchImpl(`${base}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-              ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
-            },
-            body,
-            signal: AbortSignal.timeout(20_000),
-          });
+    const response = await fetchResponse(
+      style === 'anthropic' ? joinAnthropic(base) : `${base}/chat/completions`,
+      { fetchImpl, timeoutMs: 20_000, init },
+    );
 
     if (response.ok) return { ok: true, status: response.status, message: 'ok' };
 
@@ -194,7 +184,7 @@ export async function testLlmConnection(
     return {
       ok: false,
       status: null,
-      message: error instanceof Error ? error.message : String(error),
+      message: toErrorMessage(error),
     };
   }
 }

@@ -9,21 +9,7 @@ import { errorMessage, formatInstalls } from '@renderer/lib/format';
 import { useI18n } from '@renderer/lib/i18n';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}): React.ReactElement {
-  return (
-    <section className="mt-5">
-      <h3 className="section-label mb-1.5">{title}</h3>
-      {children}
-    </section>
-  );
-}
+import { Section } from './ui/section';
 
 export function RemoteSkillDetailDrawer({
   skill,
@@ -135,7 +121,7 @@ export function RemoteSkillDetailDrawer({
 
             {detail ? (
               <>
-                <Section title={t('search.detailInstall')}>
+                <Section title={t('search.detailInstall')} level="h3" headingClassName="mb-1.5">
                   <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1.5">
                     <code className="min-w-0 flex-1 truncate font-mono text-[11px]">
                       {detail.installCommand}
@@ -153,19 +139,19 @@ export function RemoteSkillDetailDrawer({
                 </Section>
 
                 {detail.description ? (
-                  <Section title={t('search.detailDescription')}>
+                  <Section title={t('search.detailDescription')} level="h3" headingClassName="mb-1.5">
                     <p className="max-w-[65ch] text-muted-foreground">{detail.description}</p>
                   </Section>
                 ) : null}
 
-                <Section title="SKILL.md">
+                <Section title="SKILL.md" level="h3" headingClassName="mb-1.5">
                   <pre className="overflow-x-auto rounded-md border border-border bg-card p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-muted-foreground">
                     {detail.body}
                   </pre>
                 </Section>
 
                 {detail.files.length > 1 ? (
-                  <Section title={t('search.detailFiles', { count: detail.files.length })}>
+                  <Section title={t('search.detailFiles', { count: detail.files.length })} level="h3" headingClassName="mb-1.5">
                     <ul className="flex flex-col gap-0.5 font-mono text-[11px] text-muted-foreground">
                       {detail.files.map((file) => (
                         <li key={file.path} className="truncate">

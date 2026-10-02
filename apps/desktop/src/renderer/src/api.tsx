@@ -41,12 +41,11 @@ export function useSnapshot(): Snapshot | null {
 export function useStatus(): {
   status: string | null;
   showStatus: (message: string) => void;
-  showError: (message: string) => void;
 } {
   const [status, setStatus] = useState<string | null>(null);
   const showStatus = (message: string) => {
     setStatus(message);
     window.setTimeout(() => setStatus((current) => (current === message ? null : current)), 5000);
   };
-  return { status, showStatus, showError: showStatus };
+  return { status, showStatus };
 }

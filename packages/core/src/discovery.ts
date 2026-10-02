@@ -11,7 +11,6 @@ import {
   computeSkillFolderHash,
   isDirectory,
   lstatSafe,
-  pathExists,
   readJsonSafe,
   readdirSafe,
   readlinkSafe,
@@ -26,7 +25,7 @@ import {
   isGlobalSkillDir,
   resolveSkillDir,
 } from './paths.js';
-import { parseSkillDir } from './skill.js';
+import { hasSkillMd, parseSkillDir } from './skill.js';
 import { applyAnnotation } from './triggers.js';
 import type {
   AgentLink,
@@ -123,10 +122,7 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
     for (const entry of entries) {
       if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
       const skillDir = join(dir, entry.name);
-      const hasSkillMd =
-        (await pathExists(join(skillDir, 'SKILL.md'))) ||
-        (await pathExists(join(skillDir, 'skill.md')));
-      if (!hasSkillMd) continue;
+      if (!(await hasSkillMd(skillDir))) continue;
       await addCandidate(entry.name, skillDir);
     }
   }
@@ -141,14 +137,9 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
       const known = new Set([...candidates.values()].map((item) => resolve(item.path)));
       for (const skill of cliSkills) {
         declaredByName.set(skill.name, skill.agents);
-        if (!known.has(resolve(skill.path))) {
-          const hasSkillMd =
-            (await pathExists(join(skill.path, 'SKILL.md'))) ||
-            (await pathExists(join(skill.path, 'skill.md')));
-          if (hasSkillMd) {
-            await addCandidate(skill.name, skill.path);
-            known.add(resolve(skill.path));
-          }
+        if (!known.has(resolve(skill.path)) && (await hasSkillMd(skill.path))) {
+          await addCandidate(skill.name, skill.path);
+          known.add(resolve(skill.path));
         }
       }
     } catch {

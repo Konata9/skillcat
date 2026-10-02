@@ -1,6 +1,6 @@
 // deslop-ignore-file 34: 规则名与证据条目是技术标识与数据值
 import * as React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type {
   AiVerdict,
   Confidence,
@@ -11,12 +11,14 @@ import type {
 } from '@skillcat/core';
 import { recordKey } from '@skillcat/core/keys';
 import { LoaderCircle } from 'lucide-react';
+import { useSelection } from '@renderer/hooks/useSelection';
 import { useI18n } from '@renderer/lib/i18n';
 import type { MessageKey } from '@renderer/lib/i18n';
 import { cn } from '@renderer/lib/utils';
 import { EvaluationProcess } from '../components/EvaluationProcess';
 import { EmptyState, SeverityDot } from '../components/indicators';
 import { Badge } from '../components/ui/badge';
+import { Section } from '../components/ui/section';
 
 type SeverityFilter = 'all' | 'error' | 'warn' | 'info';
 
@@ -52,21 +54,6 @@ const VERDICT_CLASS = {
   uncertain: 'text-muted-foreground',
 } as const;
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}): React.ReactElement {
-  return (
-    <section className="mt-5">
-      <h2 className="section-label mb-2">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
 export function AnalysisView({
   findings,
   evaluation,
@@ -93,7 +80,6 @@ export function AnalysisView({
   const { t, formatMessage, scopeLabel, locale, relativeTime } = useI18n();
   const [filter, setFilter] = useState<SeverityFilter>('all');
   const [hideFalsePositives, setHideFalsePositives] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const severityLabel: Record<string, string> = {
     error: t('analysis.severity.error'),
@@ -112,22 +98,14 @@ export function AnalysisView({
     (finding) => finding.ai?.verdict === 'false-positive',
   ).length;
 
-  useEffect(() => {
-    if (visible.length === 0) {
-      setSelectedId(evaluation ? OVERVIEW_ID : null);
-      return;
-    }
-    if (selectedId === OVERVIEW_ID && evaluation) return;
-    if (selectedId === null) {
-      setSelectedId(evaluation ? OVERVIEW_ID : visible[0]!.id);
-      return;
-    }
-    if (!visible.some((finding) => finding.id === selectedId)) {
-      setSelectedId(visible[0]!.id);
-    }
-  }, [visible, selectedId, evaluation]);
+  const overviewKey = evaluation ? OVERVIEW_ID : null;
+  const { selectedKey: selectedId, setSelectedKey: setSelectedId, selected } = useSelection({
+    items: visible,
+    getKey: (finding) => finding.id,
+    pinnedKey: overviewKey,
+    emptyKey: overviewKey,
+  });
 
-  const selected = visible.find((finding) => finding.id === selectedId) ?? null;
   const localeMismatch = evaluation !== null && evaluation.locale !== locale;
   const showStale = evaluationStale || verdictsStale || localeMismatch;
   const running = evaluating || reviewing;
@@ -373,7 +351,7 @@ function EvaluationOverview({
   evaluation: EvaluationReport;
   scopeLabel: (scope: 'global' | 'project', projectPath?: string) => string;
 }): React.ReactElement {
-  const { t, relativeTime } = useI18n();
+  const { t, locale, relativeTime } = useI18n();
   return (
     <div className="max-w-[900px] px-4 pt-4 pb-10">
       <h1 className="text-xl font-semibold">{t('analysis.aiOverview')}</h1>
@@ -406,12 +384,12 @@ function EvaluationOverview({
               ) : null}
               {entry.strengths.length > 0 ? (
                 <div className="mt-1 text-[11px] text-success">
-                  {t('analysis.aiStrengths')}: {entry.strengths.join('；')}
+                  {t('analysis.aiStrengths')}: {entry.strengths.join(locale === 'zh' ? '、' : ', ')}
                 </div>
               ) : null}
               {entry.issues.length > 0 ? (
                 <div className="mt-1 text-[11px] text-warning">
-                  {t('analysis.aiSkillIssues')}: {entry.issues.join('；')}
+                  {t('analysis.aiSkillIssues')}: {entry.issues.join(locale === 'zh' ? '、' : ', ')}
                 </div>
               ) : null}
             </div>

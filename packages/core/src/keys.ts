@@ -13,14 +13,35 @@
  * it safe to import from browser contexts via the `@skillcat/core/keys`
  * subpath export.
  */
-import type { SkillRecord } from './types.js';
+import type { SkillRecord, SkillRef } from './types.js';
+
+/** `scope|projectPath|name` identity for a skill, before hashing. */
+export function scopeNameKey(
+  scope: SkillRef['scope'],
+  projectPath: string | undefined,
+  name: string,
+): string {
+  return `${scope}|${projectPath ?? ''}|${name}`;
+}
 
 export function recordKey(record: Pick<SkillRecord, 'scope' | 'projectPath' | 'name'>): string {
-  return `${record.scope}|${record.projectPath ?? ''}|${record.name}`;
+  return scopeNameKey(record.scope, record.projectPath, record.name);
 }
 
 export function annotationKey(
   record: Pick<SkillRecord, 'scope' | 'projectPath' | 'name' | 'contentHash'>,
 ): string {
   return `${recordKey(record)}|${record.contentHash}`;
+}
+
+/** Order-independent key for a pair of labels (skill names or catalog ids). */
+export function unorderedPairKey(a: string, b: string): string {
+  return a <= b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+/** Unordered pair identity used to match verdicts with findings. */
+export function pairKey(skills: SkillRef[]): string | null {
+  if (skills.length !== 2) return null;
+  const keys = skills.map((skill) => recordKey(skill)).sort();
+  return `${keys[0]}|${keys[1]}`;
 }

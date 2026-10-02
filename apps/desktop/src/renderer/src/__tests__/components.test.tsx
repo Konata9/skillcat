@@ -250,6 +250,7 @@ describe('SettingsView LLM', () => {
         baseUrl: 'https://api.openai.com/v1',
         model: 'gpt-4o',
       },
+      activity: { enabled: true, storePhrase: true, retentionDays: 90, maxPhraseChars: 300 },
     };
   }
 
@@ -262,7 +263,7 @@ describe('SettingsView LLM', () => {
           appVersion="0.1.0"
           cliAvailable
           cliSource="path"
-          onSave={async () => {}}
+          onSave={async () => true}
           onStatus={() => {}}
           onPickDirectory={async () => null}
           onOpenConfig={async () => {}}
@@ -287,6 +288,9 @@ describe('SettingsView LLM', () => {
             lockFiles: [],
             warnings: [],
           })}
+          onListBridges={async () => []}
+          onInstallBridge={async () => {}}
+          onUninstallBridge={async () => {}}
         />,
       ),
     );
@@ -351,11 +355,12 @@ describe('SettingsView proxy', () => {
         baseUrl: 'https://api.openai.com/v1',
         model: 'gpt-4o',
       },
+      activity: { enabled: true, storePhrase: true, retentionDays: 90, maxPhraseChars: 300 },
     };
   }
 
   it('reveals the proxy fields only when enabled and saves the toggle state', async () => {
-    const onSave = vi.fn(async () => {});
+    const onSave = vi.fn(async () => true);
     const view = (value: AppConfig): React.ReactElement => (
       <SettingsView
         config={value}
@@ -388,6 +393,9 @@ describe('SettingsView proxy', () => {
           lockFiles: [],
           warnings: [],
         })}
+        onListBridges={async () => []}
+        onInstallBridge={async () => {}}
+        onUninstallBridge={async () => {}}
       />
     );
 

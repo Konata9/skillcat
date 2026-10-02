@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { SkillRecord } from '@skillcat/core';
 import { recordKey } from '@skillcat/core/keys';
+import { useSelection } from '@renderer/hooks/useSelection';
 import { useI18n } from '@renderer/lib/i18n';
 import { SkillDetail, type SkillDetailActions } from '../components/SkillDetail';
 import { SkillList } from '../components/SkillList';
@@ -10,15 +11,15 @@ import { Input } from '../components/ui/input';
 
 export function SkillsView({
   records,
+  activityCounts,
   onOpen,
   onReveal,
   onEditTriggers,
   onUpdate,
   onRemove,
-}: { records: SkillRecord[] } & SkillDetailActions): React.ReactElement {
+}: { records: SkillRecord[]; activityCounts?: Record<string, number> } & SkillDetailActions): React.ReactElement {
   const { t } = useI18n();
   const [filter, setFilter] = useState('');
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const query = filter.trim().toLowerCase();
@@ -31,16 +32,10 @@ export function SkillsView({
     });
   }, [records, filter]);
 
-  useEffect(() => {
-    if (filtered.length === 0) {
-      setSelectedKey(null);
-      return;
-    }
-    const exists = filtered.some((record) => recordKey(record) === selectedKey);
-    if (!exists) setSelectedKey(recordKey(filtered[0]!));
-  }, [filtered, selectedKey]);
-
-  const selected = filtered.find((record) => recordKey(record) === selectedKey);
+  const { selectedKey, setSelectedKey, selected } = useSelection({
+    items: filtered,
+    getKey: recordKey,
+  });
 
   return (
     <div className="grid min-h-0 flex-1 grid-rows-1 grid-cols-[minmax(320px,42%)_1fr]">
@@ -70,6 +65,7 @@ export function SkillsView({
         {selected ? (
           <SkillDetail
             record={selected}
+            triggerCount={activityCounts?.[recordKey(selected)]}
             onOpen={onOpen}
             onReveal={onReveal}
             onEditTriggers={onEditTriggers}

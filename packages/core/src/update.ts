@@ -4,6 +4,8 @@
  * filled in and this queries the public releases API.
  */
 import type { FetchLike } from './cli/remote-search.js';
+import { toErrorMessage } from './errors.js';
+import { fetchResponse } from './http.js';
 
 export interface UpdateCheckResult {
   /** False when no repository is configured yet. */
@@ -61,12 +63,14 @@ export async function checkForUpdate(
   if (!slug) return base;
 
   try {
-    const response = await fetchImpl(`https://api.github.com/repos/${slug}/releases/latest`, {
-      headers: {
-        accept: 'application/vnd.github+json',
-        'user-agent': 'SkillCat',
+    const response = await fetchResponse(`https://api.github.com/repos/${slug}/releases/latest`, {
+      fetchImpl,
+      init: {
+        headers: {
+          accept: 'application/vnd.github+json',
+          'user-agent': 'SkillCat',
+        },
       },
-      signal: AbortSignal.timeout(15_000),
     });
     // A public repository with no published releases returns 404 for
     // `releases/latest`; that is a normal state, not a failed check.
@@ -91,7 +95,7 @@ export async function checkForUpdate(
   } catch (error) {
     return {
       ...base,
-      error: error instanceof Error ? error.message : String(error),
+      error: toErrorMessage(error),
     };
   }
 }

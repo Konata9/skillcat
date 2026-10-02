@@ -26,7 +26,7 @@ export function AppNotices({
       {!cliAvailable ? (
         <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-3.5 py-1.5">
           <span className="text-destructive">
-            {t('app.cliUnavailableBanner', { error: cliError ?? 'unknown error' })}
+            {t('app.cliUnavailableBanner', { error: cliError ?? t('common.unknownError') })}
           </span>
         </div>
       ) : null}

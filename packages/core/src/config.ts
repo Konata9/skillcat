@@ -5,6 +5,7 @@
  */
 import { dirname } from 'node:path';
 import { atomicWriteFile, ensureDir, pathExists, readJsonSafe } from './fs-utils.js';
+import { defaultActivitySettings, sanitizeActivity } from './bridge/limits.js';
 import { defaultLlmSettings, getLlmPreset, LLM_PROVIDERS } from './llm.js';
 import { configFilePath, getConfigDir } from './paths.js';
 import type { AppConfig, LlmProvider, LlmSettings } from './types.js';
@@ -22,6 +23,7 @@ export function defaultConfig(): AppConfig {
     maxScanDepth: 3,
     customSkillDirs: [],
     llm: defaultLlmSettings(),
+    activity: defaultActivitySettings(),
   };
 }
 
@@ -119,6 +121,7 @@ function sanitize(raw: unknown): AppConfig {
         : base.maxScanDepth,
     customSkillDirs: normalizeCustomSkillDirs(input.customSkillDirs),
     llm: sanitizeLlm(input.llm),
+    activity: sanitizeActivity(input.activity),
   };
 }
 
@@ -162,12 +165,4 @@ export class ConfigStore {
     return this.config;
   }
 
-  addRecent(projectPath: string): void {
-    const recent = [projectPath, ...this.config.recent.filter((item) => item !== projectPath)];
-    this.config.recent = recent.slice(0, 20);
-  }
-
-  isPinned(projectPath: string): boolean {
-    return this.config.projects.some((item) => item.path === projectPath && item.pinned);
-  }
 }

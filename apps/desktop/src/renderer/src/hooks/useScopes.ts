@@ -5,6 +5,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import type { Scope, SkillRecord } from '@skillcat/core';
+import { projectName } from '@renderer/lib/format';
 import type { Snapshot } from '@shared/contract';
 
 export interface ScopeOption {
@@ -40,7 +41,7 @@ export function useScopes(
     for (const project of snapshot?.projects ?? []) {
       list.push({
         key: `project:${project.path}`,
-        label: project.path.split('/').filter(Boolean).pop() ?? project.path,
+        label: projectName(project.path),
         path: project.path,
         count: project.records.length,
       });

@@ -1,6 +1,8 @@
 # 配置与数据
 
 SkillCat 的所有持久化数据都放在**配置目录**，不写入 skill 目录、锁文件或 agent 目录。
+唯一的例外是用户在**设置 → 集成**中显式安装的运行监听插件（可一键卸载），见
+[integrations.md](./integrations.md)。
 
 ## 配置目录
 
@@ -33,10 +35,13 @@ SkillCat 的所有持久化数据都放在**配置目录**，不写入 skill 目
 
 | 文件 | 内容 |
 | --- | --- |
-| `config.json` | 应用配置（扫描根、项目注册表、阈值、代理、CLI 覆盖、LLM 设置） |
+| `config.json` | 应用配置（扫描根、项目注册表、阈值、代理、CLI 覆盖、LLM 与运行记录设置） |
 | `annotations.json` | 人工触发词标注，按 `scope\|project\|name\|contentHash` 键控 |
 | `state.json` | 上次扫描的内容哈希，用于检测漂移 |
 | `evaluation.json` | LLM 评估报告与 AI 判定 |
+| `runtime-spool.jsonl` | 运行监听插件的收件箱：插件逐行追加原始触发记录，SkillCat 消费后清空 |
+| `runtime-events.json` | 归一化并与扫描目录匹配后的触发历史（按保留期裁剪） |
+| `integrations.json` | 已安装集成清单（文件路径 + 内容哈希），用于可撤销卸载 |
 
 ### `config.json` 字段
 
@@ -54,10 +59,22 @@ SkillCat 的所有持久化数据都放在**配置目录**，不写入 skill 目
 | `showInternal` | `boolean` | `false` | 是否显示 internal skill |
 | `maxScanDepth` | `number` | `3` | 项目发现的最大深度（0–8），自动跳过 `node_modules` / `.git` 等 |
 | `customSkillDirs` | `string[]` | `[]` | 额外的 skill 容器目录 |
+| `activity` | `ActivitySettings` | 见下 | 运行触发记录的偏好 |
 | `llm` | `LlmSettings` | 见下 | 语言模型设置 |
 
 `customSkillDirs` 的解析规则：以 `~` 开头或绝对路径 → 全局作用域；其余 → 每个项目根下的相对
 路径。每个条目是一个**容器目录**，其子目录中带 `SKILL.md` 的即为 skill。
+
+### `activity` 字段
+
+| 字段 | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | `true` | 是否记录触发事件；关闭后不再写入 |
+| `storePhrase` | `boolean` | `true` | 是否保存触发词语（用户提示词片段，仅存本地） |
+| `retentionDays` | `number` | `90` | 保留天数，限制 30–360 |
+| `maxPhraseChars` | `number` | `300` | 触发词语最大长度，限制 40–4000 |
+
+触发词语可能包含用户输入内容，只保存在本机配置目录，可通过「运行记录 → 清空记录」删除。
 
 ### `llm` 字段
 

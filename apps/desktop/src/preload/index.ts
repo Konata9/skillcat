@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { EvaluationEvent } from '@skillcat/core';
-import { CH, type OpEvent, type SkillCatApi, type Snapshot } from '../shared/contract';
+import type { EvaluationEvent, RuntimeSkillEvent } from '@skillcat/core';
+import { CH, EVENTS, type OpEvent, type SkillCatApi, type Snapshot } from '../shared/contract';
 
 const api: SkillCatApi = {
   getSnapshot: () => ipcRenderer.invoke(CH.snapshot),
@@ -30,25 +30,38 @@ const api: SkillCatApi = {
   revealConfig: () => ipcRenderer.invoke(CH.configReveal),
   reloadConfig: () => ipcRenderer.invoke(CH.configReload),
   doctor: () => ipcRenderer.invoke(CH.doctor),
+  listBridges: () => ipcRenderer.invoke(CH.bridgesList),
+  installBridge: (id) => ipcRenderer.invoke(CH.bridgesInstall, id),
+  uninstallBridge: (id) => ipcRenderer.invoke(CH.bridgesUninstall, id),
+  activityStats: () => ipcRenderer.invoke(CH.activityStats),
+  activityEvents: () => ipcRenderer.invoke(CH.activityEvents),
+  clearActivity: () => ipcRenderer.invoke(CH.activityClear),
   onStateChanged: (callback) => {
     const listener = (_event: unknown, snapshot: Snapshot) => callback(snapshot);
-    ipcRenderer.on(CH.stateChanged, listener);
+    ipcRenderer.on(EVENTS.stateChanged, listener);
     return () => {
-      ipcRenderer.removeListener(CH.stateChanged, listener);
+      ipcRenderer.removeListener(EVENTS.stateChanged, listener);
     };
   },
   onOpEvent: (callback) => {
     const listener = (_event: unknown, payload: OpEvent) => callback(payload);
-    ipcRenderer.on(CH.opEvent, listener);
+    ipcRenderer.on(EVENTS.opEvent, listener);
     return () => {
-      ipcRenderer.removeListener(CH.opEvent, listener);
+      ipcRenderer.removeListener(EVENTS.opEvent, listener);
     };
   },
   onEvaluationEvent: (callback) => {
     const listener = (_event: unknown, payload: EvaluationEvent) => callback(payload);
-    ipcRenderer.on(CH.evaluationEvent, listener);
+    ipcRenderer.on(EVENTS.evaluationEvent, listener);
     return () => {
-      ipcRenderer.removeListener(CH.evaluationEvent, listener);
+      ipcRenderer.removeListener(EVENTS.evaluationEvent, listener);
+    };
+  },
+  onActivity: (callback) => {
+    const listener = (_event: unknown, payload: RuntimeSkillEvent[]) => callback(payload);
+    ipcRenderer.on(EVENTS.activityEvent, listener);
+    return () => {
+      ipcRenderer.removeListener(EVENTS.activityEvent, listener);
     };
   },
 };

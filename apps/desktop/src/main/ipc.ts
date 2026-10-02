@@ -1,7 +1,14 @@
 import { join } from 'node:path';
 import type { AsyncOp, ProxySettings, SkillManager, UpdateCheckResult } from '@skillcat/core';
 import { z } from 'zod';
-import { CH, type OpStart, type SkillRefLite, type Snapshot } from '../shared/contract';
+import {
+  CH,
+  EVENTS,
+  type Channel,
+  type OpStart,
+  type SkillRefLite,
+  type Snapshot,
+} from '../shared/contract';
 
 export interface IpcMainLike {
   handle(
@@ -9,6 +16,8 @@ export interface IpcMainLike {
     listener: (event: unknown, ...args: unknown[]) => unknown,
   ): void;
 }
+
+type IpcHandler = (event: unknown, ...args: unknown[]) => unknown;
 
 export interface IpcDeps {
   ipc: IpcMainLike;
@@ -98,9 +107,17 @@ const SettingsSchema = z.object({
   showInternal: z.boolean().optional(),
   customSkillDirs: z.array(z.string()).optional(),
   llm: LlmSchema.optional(),
+  activity: z
+    .object({
+      enabled: z.boolean(),
+      storePhrase: z.boolean(),
+      retentionDays: z.number().int().min(30).max(360),
+      maxPhraseChars: z.number().int().min(40).max(4000),
+    })
+    .optional(),
 });
 
-export function toSnapshot(manager: SkillManager, version: string): Snapshot {
+function toSnapshot(manager: SkillManager, version: string): Snapshot {
   const resolved = manager.cliInfo;
   return {
     loading: manager.state.loading,
@@ -127,6 +144,7 @@ export function toSnapshot(manager: SkillManager, version: string): Snapshot {
     reviewing: manager.state.reviewing,
     evaluationProgress: manager.state.evaluationProgress,
     evaluationError: manager.state.evaluationError,
+    activityCounts: manager.activityCounts(),
   };
 }
 
@@ -150,153 +168,186 @@ function createOp(manager: SkillManager, request: OpStart): AsyncOp {
 
 export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
   const { ipc, broadcast } = deps;
-
-  ipc.handle(CH.snapshot, () => toSnapshot(manager, deps.appVersion));
-
-  ipc.handle(CH.refresh, async (_event, rawOptions) => {
-    const options = RefreshSchema.parse(rawOptions);
-    await manager.refresh(options ?? {});
-  });
-
-  ipc.handle(CH.projectsList, () => manager.listProjectInfos());
-  ipc.handle(CH.projectsAdd, async (_event, rawPath, rawOptions) => {
-    const path = z.string().min(1).parse(rawPath);
-    const options = z
-      .object({ alias: z.string().optional(), pinned: z.boolean().optional() })
-      .optional()
-      .parse(rawOptions);
-    await manager.addProject(path, options ?? {});
-    await manager.refresh();
-  });
-  ipc.handle(CH.projectsRemove, async (_event, rawPath) => {
-    const path = z.string().min(1).parse(rawPath);
-    await manager.removeProject(path);
-  });
-  ipc.handle(CH.projectsPin, async (_event, rawPath, rawPinned) => {
-    const path = z.string().min(1).parse(rawPath);
-    const pinned = z.boolean().parse(rawPinned);
-    await manager.setProjectPinned(path, pinned);
-  });
-  ipc.handle(CH.rootsSet, async (_event, rawRoots) => {
-    const roots = z.array(z.string()).parse(rawRoots);
-    await manager.setRoots(roots);
-    await manager.refresh();
-  });
-  ipc.handle(CH.settingsSet, async (_event, rawPatch) => {
-    const patch = SettingsSchema.parse(rawPatch);
-    if (patch.skillsCommand !== undefined) await manager.setSkillsCommand(patch.skillsCommand);
-    if (patch.proxy) {
-      await manager.setProxy(patch.proxy);
-      await deps.applyProxy(patch.proxy);
-    }
-    if (patch.thresholds) await manager.setThresholds(patch.thresholds);
-    if (patch.showInternal !== undefined) await manager.setShowInternal(patch.showInternal);
-    if (patch.customSkillDirs !== undefined) await manager.setCustomSkillDirs(patch.customSkillDirs);
-    if (patch.llm !== undefined) await manager.setLlm(patch.llm);
-    await manager.refresh();
-  });
-
-  ipc.handle(CH.annotationGet, async (_event, rawRef) => {
-    const ref = RefSchema.parse(rawRef) as SkillRefLite;
-    const record = manager.findRecord(ref.scope, ref.projectPath, ref.name);
-    if (!record) return null;
-    return manager.loadAnnotation(record);
-  });
-  ipc.handle(CH.annotationSave, async (_event, rawRef, rawAnnotation) => {
-    const ref = RefSchema.parse(rawRef) as SkillRefLite;
-    const annotation = z
-      .object({
-        added: z.array(
-          z.object({ text: z.string(), kind: z.enum(['positive', 'negative']) }),
-        ),
-        removed: z.array(z.string()),
-        note: z.string().optional(),
-      })
-      .nullable()
-      .parse(rawAnnotation);
-    const record = manager.findRecord(ref.scope, ref.projectPath, ref.name);
-    if (!record) throw new Error(`skill not found: ${ref.name}`);
-    await manager.saveAnnotation(record, annotation);
-  });
-
-  ipc.handle(CH.searchRemote, async (_event, rawQuery) => {
-    const query = z.string().min(1).parse(rawQuery);
-    return manager.searchRemote(query);
-  });
-  ipc.handle(CH.leaderboard, async (_event, rawKind, rawPage) => {
-    const kind = z.enum(['all-time', 'trending', 'hot']).parse(rawKind);
-    const page = z.number().int().min(0).optional().parse(rawPage);
-    return manager.fetchLeaderboard(kind, page ?? 0);
-  });
-  ipc.handle(CH.remoteSkillDetail, async (_event, rawSlug) => {
-    const slug = z.string().min(1).parse(rawSlug);
-    return manager.getRemoteSkillDetail(slug);
-  });
-  ipc.handle(CH.evaluate, async (_event, rawLocale) => {
-    const locale = z.enum(['zh', 'en']).parse(rawLocale);
-    await manager.runEvaluation(locale);
-  });
-  ipc.handle(CH.reviewCandidates, async (_event, rawLocale) => {
-    const locale = z.enum(['zh', 'en']).parse(rawLocale);
-    await manager.runCandidateReview(locale);
-  });
-  ipc.handle(CH.testLlm, async (_event, rawSettings) => {
-    return manager.testLlm(LlmSchema.parse(rawSettings));
-  });
-  ipc.handle(CH.checkUpdate, () => deps.checkUpdate());
-  ipc.handle(CH.openExternal, async (_event, rawUrl) => {
-    const url = z.string().url().parse(rawUrl);
-    if (!/^https:\/\//i.test(url)) throw new Error('only https URLs can be opened');
-    await deps.openExternal(url);
-  });
-
   const ops = new Map<string, AsyncOp>();
-  ipc.handle(CH.opStart, async (_event, rawRequest) => {
-    const request = OpSchema.parse(rawRequest) as OpStart;
-    const op = createOp(manager, request);
-    ops.set(op.id, op);
-    void (async () => {
-      try {
-        for await (const line of op.lines) {
-          broadcast(CH.opEvent, { opId: op.id, line });
-        }
-      } catch {
-        // stream failures are reflected in the final result
-      }
-      const result = await op.result;
-      ops.delete(op.id);
-      broadcast(CH.opEvent, { opId: op.id, done: true, ok: result.ok });
+
+  // One handler per request channel. Typing this as `Record<Channel, …>` makes a
+  // missing or unknown channel a compile error, so `CH` and the handlers can
+  // never drift apart.
+  const handlers: Record<Channel, IpcHandler> = {
+    [CH.snapshot]: () => toSnapshot(manager, deps.appVersion),
+
+    [CH.refresh]: async (_event, rawOptions) => {
+      const options = RefreshSchema.parse(rawOptions);
+      await manager.refresh(options ?? {});
+    },
+
+    [CH.projectsList]: () => manager.listProjectInfos(),
+    [CH.projectsAdd]: async (_event, rawPath, rawOptions) => {
+      const path = z.string().min(1).parse(rawPath);
+      const options = z
+        .object({ alias: z.string().optional(), pinned: z.boolean().optional() })
+        .optional()
+        .parse(rawOptions);
+      await manager.addProject(path, options ?? {});
       await manager.refresh();
-    })();
-    return { opId: op.id };
-  });
-  ipc.handle(CH.opCancel, (_event, rawOpId) => {
-    const opId = z.string().parse(rawOpId);
-    ops.get(opId)?.cancel();
-  });
+    },
+    [CH.projectsRemove]: async (_event, rawPath) => {
+      const path = z.string().min(1).parse(rawPath);
+      await manager.removeProject(path);
+    },
+    [CH.projectsPin]: async (_event, rawPath, rawPinned) => {
+      const path = z.string().min(1).parse(rawPath);
+      const pinned = z.boolean().parse(rawPinned);
+      await manager.setProjectPinned(path, pinned);
+    },
+    [CH.rootsSet]: async (_event, rawRoots) => {
+      const roots = z.array(z.string()).parse(rawRoots);
+      await manager.setRoots(roots);
+      await manager.refresh();
+    },
+    [CH.settingsSet]: async (_event, rawPatch) => {
+      const patch = SettingsSchema.parse(rawPatch);
+      if (patch.skillsCommand !== undefined) await manager.setSkillsCommand(patch.skillsCommand);
+      if (patch.proxy) {
+        await manager.setProxy(patch.proxy);
+        await deps.applyProxy(patch.proxy);
+      }
+      if (patch.thresholds) await manager.setThresholds(patch.thresholds);
+      if (patch.showInternal !== undefined) await manager.setShowInternal(patch.showInternal);
+      if (patch.customSkillDirs !== undefined) await manager.setCustomSkillDirs(patch.customSkillDirs);
+      if (patch.llm !== undefined) await manager.setLlm(patch.llm);
+      if (patch.activity !== undefined) await manager.setActivity(patch.activity);
+      await manager.refresh();
+    },
 
-  ipc.handle(CH.openSkill, async (_event, rawRef) => {
-    const ref = RefSchema.parse(rawRef) as SkillRefLite;
-    const path = skillFilePath(manager, ref);
-    if (!path) throw new Error(`skill not found: ${ref.name}`);
-    await deps.openSkill(path);
-  });
-  ipc.handle(CH.revealSkill, (_event, rawRef) => {
-    const ref = RefSchema.parse(rawRef) as SkillRefLite;
-    const record = manager.findRecord(ref.scope, ref.projectPath, ref.name);
-    if (!record) throw new Error(`skill not found: ${ref.name}`);
-    deps.revealSkill(record.path);
-  });
-  ipc.handle(CH.pickDirectory, () => deps.pickDirectory());
-  ipc.handle(CH.configOpen, async () => {
-    await deps.openConfig(await manager.ensureConfigFile());
-  });
-  ipc.handle(CH.configReveal, async () => {
-    deps.revealConfig(await manager.ensureConfigFile());
-  });
-  ipc.handle(CH.configReload, () => manager.reloadConfig());
-  ipc.handle(CH.doctor, () => manager.doctor());
+    [CH.annotationGet]: async (_event, rawRef) => {
+      const ref = RefSchema.parse(rawRef) as SkillRefLite;
+      const record = manager.findRecord(ref.scope, ref.projectPath, ref.name);
+      if (!record) return null;
+      return manager.loadAnnotation(record);
+    },
+    [CH.annotationSave]: async (_event, rawRef, rawAnnotation) => {
+      const ref = RefSchema.parse(rawRef) as SkillRefLite;
+      const annotation = z
+        .object({
+          added: z.array(
+            z.object({ text: z.string(), kind: z.enum(['positive', 'negative']) }),
+          ),
+          removed: z.array(z.string()),
+          note: z.string().optional(),
+        })
+        .nullable()
+        .parse(rawAnnotation);
+      const record = manager.findRecord(ref.scope, ref.projectPath, ref.name);
+      if (!record) throw new Error(`skill not found: ${ref.name}`);
+      await manager.saveAnnotation(record, annotation);
+    },
 
-  manager.onChange(() => broadcast(CH.stateChanged, toSnapshot(manager, deps.appVersion)));
-  manager.onEvaluationEvent((event) => broadcast(CH.evaluationEvent, event));
+    [CH.searchRemote]: async (_event, rawQuery) => {
+      const query = z.string().min(1).parse(rawQuery);
+      return manager.searchRemote(query);
+    },
+    [CH.leaderboard]: async (_event, rawKind, rawPage) => {
+      const kind = z.enum(['all-time', 'trending', 'hot']).parse(rawKind);
+      const page = z.number().int().min(0).optional().parse(rawPage);
+      return manager.fetchLeaderboard(kind, page ?? 0);
+    },
+    [CH.remoteSkillDetail]: async (_event, rawSlug) => {
+      const slug = z.string().min(1).parse(rawSlug);
+      return manager.getRemoteSkillDetail(slug);
+    },
+    [CH.evaluate]: async (_event, rawLocale) => {
+      const locale = z.enum(['zh', 'en']).parse(rawLocale);
+      await manager.runEvaluation(locale);
+    },
+    [CH.reviewCandidates]: async (_event, rawLocale) => {
+      const locale = z.enum(['zh', 'en']).parse(rawLocale);
+      await manager.runCandidateReview(locale);
+    },
+    [CH.testLlm]: async (_event, rawSettings) => {
+      return manager.testLlm(LlmSchema.parse(rawSettings));
+    },
+    [CH.checkUpdate]: () => deps.checkUpdate(),
+    [CH.openExternal]: async (_event, rawUrl) => {
+      const url = z.string().url().parse(rawUrl);
+      if (!/^https:\/\//i.test(url)) throw new Error('only https URLs can be opened');
+      await deps.openExternal(url);
+    },
+
+    [CH.opStart]: async (_event, rawRequest) => {
+      const request = OpSchema.parse(rawRequest) as OpStart;
+      const op = createOp(manager, request);
+      ops.set(op.id, op);
+      void (async () => {
+        let ok = false;
+        try {
+          try {
+            for await (const line of op.lines) {
+              broadcast(EVENTS.opEvent, { opId: op.id, line });
+            }
+          } catch {
+            // stream failures are reflected in the final result
+          }
+          const result = await op.result;
+          ok = result.ok;
+          broadcast(EVENTS.opEvent, { opId: op.id, done: true, ok });
+          await manager.refresh();
+        } catch {
+          // Always emit a terminal event and release the op, otherwise the
+          // renderer's drawer would hang waiting for `done`.
+          broadcast(EVENTS.opEvent, { opId: op.id, done: true, ok });
+        } finally {
+          ops.delete(op.id);
+        }
+      })();
+      return { opId: op.id };
+    },
+    [CH.opCancel]: (_event, rawOpId) => {
+      const opId = z.string().parse(rawOpId);
+      ops.get(opId)?.cancel();
+    },
+
+    [CH.openSkill]: async (_event, rawRef) => {
+      const ref = RefSchema.parse(rawRef) as SkillRefLite;
+      const path = skillFilePath(manager, ref);
+      if (!path) throw new Error(`skill not found: ${ref.name}`);
+      await deps.openSkill(path);
+    },
+    [CH.revealSkill]: (_event, rawRef) => {
+      const ref = RefSchema.parse(rawRef) as SkillRefLite;
+      const record = manager.findRecord(ref.scope, ref.projectPath, ref.name);
+      if (!record) throw new Error(`skill not found: ${ref.name}`);
+      deps.revealSkill(record.path);
+    },
+    [CH.pickDirectory]: () => deps.pickDirectory(),
+    [CH.configOpen]: async () => {
+      await deps.openConfig(await manager.ensureConfigFile());
+    },
+    [CH.configReveal]: async () => {
+      deps.revealConfig(await manager.ensureConfigFile());
+    },
+    [CH.configReload]: () => manager.reloadConfig(),
+    [CH.doctor]: () => manager.doctor(),
+
+    [CH.bridgesList]: () => manager.listBridges(),
+    [CH.bridgesInstall]: async (_event, rawId) => {
+      const id = z.string().min(1).parse(rawId);
+      await manager.installBridge(id);
+    },
+    [CH.bridgesUninstall]: async (_event, rawId) => {
+      const id = z.string().min(1).parse(rawId);
+      await manager.uninstallBridge(id);
+    },
+    [CH.activityStats]: () => manager.activityStats(),
+    [CH.activityEvents]: () => manager.activityEvents(),
+    [CH.activityClear]: () => manager.clearActivity(),
+  };
+
+  for (const [channel, handler] of Object.entries(handlers)) {
+    ipc.handle(channel, handler);
+  }
+
+  manager.onChange(() => broadcast(EVENTS.stateChanged, toSnapshot(manager, deps.appVersion)));
+  manager.onEvaluationEvent((event) => broadcast(EVENTS.evaluationEvent, event));
+  manager.onActivityEvent((events) => broadcast(EVENTS.activityEvent, events));
 }

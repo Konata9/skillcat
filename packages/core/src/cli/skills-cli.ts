@@ -7,6 +7,7 @@ import { createInterface } from 'node:readline';
 import type { Readable } from 'node:stream';
 import { execa } from 'execa';
 import { z } from 'zod';
+import { toErrorMessage } from '../errors.js';
 import type { AsyncOp, CliSkill, Scope } from '../types.js';
 import { cleanOutputLine } from './ansi.js';
 
@@ -102,7 +103,7 @@ export class SkillsCli {
       parsed = JSON.parse(result.stdout);
     } catch (error) {
       throw new SkillsCliError(
-        `skills ls returned invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
+        `skills ls returned invalid JSON: ${toErrorMessage(error)}`,
         result.stdout,
         result.stderr,
       );

@@ -10,7 +10,9 @@ import { parsePartialJson, streamText, type LanguageModel } from 'ai';
 import { jsonrepair } from 'jsonrepair';
 import { z } from 'zod';
 import type { FetchLike } from '../cli/remote-search.js';
-import { recordKey } from '../keys.js';
+import { toStringList } from '../coerce.js';
+import { pairKey, recordKey, unorderedPairKey } from '../keys.js';
+import { skillRef } from '../refs.js';
 import { bodyShingles, computeOverlaps, jaccard } from '../similarity.js';
 import type {
   AiPairVerdict,
@@ -18,6 +20,7 @@ import type {
   EvaluationEvent,
   EvaluationGrade,
   EvaluationIssueKind,
+  EvaluationLocale,
   EvaluationProgress,
   EvaluationReport,
   EvaluationSeverity,
@@ -34,7 +37,6 @@ import {
   type CatalogPair,
   type CatalogSkill,
 } from './prompt.js';
-import { pairKey } from './verdicts.js';
 
 const EXCERPT_CHARS = 1200;
 const MAX_BATCH_CHARS = 12_000;
@@ -72,8 +74,6 @@ const VerdictEnvelopeSchema = z.object({ verdicts: z.array(z.unknown()) });
 
 const SummaryResponseSchema = z.object({ summary: z.string() });
 const SummaryEnvelopeSchema = z.object({ summary: z.string().optional() });
-
-export type EvaluationLocale = 'zh' | 'en';
 
 export interface ModelCallRequest {
   model: LanguageModel;
@@ -208,9 +208,8 @@ function excerpt(body: string): string {
 }
 
 function coerceList(value: unknown): string[] {
-  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string');
-  if (typeof value === 'string' && value.trim()) return [value.trim()];
-  return [];
+  if (typeof value === 'string') return value.trim() ? [value.trim()] : [];
+  return toStringList(value);
 }
 
 export function buildCatalogEntries(records: SkillRecord[]): CatalogSkill[] {
@@ -235,7 +234,7 @@ export function buildPairs(records: SkillRecord[], catalog: CatalogSkill[]): Cat
     const a = idByKey.get(aKey);
     const b = idByKey.get(bKey);
     if (!a || !b || a === b) return;
-    const key = [a, b].sort().join('|');
+    const key = unorderedPairKey(a, b);
     if (pairs.has(key)) return;
     pairs.set(key, { id: `p${pairs.size + 1}`, a, b, reason });
   };
@@ -369,14 +368,7 @@ function skillNames(catalog: CatalogSkill[], records: SkillRecord[]): Map<string
   return new Map(catalog.map((skill, index) => [skill.id, records[index]?.name ?? skill.name]));
 }
 
-function toRef(record: SkillRecord): SkillRef {
-  return {
-    name: record.name,
-    scope: record.scope,
-    projectPath: record.projectPath,
-    path: record.path,
-  };
-}
+
 
 export function evaluationSignature(records: SkillRecord[], settings: LlmSettings): string {
   const payload = JSON.stringify({
@@ -446,7 +438,7 @@ async function judgePairs(
       const a = recordById.get(result.data.a);
       const b = recordById.get(result.data.b);
       if (!a || !b) continue;
-      const skills: [SkillRef, SkillRef] = [toRef(a), toRef(b)];
+      const skills: [SkillRef, SkillRef] = [skillRef(a), skillRef(b)];
       const key = pairKey(skills);
       if (!key) continue;
       verdicts.push({
@@ -544,7 +536,7 @@ export async function evaluateSkills(options: EvaluateOptions): Promise<Evaluati
         const record = recordById.get(result.data.id);
         if (!record) continue;
         scores.push({
-          skill: toRef(record),
+          skill: skillRef(record),
           score: clampScore(result.data.score),
           grade: normalizeGrade(result.data.grade, result.data.score),
           summary: replaceSkillIds((result.data.summary ?? '').trim(), names),

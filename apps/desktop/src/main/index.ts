@@ -101,6 +101,28 @@ function broadcast(channel: string, payload: unknown): void {
   }
 }
 
+function isSafeExternalUrl(url: string): boolean {
+  return /^https:\/\//i.test(url);
+}
+
+/**
+ * Locks the window to its own document: in-app navigations away from the loaded
+ * page are cancelled, and any https target is handed to the OS browser instead.
+ * Only a same-URL reload (dev full reload) is allowed through.
+ */
+function hardenWebContents(window: BrowserWindow): void {
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    if (isSafeExternalUrl(url)) void shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  window.webContents.on('will-navigate', (event, url) => {
+    if (url === window.webContents.getURL()) return;
+    event.preventDefault();
+    if (isSafeExternalUrl(url)) void shell.openExternal(url);
+  });
+}
+
 function createWindow(): void {
   const window = new BrowserWindow({
     width: 1320,
@@ -114,11 +136,12 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   });
 
   window.once('ready-to-show', () => window.show());
+  hardenWebContents(window);
 
   if (process.env.ELECTRON_RENDERER_URL) {
     void window.loadURL(process.env.ELECTRON_RENDERER_URL);
@@ -138,6 +161,13 @@ app.whenReady().then(async () => {
   await bootstrap(manager);
   await applyProxy(manager.config.proxy);
   manager.setRemoteFetch((url, init) => net.fetch(url, init));
+
+  // The app needs no optional permission (media, geolocation, notifications,
+  // …); deny them explicitly instead of relying on Electron's default.
+  session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) =>
+    callback(false),
+  );
+  session.defaultSession.setPermissionCheckHandler(() => false);
 
   registerIpc(manager, {
     ipc: ipcMain,
@@ -162,6 +192,9 @@ app.whenReady().then(async () => {
     appVersion: app.getVersion(),
     checkUpdate: () => manager.checkUpdate(UPDATE_REPO, app.getVersion()),
     openExternal: async (url) => {
+      // Defense in depth: IPC validates too, but the OS boundary must hold even
+      // if a future non-IPC caller reaches this function directly.
+      if (!isSafeExternalUrl(url)) throw new Error('only https URLs can be opened');
       await shell.openExternal(url);
     },
   });

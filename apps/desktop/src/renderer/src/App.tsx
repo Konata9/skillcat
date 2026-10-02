@@ -5,7 +5,7 @@
  */
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import type { ProjectInfo, RemoteSkill, SkillRecord, LlmSettings } from '@skillcat/core';
+import type { ProjectInfo, RemoteSkill, SkillRecord, LlmSettings, ActivitySettings } from '@skillcat/core';
 import { isLlmConfigured } from '@skillcat/core/llm';
 import type { OpStart } from '@shared/contract';
 import { useApi, useSnapshot, useStatus } from './api';
@@ -17,13 +17,16 @@ import { GlobalProgress } from './components/GlobalProgress';
 import { OperationDrawer } from './components/OperationDrawer';
 import { TriggerEditorModal } from './components/TriggerEditorModal';
 import { useAnnotationEditor } from './hooks/useAnnotationEditor';
+import { useActivity } from './hooks/useActivity';
 import { useEvaluationLog } from './hooks/useEvaluationLog';
 import { useOperations } from './hooks/useOperations';
 import { useProjects } from './hooks/useProjects';
+import { useReportError } from './hooks/useReportError';
 import { useScopes } from './hooks/useScopes';
 import { errorMessage } from './lib/format';
 import { useI18n } from './lib/i18n';
 import type { Tab } from './lib/navigation';
+import { ActivityView } from './views/ActivityView';
 import { AnalysisView } from './views/AnalysisView';
 import { ProjectsView } from './views/ProjectsView';
 import { SearchView } from './views/SearchView';
@@ -50,10 +53,10 @@ export function App(): React.ReactElement {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const { op, startOp, cancelOp, closeOp } = useOperations(api, (error) => {
-    showStatus(t('status.opFailed', { message: errorMessage(error) }));
-  });
+  const reportError = useReportError(showStatus);
+  const { op, startOp, cancelOp, closeOp } = useOperations(api, reportError);
   const evaluationLog = useEvaluationLog(api);
+  const activity = useActivity(api, snapshot?.scannedAt ?? null);
   const { projects, reload: reloadProjects } = useProjects(api, snapshot?.scannedAt);
   const { scopes, scopeKey, setScopeKey, activeScope, records } = useScopes(snapshot, scopeLabel);
   const editor = useAnnotationEditor(
@@ -73,6 +76,8 @@ export function App(): React.ReactElement {
         (snapshot?.projects.reduce((sum, project) => sum + project.records.length, 0) ?? 0),
     ),
     analysis: String(findings.length),
+    activity:
+      activity.stats && activity.stats.total > 0 ? String(activity.stats.total) : '',
     projects: String(projects.length),
     search: '',
     settings: '',
@@ -110,9 +115,7 @@ export function App(): React.ReactElement {
   };
 
   const runEvaluation = () => {
-    void api.evaluate(locale).catch((error) => {
-      showStatus(t('status.opFailed', { message: errorMessage(error) }));
-    });
+    void api.evaluate(locale).catch(reportError);
   };
 
   const requestEvaluate = () => {
@@ -124,9 +127,7 @@ export function App(): React.ReactElement {
   };
 
   const reviewCandidates = () => {
-    void api.reviewCandidates(locale).catch((error) => {
-      showStatus(t('status.opFailed', { message: errorMessage(error) }));
-    });
+    void api.reviewCandidates(locale).catch(reportError);
   };
 
   const openSkill = (record: SkillRecord) =>
@@ -151,7 +152,8 @@ export function App(): React.ReactElement {
     showInternal: boolean;
     customSkillDirs: string[];
     llm: LlmSettings;
-  }): Promise<void> => {
+    activity: ActivitySettings;
+  }): Promise<boolean> => {
     try {
       await api.setSettings({
         skillsCommand: patch.skillsCommand,
@@ -160,11 +162,14 @@ export function App(): React.ReactElement {
         showInternal: patch.showInternal,
         customSkillDirs: patch.customSkillDirs,
         llm: patch.llm,
+        activity: patch.activity,
       });
       await api.setRoots(patch.roots);
       showStatus(t('status.settingsSaved'));
+      return true;
     } catch (error) {
       showStatus(t('status.saveFailed', { message: errorMessage(error) }));
+      return false;
     }
   };
 
@@ -220,11 +225,23 @@ export function App(): React.ReactElement {
           {tab === 'skills' ? (
             <SkillsView
               records={records}
+              activityCounts={snapshot?.activityCounts}
               onOpen={openSkill}
               onReveal={revealSkill}
               onEditTriggers={(record) => void editor.open(record)}
               onUpdate={(record) => setConfirmState({ kind: 'update', record })}
               onRemove={(record) => setConfirmState({ kind: 'remove', record })}
+            />
+          ) : null}
+          {tab === 'activity' ? (
+            <ActivityView
+              events={activity.events}
+              stats={activity.stats}
+              onClear={async () => {
+                await api.clearActivity();
+                await activity.reload();
+                showStatus(t('settings.activityCleared'));
+              }}
             />
           ) : null}
           {tab === 'analysis' ? (
@@ -271,21 +288,18 @@ export function App(): React.ReactElement {
               onCheckUpdate={api.checkUpdate}
               onOpenExternal={api.openExternal}
               onPickDirectory={() => api.pickDirectory()}
-              onOpenConfig={() =>
-                api.openConfig().catch((error) => {
-                  showStatus(t('status.opFailed', { message: errorMessage(error) }));
-                })
-              }
+              onOpenConfig={() => api.openConfig().catch(reportError)}
               onRevealConfig={() => api.revealConfig()}
               onReloadConfig={() =>
                 api
                   .reloadConfig()
                   .then(() => showStatus(t('status.configReloaded')))
-                  .catch((error) => {
-                    showStatus(t('status.opFailed', { message: errorMessage(error) }));
-                  })
+                  .catch(reportError)
               }
               onDoctor={() => api.doctor()}
+              onListBridges={() => api.listBridges()}
+              onInstallBridge={(id) => api.installBridge(id)}
+              onUninstallBridge={(id) => api.uninstallBridge(id)}
             />
           ) : null}
         </div>

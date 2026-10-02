@@ -79,3 +79,18 @@ export function annotationsFilePath(configDir: string): string {
 export function evaluationFilePath(configDir: string): string {
   return join(configDir, 'evaluation.json');
 }
+
+/** Inbox that installed bridge plugins append raw trigger records to. */
+export function runtimeSpoolFilePath(configDir: string): string {
+  return join(configDir, 'runtime-spool.jsonl');
+}
+
+/** Normalized, matched trigger history. */
+export function runtimeEventsFilePath(configDir: string): string {
+  return join(configDir, 'runtime-events.json');
+}
+
+/** Manifest of installed bridges, used for exact uninstall. */
+export function integrationsFilePath(configDir: string): string {
+  return join(configDir, 'integrations.json');
+}

@@ -9,6 +9,8 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // Tests live in `__tests__` folders only, never beside production code, so
+    // the bundler (which follows imports from the entry files) never sees them.
+    include: ['src/**/__tests__/*.test.ts', 'src/**/__tests__/*.test.tsx'],
   },
 });

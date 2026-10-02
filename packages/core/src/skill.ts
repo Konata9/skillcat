@@ -4,7 +4,9 @@
  */
 import { basename, join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
-import { readFileSafe, walkFiles, type WalkedFile } from './fs-utils.js';
+import { coerceString, coerceTrimmed } from './coerce.js';
+import { toErrorMessage } from './errors.js';
+import { pathExists, readFileSafe, walkFiles, type WalkedFile } from './fs-utils.js';
 import { extractTriggers } from './triggers.js';
 import type { SkillFileInfo, TriggerProfile } from './types.js';
 
@@ -60,20 +62,9 @@ export function parseFrontmatter(raw: string): FrontmatterResult {
     return {
       data: {},
       content,
-      error: error instanceof Error ? error.message : String(error),
+      error: toErrorMessage(error),
     };
   }
-}
-
-function coerceString(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => (typeof item === 'string' ? item : JSON.stringify(item)))
-      .join('\n');
-  }
-  if (value === null || value === undefined) return '';
-  return String(value);
 }
 
 function fileKind(relativePath: string): SkillFileInfo['kind'] {
@@ -95,28 +86,35 @@ export function buildFileInfos(files: WalkedFile[]): SkillFileInfo[] {
     .sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 }
 
-export async function findSkillMd(dir: string): Promise<string | null> {
-  for (const candidate of ['SKILL.md', 'skill.md', 'Skill.md']) {
+const SKILL_MD_CANDIDATES = ['SKILL.md', 'skill.md', 'Skill.md'] as const;
+
+/** Reads the first SKILL.md variant in `dir` without probing twice. */
+async function readSkillMd(dir: string): Promise<{ path: string; content: string } | null> {
+  for (const candidate of SKILL_MD_CANDIDATES) {
     const path = join(dir, candidate);
     const content = await readFileSafe(path);
-    if (content !== null) return path;
+    if (content !== null) return { path, content };
   }
   return null;
 }
 
+/** Cheap existence probe for discovery, before parsing the file. */
+export async function hasSkillMd(dir: string): Promise<boolean> {
+  for (const candidate of SKILL_MD_CANDIDATES) {
+    if (await pathExists(join(dir, candidate))) return true;
+  }
+  return false;
+}
+
 export async function parseSkillDir(dir: string, fallbackName?: string): Promise<ParsedSkill> {
-  const skillMdPath = await findSkillMd(dir);
-  if (!skillMdPath) {
+  const found = await readSkillMd(dir);
+  if (!found) {
     throw new Error(`No SKILL.md found in ${dir}`);
   }
-  const raw = (await readFileSafe(skillMdPath)) ?? '';
-  const { data, content } = parseFrontmatter(raw);
+  const skillMdPath = found.path;
+  const { data, content } = parseFrontmatter(found.content);
 
-  const rawName = data.name;
-  const name =
-    typeof rawName === 'string' && rawName.trim()
-      ? rawName.trim()
-      : (fallbackName ?? basename(dir));
+  const name = coerceTrimmed(data.name, fallbackName ?? basename(dir));
 
   const description = coerceString(data.description).trim();
   const metadata = data.metadata;

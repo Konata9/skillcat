@@ -11,6 +11,7 @@
 | [analysis-rules.md](analysis-rules.md) | 完整的确定性 / 启发式规则表与相似度算法 |
 | [ai-evaluation.md](ai-evaluation.md) | LLM 评分、候选对判定、模型供应商、远程榜单与搜索 |
 | [configuration.md](configuration.md) | 配置与数据位置、`config.json` 字段、代理、迁移 |
+| [integrations.md](integrations.md) | 运行监听：适配器模型、OpenCode 集成、隐私与保留 |
 | [development.md](development.md) | 开发命令、项目结构、测试、新增 agent |
 | [troubleshooting.md](troubleshooting.md) | 已知限制与常见问题 |
 

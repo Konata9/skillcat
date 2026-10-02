@@ -2,6 +2,12 @@
  * Persisted application configuration (`config.json`).
  */
 import type { ProjectEntry } from './domain.js';
+import type { ActivitySettings } from './bridge.js';
+// `LlmProvider` is derived from the provider registry in `llm.ts` so the preset
+// list is the single source of truth for supported vendors.
+import type { LlmProvider } from '../llm.js';
+
+export type { LlmProvider };
 
 export interface Thresholds {
   overlap: number;
@@ -14,20 +20,6 @@ export interface ProxySettings {
   /** Comma-separated bypass list (NO_PROXY), e.g. `localhost,127.0.0.1,.internal`. */
   bypass: string;
 }
-
-/** Supported LLM vendors. SkillCat ships no model; the user supplies a key. */
-export type LlmProvider =
-  | 'anthropic'
-  | 'openai'
-  | 'gemini'
-  | 'deepseek'
-  | 'qwen'
-  | 'glm'
-  | 'kimi'
-  | 'minimax'
-  | 'mimo'
-  | 'ollama'
-  | 'custom';
 
 export interface LlmSettings {
   /** Whether the language model is enabled; when off the config is ignored. */
@@ -60,4 +52,6 @@ export interface AppConfig {
   customSkillDirs: string[];
   /** User-supplied language-model credentials. Never bundled by SkillCat. */
   llm: LlmSettings;
+  /** Runtime trigger-observation preferences. */
+  activity: ActivitySettings;
 }

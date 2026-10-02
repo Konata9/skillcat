@@ -3,6 +3,7 @@
  * (`when_to_use`, `dispatch_intent`), description patterns and "When to Use"
  * body sections, plus applying/merging user annotations. Pure text analysis.
  */
+import { toStringList } from './coerce.js';
 import type { Annotation, TriggerProfile, TriggerSource, TriggerTerm } from './types.js';
 
 const WEIGHTS: Record<Exclude<TriggerSource, 'user'>, number> = {
@@ -136,14 +137,6 @@ function extractQuoted(text: string, kind: 'positive' | 'negative', source: Trig
   return out;
 }
 
-function readStringList(value: unknown): string[] {
-  if (typeof value === 'string') return [value];
-  if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === 'string');
-  }
-  return [];
-}
-
 const DESCRIPTION_PATTERNS: Array<{
   pattern: RegExp;
   kind: 'positive' | 'negative';
@@ -225,10 +218,10 @@ export function extractTriggers(input: TriggerInput): TriggerProfile {
   const negative: TriggerTerm[] = [];
   const intents: string[] = [];
 
-  const whenToUse = readStringList(input.frontmatter.when_to_use);
+  const whenToUse = toStringList(input.frontmatter.when_to_use);
   for (const chunk of whenToUse) pushTerms(positive, chunk, 'positive', 'when_to_use');
 
-  const dispatchIntent = readStringList(input.frontmatter.dispatch_intent);
+  const dispatchIntent = toStringList(input.frontmatter.dispatch_intent);
   for (const chunk of dispatchIntent) {
     intents.push(...splitList(chunk));
   }

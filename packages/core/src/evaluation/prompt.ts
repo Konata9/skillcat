@@ -6,14 +6,17 @@
  * the model cannot be trusted to reproduce; the caller maps ids back.
  */
 
-import type { AiPairVerdict, EvaluationSkillScore } from '../types.js';
-
-export const EVALUATION_PROMPT_VERSION = '1';
+import type {
+  AiPairVerdict,
+  EvaluationLocale,
+  EvaluationSkillScore,
+  Scope,
+} from '../types.js';
 
 export interface CatalogSkill {
   id: string;
   name: string;
-  scope: 'global' | 'project';
+  scope: Scope;
   projectPath?: string;
   description: string;
   whenToUse: string[];
@@ -28,8 +31,6 @@ export interface CatalogPair {
   b: string;
   reason: string;
 }
-
-export type EvaluationLocale = 'zh' | 'en';
 
 function languageName(locale: EvaluationLocale): string {
   return locale === 'zh' ? 'Simplified Chinese (简体中文)' : 'English';

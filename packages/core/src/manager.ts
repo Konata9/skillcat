@@ -15,15 +15,20 @@ import {
   searchRemoteViaCli,
   type FetchLike,
 } from './cli/remote-search.js';
+import { runAdd, runInit, runRemove, runUpdate } from './cli/operations.js';
 import { SkillsCli } from './cli/skills-cli.js';
 import { ConfigStore, normalizeCustomSkillDirs, sanitizeLlm } from './config.js';
+import { sanitizeActivity } from './bridge/limits.js';
 import { analyzeSkills } from './analysis.js';
-import { readLock, scanScope } from './discovery.js';
+import { readLock } from './discovery.js';
+import { toErrorMessage } from './errors.js';
+import { BridgeService } from './bridge/service.js';
+import { scanAll } from './scan.js';
 import {
   evaluateSkills,
   evaluationSignature,
   reviewCandidatePairs,
-  type EvaluationLocale,
+  type ModelCaller,
 } from './evaluation/evaluate.js';
 import { applyVerdicts } from './evaluation/verdicts.js';
 import { annotationKey, recordKey } from './keys.js';
@@ -33,25 +38,29 @@ import { discoverProjects } from './projects.js';
 import { SidecarStore } from './sidecar.js';
 import { checkForUpdate, type UpdateCheckResult } from './update.js';
 import type {
+  ActivitySettings,
+  ActivityStats,
   AddTarget,
   AiPairVerdict,
   Annotation,
   AppConfig,
   AsyncOp,
+  BridgeStatus,
   DoctorReport,
   DoctorWarning,
   EvaluationEvent,
+  EvaluationLocale,
   EvaluationProgress,
   EvaluationReport,
   Finding,
   LeaderboardKind,
   LlmSettings,
-  OpResult,
   OrphanLock,
   ProjectInfo,
   ProxySettings,
   RemoteSkill,
   RemoteSkillDetail,
+  RuntimeSkillEvent,
   Scope,
   SkillRecord,
 } from './types.js';
@@ -85,6 +94,7 @@ export interface RefreshOptions {
 export class SkillManager {
   readonly configStore: ConfigStore;
   readonly sidecar: SidecarStore;
+  readonly bridge: BridgeService;
   readonly state: ManagerState = {
     loading: false,
     scannedAt: null,
@@ -108,15 +118,28 @@ export class SkillManager {
   private cli: SkillsCli | null = null;
   private listeners = new Set<() => void>();
   private evaluationListeners = new Set<(event: EvaluationEvent) => void>();
+  private activityListeners = new Set<(events: RuntimeSkillEvent[]) => void>();
   private copyHashCache = new Map<string, string>();
   private remoteFetch: FetchLike | null = null;
   private readonly bundledCli: BundledCli | undefined;
+  /** Test seam: overrides the model transport used by the evaluation pipeline. */
+  private readonly modelCaller: ModelCaller | undefined;
 
-  constructor(options: { configDir?: string; bundledCli?: BundledCli } = {}) {
+  constructor(options: {
+    configDir?: string;
+    bundledCli?: BundledCli;
+    modelCaller?: ModelCaller;
+  } = {}) {
     const dir = options.configDir ?? getConfigDir();
     this.configStore = new ConfigStore(dir);
     this.sidecar = new SidecarStore(dir);
+    this.bridge = new BridgeService({ configDir: dir });
     this.bundledCli = options.bundledCli;
+    this.modelCaller = options.modelCaller;
+    this.bridge.onActivity((events) => {
+      this.emit();
+      for (const listener of this.activityListeners) listener(events);
+    });
   }
 
   async init(): Promise<void> {
@@ -127,6 +150,9 @@ export class SkillManager {
     this.state.verdicts = store?.verdicts ?? [];
     this.state.verdictsAt = store?.verdictsAt ?? null;
     this.state.verdictsSignature = store?.verdictsSignature ?? null;
+    this.bridge.setActivitySettings(this.configStore.value.activity);
+    await this.bridge.load();
+    this.bridge.startWatching();
   }
 
   /** Guarantees `config.json` exists and returns its path (for open / reveal). */
@@ -177,6 +203,45 @@ export class SkillManager {
     for (const listener of this.evaluationListeners) listener(event);
   }
 
+  /** Subscribes to freshly ingested trigger events (also persisted). */
+  onActivityEvent(listener: (events: RuntimeSkillEvent[]) => void): () => void {
+    this.activityListeners.add(listener);
+    return () => {
+      this.activityListeners.delete(listener);
+    };
+  }
+
+  listBridges(): Promise<BridgeStatus[]> {
+    return this.bridge.statuses();
+  }
+
+  async installBridge(id: string): Promise<void> {
+    await this.bridge.install(id);
+    this.emit();
+  }
+
+  async uninstallBridge(id: string): Promise<void> {
+    await this.bridge.uninstall(id);
+    this.emit();
+  }
+
+  activityEvents(): RuntimeSkillEvent[] {
+    return this.bridge.activityEvents();
+  }
+
+  activityStats(): ActivityStats {
+    return this.bridge.activityStats();
+  }
+
+  activityCounts(): Record<string, number> {
+    return this.bridge.activityCounts();
+  }
+
+  async clearActivity(): Promise<void> {
+    await this.bridge.clearActivity();
+    this.emit();
+  }
+
   private async resolveCli(): Promise<void> {
     this.resolved = await resolveSkillsCommand(this.configStore.value.skillsCommand, {
       bundled: this.bundledCli,
@@ -209,59 +274,27 @@ export class SkillManager {
       const savedState = await this.sidecar.loadState();
       this.copyHashCache.clear();
 
-      const globalScan = await scanScope({
-        scope: 'global',
+      const scan = await scanAll({
         cli: this.cli,
         annotations,
         showInternal: config.showInternal,
-        deep: options.deep,
-        copyHashCache: this.copyHashCache,
-        customSkillDirs: config.customSkillDirs,
-      });
-
-      const discovered = await discoverProjects(config.roots, {
+        roots: config.roots,
         maxDepth: config.maxScanDepth,
         customSkillDirs: config.customSkillDirs,
+        registeredProjects: config.projects.map((entry) => entry.path),
+        extraProjectPaths: options.projectPaths,
+        deep: options.deep,
+        copyHashCache: this.copyHashCache,
       });
-      const projectPaths = new Set<string>([
-        ...config.projects.map((entry) => entry.path),
-        ...discovered.map((entry) => entry.path),
-        ...(options.projectPaths ?? []),
-      ]);
+      const allRecords = scan.all;
 
-      const projects = new Map<string, SkillRecord[]>();
-      const errors = new Map<string, string>();
-      const orphans: OrphanLock[] = [...globalScan.orphans];
-
-      for (const path of projectPaths) {
-        try {
-          const scan = await scanScope({
-            scope: 'project',
-            root: path,
-            cli: this.cli,
-            annotations,
-            showInternal: config.showInternal,
-            deep: false,
-            copyHashCache: this.copyHashCache,
-            customSkillDirs: config.customSkillDirs,
-          });
-          projects.set(path, scan.records);
-          orphans.push(...scan.orphans);
-          if (scan.error) errors.set(path, scan.error);
-        } catch (error) {
-          errors.set(path, error instanceof Error ? error.message : String(error));
-        }
-      }
-
-      const allRecords = [...globalScan.records, ...[...projects.values()].flat()];
-
-      this.state.global = globalScan.records;
-      this.state.projects = projects;
-      this.state.orphans = orphans;
-      this.state.projectErrors = errors;
+      this.state.global = scan.global;
+      this.state.projects = scan.projects;
+      this.state.orphans = scan.orphans;
+      this.state.projectErrors = scan.errors;
       this.state.baseFindings = analyzeSkills({
         records: allRecords,
-        orphans,
+        orphans: scan.orphans,
         lastSeen: savedState.hashes,
         thresholds: config.thresholds,
       });
@@ -270,6 +303,10 @@ export class SkillManager {
       const hashes: Record<string, string> = {};
       for (const record of allRecords) hashes[recordKey(record)] = record.contentHash;
       await this.sidecar.saveState({ hashes });
+
+      this.bridge.setActivitySettings(config.activity);
+      this.bridge.setCatalog(allRecords);
+      await this.bridge.ingest();
 
       this.state.scannedAt = new Date().toISOString();
     } finally {
@@ -416,11 +453,6 @@ export class SkillManager {
     this.emit();
   }
 
-  async touchProject(path: string): Promise<void> {
-    this.configStore.addRecent(path);
-    await this.configStore.save();
-  }
-
   async setSkillsCommand(command: string[] | null): Promise<void> {
     await this.configStore.update((config) => {
       config.skillsCommand = command;
@@ -466,6 +498,15 @@ export class SkillManager {
     await this.configStore.update((config) => {
       config.customSkillDirs = normalizeCustomSkillDirs(dirs);
     });
+    this.emit();
+  }
+
+  async setActivity(settings: ActivitySettings): Promise<void> {
+    const next = sanitizeActivity(settings);
+    await this.configStore.update((config) => {
+      config.activity = next;
+    });
+    this.bridge.setActivitySettings(next);
     this.emit();
   }
 
@@ -557,6 +598,7 @@ export class SkillManager {
         settings,
         locale,
         fetchImpl: this.remoteFetch ?? fetch,
+        caller: this.modelCaller,
         onEvent: sink.onEvent,
         onProgress: (progress) => {
           this.state.evaluationProgress = progress;
@@ -570,7 +612,7 @@ export class SkillManager {
       this.rebuildFindings();
       await this.saveEvaluationStore();
     } catch (error) {
-      this.state.evaluationError = error instanceof Error ? error.message : String(error);
+      this.state.evaluationError = toErrorMessage(error);
       throw error;
     } finally {
       sink.flush();
@@ -603,6 +645,7 @@ export class SkillManager {
         settings,
         locale,
         fetchImpl: this.remoteFetch ?? fetch,
+        caller: this.modelCaller,
         onEvent: sink.onEvent,
       });
       this.state.verdicts = verdicts;
@@ -611,7 +654,7 @@ export class SkillManager {
       this.rebuildFindings();
       await this.saveEvaluationStore();
     } catch (error) {
-      this.state.evaluationError = error instanceof Error ? error.message : String(error);
+      this.state.evaluationError = toErrorMessage(error);
       throw error;
     } finally {
       sink.flush();
@@ -633,86 +676,19 @@ export class SkillManager {
    * a single stream and one final result.
    */
   runAdd(source: string, targets: AddTarget[]): AsyncOp {
-    const cli = this.ensureCli();
-    const runOne = (target: AddTarget): AsyncOp => {
-      const args = ['add', source, '-y'];
-      if (target.scope === 'global') args.push('-g');
-      args.push('-s', '*', '-a', '*');
-      return cli.run(args, { cwd: target.cwd });
-    };
-
-    if (targets.length <= 1) {
-      return runOne(targets[0] ?? { scope: 'global' });
-    }
-
-    const id = `op-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    let current: AsyncOp | null = null;
-    let cancelled = false;
-    let settle!: (result: OpResult) => void;
-    const result = new Promise<OpResult>((resolve) => {
-      settle = resolve;
-    });
-
-    const lines = (async function* () {
-      let ok = true;
-      let code: number | null = 0;
-      try {
-        for (const target of targets) {
-          if (cancelled) {
-            ok = false;
-            code = null;
-            break;
-          }
-          yield `# ${target.scope === 'global' ? 'global' : (target.cwd ?? 'project')}`;
-          const op = runOne(target);
-          current = op;
-          for await (const line of op.lines) yield line;
-          const outcome = await op.result;
-          if (!outcome.ok) {
-            ok = false;
-            code = outcome.code;
-          }
-        }
-      } finally {
-        current = null;
-        settle({ ok, code });
-      }
-    })();
-
-    return {
-      id,
-      title: `add ${source}`,
-      lines,
-      result,
-      cancel: () => {
-        cancelled = true;
-        current?.cancel();
-      },
-    };
+    return runAdd(this.ensureCli(), source, targets);
   }
 
   runRemove(name: string, options: { scope: Scope; cwd?: string }): AsyncOp {
-    const cli = this.ensureCli();
-    const args = ['remove', name, '-y'];
-    if (options.scope === 'global') args.push('-g');
-    return cli.run(args, { cwd: options.cwd });
+    return runRemove(this.ensureCli(), name, options);
   }
 
-  runUpdate(
-    names: string[],
-    options: { scope: Scope; cwd?: string },
-  ): AsyncOp {
-    const cli = this.ensureCli();
-    const args = ['update', ...names, '-y'];
-    args.push(options.scope === 'global' ? '-g' : '-p');
-    return cli.run(args, { cwd: options.cwd });
+  runUpdate(names: string[], options: { scope: Scope; cwd?: string }): AsyncOp {
+    return runUpdate(this.ensureCli(), names, options);
   }
 
   runInit(name: string | null, cwd: string): AsyncOp {
-    const cli = this.ensureCli();
-    const args = ['init'];
-    if (name) args.push(name);
-    return cli.run(args, { cwd });
+    return runInit(this.ensureCli(), name, cwd);
   }
 
   private ensureCli(): SkillsCli {

@@ -79,6 +79,7 @@ function snapshot(): Snapshot {
         baseUrl: 'https://api.openai.com/v1',
         model: 'gpt-4o',
       },
+      activity: { enabled: true, storePhrase: true, retentionDays: 90, maxPhraseChars: 300 },
     },
     configPath: '/tmp/config/config.json',
     cliAvailable: true,
@@ -91,6 +92,20 @@ function snapshot(): Snapshot {
     reviewing: false,
     evaluationProgress: null,
     evaluationError: null,
+    activityCounts: {},
+  };
+}
+
+function emptyActivityStats() {
+  return {
+    total: 0,
+    uniqueSkills: 0,
+    activeAgents: 0,
+    unmatched: 0,
+    bySkill: [],
+    byAgent: [],
+    byDay: [],
+    phraseConflicts: [],
   };
 }
 
@@ -196,9 +211,16 @@ function makeApi(): SkillCatApi {
       lockFiles: [],
       warnings: [],
     })),
+    listBridges: vi.fn(async () => []),
+    installBridge: vi.fn(async () => {}),
+    uninstallBridge: vi.fn(async () => {}),
+    activityStats: vi.fn(async () => emptyActivityStats()),
+    activityEvents: vi.fn(async () => []),
+    clearActivity: vi.fn(async () => {}),
     onStateChanged: vi.fn(() => () => {}),
     onOpEvent: vi.fn(() => () => {}),
     onEvaluationEvent: vi.fn(() => () => {}),
+    onActivity: vi.fn(() => () => {}),
   };
 }
 
@@ -417,13 +439,13 @@ describe('App', () => {
     });
     renderApp(api);
 
-    expect(await screen.findByText('/tmp/workspace/alpha-app')).toBeTruthy();
-    expect(screen.getByText('/tmp/workspace/beta-tool')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /alpha-app/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /beta-tool/ })).toBeTruthy();
 
     fireEvent.change(screen.getByPlaceholderText('搜索项目'), { target: { value: 'beta' } });
 
-    expect(screen.queryByText('/tmp/workspace/alpha-app')).toBeNull();
-    expect(screen.getByText('/tmp/workspace/beta-tool')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /alpha-app/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /beta-tool/ })).toBeTruthy();
   });
 
   it('shows the global loading bar while a scan is in progress', async () => {
@@ -539,5 +561,137 @@ describe('App', () => {
     expect(await screen.findByText('Use this skill for PDF work.')).toBeTruthy();
     expect(screen.getByText('# PDF Processing Guide')).toBeTruthy();
     expect(screen.getByText('reference.md')).toBeTruthy();
+  });
+
+  it('switches between the global and project scopes', async () => {
+    const api = makeApi();
+    const projectPath = '/tmp/workspace/demo-project';
+    vi.mocked(api.getSnapshot).mockResolvedValue({
+      ...snapshot(),
+      projects: [
+        {
+          path: projectPath,
+          records: [record({ name: 'project-only', scope: 'project', projectPath })],
+        },
+      ],
+    });
+    renderApp(api);
+
+    expect(await screen.findByText('alpha')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /demo-project/ }));
+
+    expect((await screen.findAllByText('project-only')).length).toBeGreaterThan(0);
+    expect(screen.queryByText('alpha')).toBeNull();
+  });
+
+  it('filters the skills list and shows the match count', async () => {
+    const api = makeApi();
+    renderApp(api);
+
+    await screen.findByText('alpha');
+    expect(screen.getByText('2/2')).toBeTruthy();
+
+    fireEvent.change(screen.getByPlaceholderText('过滤 name / 描述 / 触发词 / 来源'), {
+      target: { value: 'alpha' },
+    });
+
+    expect(screen.getByText('1/2')).toBeTruthy();
+    expect(screen.getAllByText('alpha').length).toBeGreaterThan(0);
+    expect(screen.queryByText('beta')).toBeNull();
+  });
+
+  it('edits skill triggers and persists the annotation', async () => {
+    const api = makeApi();
+    renderApp(api);
+
+    await screen.findByText('alpha');
+    fireEvent.click(screen.getByRole('button', { name: '编辑触发词' }));
+
+    fireEvent.change(await screen.findByPlaceholderText('新增触发词，例如 周报'), {
+      target: { value: '周报' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '添加' }));
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(api.saveAnnotation).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'alpha', scope: 'global' }),
+        { added: [{ text: '周报', kind: 'positive' }], removed: [] },
+      );
+    });
+  });
+
+  it('keeps the unsaved state when saving settings fails', async () => {
+    const api = makeApi();
+    vi.mocked(api.setSettings).mockRejectedValue(new Error('disk full'));
+    renderApp(api);
+
+    await screen.findByText('alpha');
+    fireEvent.click(screen.getByText('设置'));
+    fireEvent.click(await screen.findByText('扫描'));
+
+    fireEvent.change(screen.getByPlaceholderText('~/Workspace'), {
+      target: { value: '/tmp/other-root' },
+    });
+    expect(screen.getByText('有未保存的修改')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '保存并刷新' }));
+
+    await waitFor(() => expect(api.setSettings).toHaveBeenCalled());
+    expect(screen.getByText('有未保存的修改')).toBeTruthy();
+  });
+
+  it('renders activity stats and clears the log', async () => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {}
+      },
+    );
+    const api = makeApi();
+    const event = {
+      id: 'e1',
+      adapterId: 'opencode',
+      agentDisplay: 'OpenCode',
+      skillName: 'alpha',
+      skillKey: 'global||alpha',
+      scope: 'global' as const,
+      task: null,
+      taskId: null,
+      source: 'model' as const,
+      phrase: 'do alpha work',
+      triggerTerm: null,
+      sessionId: null,
+      cwd: null,
+      at: '2026-01-01T00:00:00.000Z',
+    };
+    vi.mocked(api.activityEvents).mockResolvedValue([event]);
+    vi.mocked(api.activityStats).mockResolvedValue({
+      total: 1,
+      uniqueSkills: 1,
+      activeAgents: 1,
+      unmatched: 0,
+      bySkill: [
+        { key: 'global||alpha', label: 'alpha', count: 1, lastAt: event.at, lastPhrase: 'do alpha work' },
+      ],
+      byAgent: [{ key: 'opencode', label: 'OpenCode', count: 1 }],
+      byDay: [{ day: '2026-01-01', count: 1 }],
+      phraseConflicts: [],
+    });
+    renderApp(api);
+
+    fireEvent.click(await screen.findByText('运行记录'));
+
+    expect(await screen.findByText('总触发')).toBeTruthy();
+    expect(screen.getAllByText('alpha').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: '清空记录' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: '清空记录' }));
+
+    await waitFor(() => expect(api.clearActivity).toHaveBeenCalled());
   });
 });

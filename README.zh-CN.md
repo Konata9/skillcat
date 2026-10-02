@@ -48,7 +48,7 @@ agent 各自的原生目录里；彼此遮蔽；与锁文件记录的版本发�
 
 ## 功能
 
-- **库存盘点** —— 覆盖 90+ 已知 agent（Claude Code、Codex、Cursor、OpenCode、Gemini CLI、
+- **库存盘点** —— 覆盖 79 个已知 agent（Claude Code、Codex、Cursor、OpenCode、Gemini CLI、
   Windsurf、Trae 等）的全局与项目级 skill，含来源、锁文件元数据与真实链接状态
   （符号链接 / 悬空 / 副本漂移）。
 - **触发画像** —— 从 `when_to_use`、`dispatch_intent`、description 及正文 "When to Use / 触发"
@@ -61,6 +61,8 @@ agent 各自的原生目录里；彼此遮蔽；与锁文件记录的版本发�
   删除条目不会删除文件。
 - **远程榜单与搜索** —— 浏览 skills.sh 榜单（全部时间 / 趋势 / 热门）并搜索公开索引，
   选中后直接安装到当前作用域。
+- **运行记录**（可选）—— 安装 agent bridge（目前支持 OpenCode）后可记录 skill 的真实触发情况，
+  含触发词语、任务与按 agent / 按天的统计图表。
 - **安全操作** —— 所有变更通过底部抽屉流式显示进度，带二次确认，可随时取消。
 - **桌面体验** —— 亮色 / 暗色双主题、中文 / English 界面（默认跟随系统语言）、代理支持，
   以及诊断工具 doctor。
@@ -137,6 +139,7 @@ ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-
 | [docs/analysis-rules.md](docs/analysis-rules.md) | 完整的确定性 / 启发式规则表 |
 | [docs/ai-evaluation.md](docs/ai-evaluation.md) | LLM 评分、候选对判定、模型供应商与远程榜单 |
 | [docs/configuration.md](docs/configuration.md) | 配置与数据位置、`config.json` 字段、代理、迁移 |
+| [docs/integrations.md](docs/integrations.md) | 运行监听：适配器模型、OpenCode 集成、隐私与保留 |
 | [docs/development.md](docs/development.md) | 开发命令、项目结构、测试、新增 agent |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | 已知限制与常见问题 |
 

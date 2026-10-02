@@ -5,14 +5,13 @@
  * that no heuristic flagged but the AI confirmed become new findings. Verdicts
  * never hide a finding — a false positive is annotated, not removed.
  */
-import { sortFindings } from '../analysis.js';
-import { recordKey } from '../keys.js';
+import { sortFindings } from '../findings.js';
+import { pairKey } from '../keys.js';
 import type {
   AiPairVerdict,
   AnalysisRule,
   EvaluationIssueKind,
   Finding,
-  SkillRef,
 } from '../types.js';
 
 const AI_RULE: Record<EvaluationIssueKind, AnalysisRule> = {
@@ -22,13 +21,6 @@ const AI_RULE: Record<EvaluationIssueKind, AnalysisRule> = {
   boundary: 'ai-boundary',
   quality: 'ai-quality',
 };
-
-/** Unordered pair identity used to match verdicts with findings. */
-export function pairKey(skills: SkillRef[]): string | null {
-  if (skills.length !== 2) return null;
-  const keys = skills.map((skill) => recordKey(skill)).sort();
-  return `${keys[0]}|${keys[1]}`;
-}
 
 function aiFinding(verdict: AiPairVerdict): Finding {
   return {

@@ -2,8 +2,8 @@
  * Sidecar storage for data that must not touch skill directories: human
  * trigger annotations and the previous scan's content hashes.
  */
-import { pairKey } from './evaluation/verdicts.js';
 import { atomicWriteFile, ensureDir, readJsonSafe } from './fs-utils.js';
+import { pairKey } from './keys.js';
 import { annotationsFilePath, evaluationFilePath, stateFilePath } from './paths.js';
 import type {
   AiPairVerdict,
@@ -16,29 +16,64 @@ import type {
   SkillRef,
 } from './types.js';
 
+const ISSUE_KINDS: readonly EvaluationIssueKind[] = [
+  'duplicate',
+  'conflict',
+  'quality',
+  'trigger',
+  'boundary',
+];
+const SEVERITIES: readonly EvaluationSeverity[] = ['error', 'warn', 'info'];
+
+function toIssueKind(value: unknown): EvaluationIssueKind {
+  return typeof value === 'string' && (ISSUE_KINDS as readonly string[]).includes(value)
+    ? (value as EvaluationIssueKind)
+    : 'duplicate';
+}
+
+function toSeverity(value: unknown): EvaluationSeverity {
+  return typeof value === 'string' && (SEVERITIES as readonly string[]).includes(value)
+    ? (value as EvaluationSeverity)
+    : 'warn';
+}
+
+/**
+ * Validates one persisted verdict. A corrupted `evaluation.json` must not leak
+ * invalid `kind`/`severity` union values into the findings pipeline.
+ */
+function sanitizeVerdict(raw: unknown): AiPairVerdict | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const verdict = raw as Record<string, unknown>;
+  if (!Array.isArray(verdict.skills) || verdict.skills.length !== 2) return null;
+  const skills = verdict.skills as [SkillRef, SkillRef];
+  const key = pairKey(skills);
+  if (!key) return null;
+  const rawVerdict = verdict.verdict;
+  return {
+    pairKey: key,
+    skills,
+    kind: toIssueKind(verdict.kind),
+    verdict:
+      rawVerdict === 'confirmed' || rawVerdict === 'false-positive' || rawVerdict === 'uncertain'
+        ? rawVerdict
+        : 'uncertain',
+    severity: toSeverity(verdict.severity),
+    title: typeof verdict.title === 'string' ? verdict.title : '',
+    detail: typeof verdict.detail === 'string' ? verdict.detail : '',
+    suggestion: typeof verdict.suggestion === 'string' ? verdict.suggestion : null,
+  };
+}
+
+function sanitizeVerdicts(raw: unknown): AiPairVerdict[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map(sanitizeVerdict)
+    .filter((verdict): verdict is AiPairVerdict => verdict !== null);
+}
+
 /** Maps the pre-verdict persisted `issues` array onto confirmed verdicts. */
 function legacyIssuesToVerdicts(raw: unknown): AiPairVerdict[] {
-  if (!Array.isArray(raw)) return [];
-  const verdicts: AiPairVerdict[] = [];
-  for (const item of raw) {
-    if (typeof item !== 'object' || item === null) continue;
-    const issue = item as Record<string, unknown>;
-    if (!Array.isArray(issue.skills) || issue.skills.length !== 2) continue;
-    const skills = issue.skills as [SkillRef, SkillRef];
-    const key = pairKey(skills);
-    if (!key) continue;
-    verdicts.push({
-      pairKey: key,
-      skills,
-      kind: (issue.kind as EvaluationIssueKind) ?? 'duplicate',
-      verdict: 'confirmed',
-      severity: (issue.severity as EvaluationSeverity) ?? 'warn',
-      title: typeof issue.title === 'string' ? issue.title : '',
-      detail: typeof issue.detail === 'string' ? issue.detail : '',
-      suggestion: typeof issue.suggestion === 'string' ? issue.suggestion : null,
-    });
-  }
-  return verdicts;
+  return sanitizeVerdicts(raw).map((verdict) => ({ ...verdict, verdict: 'confirmed' }));
 }
 
 export class SidecarStore {
@@ -112,7 +147,7 @@ export class SidecarStore {
     if (value.report === undefined && value.verdicts === undefined) return null;
     return {
       report: (value.report as EvaluationReport | null) ?? null,
-      verdicts: Array.isArray(value.verdicts) ? (value.verdicts as AiPairVerdict[]) : [],
+      verdicts: sanitizeVerdicts(value.verdicts),
       verdictsAt: typeof value.verdictsAt === 'string' ? value.verdictsAt : null,
       verdictsSignature: typeof value.verdictsSignature === 'string' ? value.verdictsSignature : null,
     };

@@ -1,7 +1,10 @@
 import type {
+  ActivitySettings,
+  ActivityStats,
   AddTarget,
   Annotation,
   AppConfig,
+  BridgeStatus,
   DoctorReport,
   EvaluationEvent,
   EvaluationProgress,
@@ -14,6 +17,7 @@ import type {
   ProjectInfo,
   RemoteSkill,
   RemoteSkillDetail,
+  RuntimeSkillEvent,
   Scope,
   SkillRecord,
   UpdateCheckResult,
@@ -41,6 +45,8 @@ export interface Snapshot {
   reviewing: boolean;
   evaluationProgress: EvaluationProgress | null;
   evaluationError: string | null;
+  /** Per-skill trigger counts (`scope|project|name` -> count). */
+  activityCounts: Record<string, number>;
 }
 
 export interface SkillRefLite {
@@ -68,6 +74,7 @@ export interface SettingsPatch {
   showInternal?: boolean;
   customSkillDirs?: string[];
   llm?: LlmSettings;
+  activity?: ActivitySettings;
 }
 
 export interface SkillCatApi {
@@ -98,11 +105,19 @@ export interface SkillCatApi {
   revealConfig(): Promise<void>;
   reloadConfig(): Promise<void>;
   doctor(): Promise<DoctorReport>;
+  listBridges(): Promise<BridgeStatus[]>;
+  installBridge(id: string): Promise<void>;
+  uninstallBridge(id: string): Promise<void>;
+  activityStats(): Promise<ActivityStats>;
+  activityEvents(): Promise<RuntimeSkillEvent[]>;
+  clearActivity(): Promise<void>;
   onStateChanged(callback: (snapshot: Snapshot) => void): () => void;
   onOpEvent(callback: (event: OpEvent) => void): () => void;
   onEvaluationEvent(callback: (event: EvaluationEvent) => void): () => void;
+  onActivity(callback: (events: RuntimeSkillEvent[]) => void): () => void;
 }
 
+/** Request/response channels (invoked from the renderer). */
 export const CH = {
   snapshot: 'app:snapshot',
   refresh: 'app:refresh',
@@ -131,7 +146,22 @@ export const CH = {
   configReveal: 'config:reveal',
   configReload: 'config:reload',
   doctor: 'app:doctor',
+  bridgesList: 'bridges:list',
+  bridgesInstall: 'bridges:install',
+  bridgesUninstall: 'bridges:uninstall',
+  activityStats: 'activity:stats',
+  activityEvents: 'activity:events',
+  activityClear: 'activity:clear',
+} as const;
+
+export type Channel = (typeof CH)[keyof typeof CH];
+
+/** One-way main→renderer event channels. */
+export const EVENTS = {
   stateChanged: 'event:state-changed',
   opEvent: 'event:op',
   evaluationEvent: 'event:evaluation',
+  activityEvent: 'event:activity',
 } as const;
+
+

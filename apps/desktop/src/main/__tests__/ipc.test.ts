@@ -1,10 +1,10 @@
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { SkillManager } from '@skillcat/core';
-import { CH, type OpEvent, type Snapshot } from '../shared/contract';
-import { registerIpc, type IpcMainLike } from './ipc';
+import { CH, EVENTS, type OpEvent, type Snapshot } from '../../shared/contract';
+import { registerIpc, type IpcMainLike } from '../ipc';
 
 type Handler = (event: unknown, ...args: unknown[]) => unknown;
 
@@ -179,12 +179,14 @@ describe('ipc contract', () => {
     expect(opId).toBeTruthy();
 
     await new Promise((resolve) => setTimeout(resolve, 500));
-    const opEvents = events
-      .filter((event) => event.channel === CH.opEvent)
-      .map((event) => event.payload as OpEvent);
-    const done = opEvents.find((event) => event.done);
-    expect(done?.ok).toBe(true);
-    expect(events.some((event) => event.channel === CH.stateChanged)).toBe(true);
+    await vi.waitFor(() => {
+      const done = events
+        .filter((event) => event.channel === EVENTS.opEvent)
+        .map((event) => event.payload as OpEvent)
+        .find((event) => event.done);
+      expect(done?.ok).toBe(true);
+    });
+    expect(events.some((event) => event.channel === EVENTS.stateChanged)).toBe(true);
   });
 
   it('runs a multi-target add as a single operation', async () => {
@@ -197,15 +199,134 @@ describe('ipc contract', () => {
     });
     expect(opId).toBeTruthy();
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const opEvents = events
-      .filter((event) => event.channel === CH.opEvent)
-      .map((event) => event.payload as OpEvent);
+    let opEvents: OpEvent[] = [];
+    await vi.waitFor(() => {
+      opEvents = events
+        .filter((event) => event.channel === EVENTS.opEvent)
+        .map((event) => event.payload as OpEvent);
+      expect(opEvents.find((event) => event.done)?.ok).toBe(true);
+    });
     const lines = opEvents
       .filter((event) => event.line !== undefined)
       .map((event) => event.line);
     expect(lines).toContain('# global');
     expect(lines).toContain(`# ${projectRoot}`);
-    expect(opEvents.find((event) => event.done)?.ok).toBe(true);
+  });
+
+  it('lists bridges and installs / uninstalls reversibly', async () => {
+    const before = await call<Array<{ id: string; installed: boolean }>>(CH.bridgesList);
+    expect(before.some((bridge) => bridge.id === 'opencode')).toBe(true);
+
+    await call(CH.bridgesInstall, 'opencode');
+    const installed = await call<Array<{ id: string; installed: boolean }>>(CH.bridgesList);
+    expect(installed.find((bridge) => bridge.id === 'opencode')?.installed).toBe(true);
+
+    await call(CH.bridgesUninstall, 'opencode');
+    const after = await call<Array<{ id: string; installed: boolean }>>(CH.bridgesList);
+    expect(after.find((bridge) => bridge.id === 'opencode')?.installed).toBe(false);
+  });
+
+  it('ingests and clears bridge trigger events', async () => {
+    await writeFile(
+      join(configDir, 'runtime-spool.jsonl'),
+      `${JSON.stringify({
+        v: 1,
+        adapterId: 'opencode',
+        kind: 'tool',
+        name: 'alpha',
+        phrase: 'do alpha work',
+        task: 'Task A',
+        ts: Date.now(),
+      })}\n`,
+    );
+    await call(CH.refresh);
+
+    const activityEvents = await call<Array<{ skillName: string }>>(CH.activityEvents);
+    expect(activityEvents.some((event) => event.skillName === 'alpha')).toBe(true);
+
+    const stats = await call<{ total: number }>(CH.activityStats);
+    expect(stats.total).toBeGreaterThan(0);
+
+    const snapshot = await call<Snapshot>(CH.snapshot);
+    expect(Object.keys(snapshot.activityCounts).length).toBeGreaterThan(0);
+
+    await call(CH.activityClear);
+    expect(await call<Array<unknown>>(CH.activityEvents)).toHaveLength(0);
+  });
+
+  it('registers, pins, lists and removes projects', async () => {
+    const path = join(projectRoot, 'registry-project');
+    await mkdir(path, { recursive: true });
+
+    await call(CH.projectsAdd, path);
+    let projects = await call<Array<{ path: string; registered: boolean; pinned: boolean }>>(
+      CH.projectsList,
+    );
+    expect(projects.find((entry) => entry.path === path)).toMatchObject({
+      registered: true,
+      pinned: false,
+    });
+
+    await call(CH.projectsPin, path, true);
+    projects = await call(CH.projectsList);
+    expect(projects.find((entry) => entry.path === path)?.pinned).toBe(true);
+
+    await call(CH.projectsRemove, path);
+    projects = await call(CH.projectsList);
+    expect(projects.some((entry) => entry.path === path)).toBe(false);
+  });
+
+  it('persists thresholds, llm and activity settings', async () => {
+    await call(CH.settingsSet, {
+      thresholds: { overlap: 0.42, duplicate: 0.6 },
+      llm: {
+        enabled: true,
+        provider: 'openai',
+        apiKey: 'sk-x',
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-4o',
+      },
+      activity: { enabled: true, storePhrase: true, retentionDays: 60, maxPhraseChars: 200 },
+    });
+
+    const snapshot = await call<Snapshot>(CH.snapshot);
+    expect(snapshot.config.thresholds.overlap).toBe(0.42);
+    expect(snapshot.config.thresholds.duplicate).toBe(0.6);
+    expect(snapshot.config.llm.apiKey).toBe('sk-x');
+    expect(snapshot.config.activity.retentionDays).toBe(60);
+  });
+
+  it('returns a doctor report for the configured directory', async () => {
+    const report = await call<{ configDir: string; warnings: Array<{ code: string }> }>(CH.doctor);
+    expect(report.configDir).toBe(configDir);
+    expect(Array.isArray(report.warnings)).toBe(true);
+  });
+
+  it('rejects non-https external URLs', async () => {
+    await expect(call(CH.openExternal, 'http://example.com')).rejects.toThrow(/https/);
+    await expect(call(CH.openExternal, 'not a url')).rejects.toThrow();
+  });
+
+  it('emits a terminal event and releases the op when it fails', async () => {
+    await call(CH.settingsSet, { skillsCommand: ['false'] });
+    events.length = 0;
+
+    await call(CH.opStart, {
+      kind: 'update',
+      names: ['alpha'],
+      scope: 'global',
+      title: 'failing update',
+    });
+
+    await vi.waitFor(() => {
+      const done = events
+        .filter((event) => event.channel === EVENTS.opEvent)
+        .map((event) => event.payload as OpEvent)
+        .find((event) => event.done);
+      expect(done?.ok).toBe(false);
+    });
+
+    // Restore a passing CLI for any later test.
+    await call(CH.settingsSet, { skillsCommand: ['true'] });
   });
 });

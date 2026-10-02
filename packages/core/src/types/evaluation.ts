@@ -7,11 +7,14 @@
  */
 import type { LlmProvider } from './config.js';
 import type { SkillRef } from './domain.js';
-import type { AiVerdict } from './findings.js';
+import type { AiVerdict, Severity } from './findings.js';
 
 export type EvaluationIssueKind = 'duplicate' | 'conflict' | 'quality' | 'trigger' | 'boundary';
 
-export type EvaluationSeverity = 'error' | 'warn' | 'info';
+/** Language the evaluation prose is generated in. */
+export type EvaluationLocale = 'zh' | 'en';
+
+export type EvaluationSeverity = Severity;
 
 export type EvaluationGrade = 'A' | 'B' | 'C' | 'D';
 
@@ -43,7 +46,7 @@ export interface EvaluationReport {
   provider: LlmProvider;
   model: string;
   /** Language the prose was generated in. */
-  locale: 'zh' | 'en';
+  locale: EvaluationLocale;
   /**
    * Fingerprint of the evaluated input (skill content hashes + model). Used to
    * flag the report as stale when skills change; it never hides the report.

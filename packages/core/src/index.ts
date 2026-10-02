@@ -4,7 +4,8 @@
  */
 export * from './types.js';
 export { SkillManager, type ManagerState, type RefreshOptions } from './manager.js';
-export { analyzeSkills, sortFindings, type AnalysisInput } from './analysis.js';
+export { analyzeSkills, type AnalysisInput } from './analysis.js';
+export { sortFindings } from './findings.js';
 export {
   extractTriggers,
   applyAnnotation,
@@ -12,7 +13,7 @@ export {
   splitList,
   type TriggerInput,
 } from './triggers.js';
-export { recordKey, annotationKey } from './keys.js';
+export { recordKey, annotationKey, scopeNameKey, pairKey } from './keys.js';
 export {
   tokenize,
   computeOverlaps,
@@ -22,7 +23,12 @@ export {
   type OverlapPair,
   type SkillVector,
 } from './similarity.js';
-export { parseFrontmatter, parseSkillDir, findSkillMd, buildFileInfos } from './skill.js';
+export {
+  parseFrontmatter,
+  parseSkillDir,
+  hasSkillMd,
+  buildFileInfos,
+} from './skill.js';
 export {
   scanScope,
   readLock,
@@ -57,6 +63,17 @@ export {
 } from './cli/remote-search.js';
 export { ConfigStore, defaultConfig, sanitizeLlm } from './config.js';
 export {
+  ACTIVITY_PHRASE_MAX,
+  ACTIVITY_PHRASE_MIN,
+  ACTIVITY_RETENTION_MAX,
+  ACTIVITY_RETENTION_MIN,
+  defaultActivitySettings,
+  sanitizeActivity,
+} from './bridge/limits.js';
+export { BridgeService, type BridgeServiceOptions } from './bridge/service.js';
+export { BRIDGE_ADAPTERS, listBridgeAdapters, getBridgeAdapter } from './bridge/registry.js';
+export { computeActivityStats } from './bridge/stats.js';
+export {
   LLM_PROVIDERS,
   defaultLlmSettings,
   getLlmPreset,
@@ -79,12 +96,10 @@ export {
   type ModelCallRequest,
   type EvaluateOptions,
   type EvaluationRunResult,
-  type EvaluationLocale,
 } from './evaluation/evaluate.js';
 export { createEvaluationModel } from './evaluation/model.js';
-export { applyVerdicts, pairKey } from './evaluation/verdicts.js';
+export { applyVerdicts } from './evaluation/verdicts.js';
 export {
-  EVALUATION_PROMPT_VERSION,
   buildScoringPrompt,
   buildVerdictPrompt,
   buildSummaryPrompt,

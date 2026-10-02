@@ -35,14 +35,22 @@ skillcat/
 ├─ packages/core/         @skillcat/core
 │  └─ src/
 │     ├─ index.ts         公共 API（消费者只从这里 import）
-│     ├─ manager.ts       SkillManager 门面：配置、扫描、分析、操作
+│     ├─ manager.ts       SkillManager 门面：状态、配置、操作编排
+│     ├─ scan.ts          扫描流水线（全局 + 各项目），供 manager 调用
 │     ├─ discovery.ts     文件系统发现 + 链接状态计算
 │     ├─ skill.ts         SKILL.md / frontmatter 解析
 │     ├─ triggers.ts      触发词提取与人工标注合并
+│     ├─ bridge/          运行触发监听：适配器注册表、收件箱、匹配、统计
 │     ├─ similarity.ts    IDF 加权重叠 + 余弦 + Jaccard
-│     ├─ analysis.ts      规则引擎
+│     ├─ analysis.ts      规则引擎：ANALYSIS_RULES 注册表 + 结果排序
+│     ├─ rules/           独立规则模块（records / scopes / similarity / helpers）
+│     ├─ findings.ts      finding 排序（规则引擎与 AI 判定共用）
+│     ├─ refs.ts          skill 身份快照（规则与评估共用）
+│     ├─ errors.ts        unknown 错误 → message
 │     ├─ evaluation/      LLM 评估（evaluate / model / prompt / verdicts）
-│     ├─ cli/             skills CLI 适配、代理、远程搜索
+│     ├─ cli/             skills CLI 适配、操作构造（operations）、代理、远程搜索
+│     ├─ coerce.ts        frontmatter / API 值的统一强制转换
+│     ├─ http.ts          带超时的 fetch + JSON 解析封装
 │     ├─ config.ts        config.json 持久化与净化
 │     ├─ sidecar.ts       annotations / state / evaluation sidecar
 │     ├─ paths.ts         跨平台路径布局
@@ -55,7 +63,7 @@ skillcat/
 ```
 
 `packages/core/src/types.ts` 只做 re-export，实际定义按域拆分在 `src/types/`：
-`domain`（skill/项目模型）、`findings`（分析/诊断）、`config`、`storage`、`cli`、`evaluation`。
+`domain`（skill/项目模型）、`findings`（分析/诊断）、`config`、`storage`、`cli`、`evaluation`、`bridge`。
 
 ## 数据流
 
@@ -63,14 +71,20 @@ skillcat/
    已保存的评估），解析 `skills` CLI；随后执行一次 `refresh()`。首次扫描失败不会阻止应用启动。
 2. **扫描**（`core/discovery.ts`）：读取全局与项目锁文件，枚举 canonical 目录、各 agent 目录与
    自定义目录，解析每个 skill，计算内容哈希与各 agent 的链接状态，合并人工标注。
-3. **分析**（`core/analysis.ts`）：对全部记录运行确定性 + 启发式规则，得到 `baseFindings`；
-   再把已保存的 AI 判定（verdicts）应用到 findings 上。
+3. **分析**（`core/analysis.ts`）：按 `rules/` 注册表对全部记录运行确定性 + 启发式规则，得到
+   `baseFindings`；再把已保存的 AI 判定（verdicts）应用到 findings 上。新增规则只需添加一个
+   规则模块并登记到 `ANALYSIS_RULES`，无需改动引擎。
 4. **广播**：`SkillManager` 通过 `onChange` 通知订阅者；主进程把状态经 IPC 推给渲染进程。
 5. **操作**：所有变更（add / remove / update）由 `SkillManager` 构造参数并委托官方 `skills` CLI，
    以 `AsyncOp`（流式行 + 结果 Promise + cancel）形式返回给 UI 抽屉展示。macOS 正式版自带该 CLI
    （`resources/skills-cli`，由 `scripts/bundle-skills-cli.mjs` 生成），用应用自身的 Electron
    二进制以 `ELECTRON_RUN_AS_NODE` 运行，因此**不依赖宿主系统的 Node**；Windows 使用系统
    Node / `npx`。
+6. **运行监听（可选）**：用户在设置中安装某个 agent 的 bridge 插件后，插件把触发记录追加到
+   配置目录的 `runtime-spool.jsonl`；`BridgeService` 监听配置目录并按文件名过滤，用 `bridge/registry.ts` 中
+   注册的适配器把记录归一化、匹配到已扫描的 skill，写入 `runtime-events.json` 并广播。适配器
+   是唯一的 agent 相关代码，新增 agent 只加一个适配器模块。详见
+   [integrations.md](./integrations.md)。
 
 ## 进程与安全
 
@@ -79,9 +93,18 @@ skillcat/
 - **preload**：`contextBridge` 暴露类型化 API，渲染进程不直接接触 Node。
 - **renderer**：React 界面，通过 `@shared/contract` 的类型与 preload 通信。
 
-安全边界：`contextIsolation: true` + `nodeIntegration: false`；IPC 参数经 zod 校验；
-渲染进程不接触文件系统。主进程启动时会设置窗口 `backgroundColor` 并等待 `ready-to-show`，
-避免白屏闪烁。
+安全边界：`contextIsolation: true` + `nodeIntegration: false` + `sandbox: true`；IPC 参数经 zod
+校验；渲染进程不接触文件系统。窗口锁定在自身文档内：阻止 `will-navigate` 离开当前页面，
+`setWindowOpenHandler` 拒绝新窗口，两者的 https 目标都转交系统浏览器打开（`openExternal`
+在主进程侧也再次校验仅允许 https）。渲染页面的 CSP 由 `electron.vite.config.ts` 中的
+`skillcat-csp` 插件注入：开发模式允许 Fast Refresh 所需的内联脚本与 Vite websocket，
+生产模式收紧为 `script-src 'self'`、`connect-src 'none'`（开发模式放宽以支持 Fast Refresh）；
+两种模式都附加 `object-src 'none'` / `base-uri 'self'` / `form-action 'none'`。主进程还对
+`session.defaultSession` 设置 `setPermissionRequestHandler` / `setPermissionCheckHandler`，一律
+拒绝可选权限（媒体、地理位置、通知等）。主进程启动时会
+设置窗口 `backgroundColor` 并等待 `ready-to-show`，避免白屏闪烁。请求频道在
+`shared/contract.ts` 的 `CH` 中声明（事件频道在 `EVENTS`），`main/ipc.ts` 以一个
+`Record<Channel, handler>` 注册：漏写或写错频道都是编译错误。
 
 ## 代理
 

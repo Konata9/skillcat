@@ -103,12 +103,9 @@ export function AppSidebar({
               scopeKey === scope.key && 'bg-accent text-foreground',
             )}
           >
-            <span>
+            <span className="truncate">
               {scope.label} <span className="text-[11px] text-muted-foreground">({scope.count})</span>
             </span>
-            {scope.path ? (
-              <span className="block truncate text-[11px] text-muted-foreground">{scope.path}</span>
-            ) : null}
           </button>
         ))}
         {query && projectCount === 0 ? (

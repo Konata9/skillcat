@@ -8,6 +8,7 @@ import { AGENTS } from './agents.js';
 import { readLock } from './discovery.js';
 import { isDirectory, pathExists, readdirSafe, safeRealpath } from './fs-utils.js';
 import { expandHome, getProjectLockPath, getProjectSkillsDir, isGlobalSkillDir } from './paths.js';
+import { hasSkillMd } from './skill.js';
 
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', 'out', '.next', '.nuxt', '.cache', '.turbo',
@@ -94,12 +95,7 @@ async function hasGenericSkillsDir(root: string): Promise<boolean> {
   const entries = await readdirSafe(skillsDir, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
-    if (
-      (await pathExists(join(skillsDir, entry.name, 'SKILL.md'))) ||
-      (await pathExists(join(skillsDir, entry.name, 'skill.md')))
-    ) {
-      return true;
-    }
+    if (await hasSkillMd(join(skillsDir, entry.name))) return true;
   }
   return false;
 }
@@ -111,12 +107,7 @@ async function countSkills(root: string): Promise<number | null> {
     let count = 0;
     for (const entry of entries) {
       if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
-      if (
-        (await pathExists(join(canonical, entry.name, 'SKILL.md'))) ||
-        (await pathExists(join(canonical, entry.name, 'skill.md')))
-      ) {
-        count += 1;
-      }
+      if (await hasSkillMd(join(canonical, entry.name))) count += 1;
     }
     return count;
   }

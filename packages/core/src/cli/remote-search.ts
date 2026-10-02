@@ -3,6 +3,8 @@
  * over `npx skills find` output. Output is sanitized before it reaches the UI.
  */
 import { execa } from 'execa';
+import { coerceString, coerceTrimmed } from '../coerce.js';
+import { fetchJson } from '../http.js';
 import { parseFrontmatter } from '../skill.js';
 import type { LeaderboardKind, RemoteSkill, RemoteSkillDetail, RemoteSkillFile } from '../types.js';
 import { stripAnsi } from './ansi.js';
@@ -50,13 +52,11 @@ export async function searchRemoteApi(
 ): Promise<RemoteSkill[]> {
   const params = new URLSearchParams({ q: query, limit: SEARCH_LIMIT });
   if (owner) params.set('owner', owner);
-  const response = await fetchImpl(`${SEARCH_API_BASE}/api/search?${params.toString()}`, {
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!response.ok) {
-    throw new Error(`search API responded with ${response.status}`);
-  }
-  const data = (await response.json()) as SearchApiResponse;
+  const data = await fetchJson<SearchApiResponse>(
+    `${SEARCH_API_BASE}/api/search?${params.toString()}`,
+    'search API',
+    { fetchImpl },
+  );
   return (data.skills ?? [])
     .map((skill) => ({
       name: sanitize(skill.name),
@@ -97,13 +97,11 @@ export async function fetchLeaderboardApi(
   page = 0,
   fetchImpl: FetchLike = fetch,
 ): Promise<RemoteSkill[]> {
-  const response = await fetchImpl(`${SEARCH_API_BASE}/api/skills/${kind}/${page}`, {
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!response.ok) {
-    throw new Error(`leaderboard API responded with ${response.status}`);
-  }
-  const data = (await response.json()) as LeaderboardApiResponse;
+  const data = await fetchJson<LeaderboardApiResponse>(
+    `${SEARCH_API_BASE}/api/skills/${kind}/${page}`,
+    'leaderboard API',
+    { fetchImpl },
+  );
   return (data.skills ?? [])
     .map((skill) => {
       const source = sanitize(skill.source);
@@ -129,12 +127,6 @@ interface DownloadApiResponse {
   hash?: unknown;
 }
 
-function coerceText(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (value === null || value === undefined) return '';
-  return String(value);
-}
-
 /**
  * Fetches a skill's published files from skills.sh (`/api/download/<slug>`)
  * and parses SKILL.md. This is the same payload the website renders, so the
@@ -150,13 +142,11 @@ export async function fetchRemoteSkillDetail(
     .map((segment) => encodeURIComponent(segment))
     .join('/');
   if (!path) throw new Error('skill slug is required');
-  const response = await fetchImpl(`${SEARCH_API_BASE}/api/download/${path}`, {
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!response.ok) {
-    throw new Error(`skill detail API responded with ${response.status}`);
-  }
-  const data = (await response.json()) as DownloadApiResponse;
+  const data = await fetchJson<DownloadApiResponse>(
+    `${SEARCH_API_BASE}/api/download/${path}`,
+    'skill detail API',
+    { fetchImpl, timeoutMs: 20_000 },
+  );
   const files: RemoteSkillFile[] = (data.files ?? [])
     .map((file) => ({
       path: sanitize(file.path),
@@ -170,11 +160,9 @@ export async function fetchRemoteSkillDetail(
   const segments = slug.split('/').filter((segment) => segment.length > 0);
   const source = segments.slice(0, -1).join('/');
   const fallbackName = segments.at(-1) ?? slug;
-  const rawName = frontmatter.name;
-  const name = typeof rawName === 'string' && rawName.trim() ? rawName.trim() : fallbackName;
-  const description = coerceText(frontmatter.description).trim();
-  const rawLicense = frontmatter.license;
-  const license = typeof rawLicense === 'string' && rawLicense.trim() ? rawLicense.trim() : null;
+  const name = coerceTrimmed(frontmatter.name, fallbackName);
+  const description = coerceString(frontmatter.description).trim();
+  const license = coerceTrimmed(frontmatter.license) || null;
 
   return {
     name,

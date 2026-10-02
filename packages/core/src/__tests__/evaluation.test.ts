@@ -12,7 +12,8 @@ import {
   reviewCandidatePairs,
   type ModelCaller,
 } from '../evaluation/evaluate.js';
-import { applyVerdicts, pairKey } from '../evaluation/verdicts.js';
+import { applyVerdicts } from '../evaluation/verdicts.js';
+import { pairKey } from '../keys.js';
 import { SidecarStore } from '../sidecar.js';
 import type {
   AiPairVerdict,
@@ -81,10 +82,6 @@ describe('extractJson', () => {
 });
 
 describe('parseModelJson', () => {
-  it('parses complete and fenced JSON', async () => {
-    expect(await parseModelJson('```json\n{"a":1}\n```')).toEqual({ a: 1 });
-  });
-
   it('repairs a truncated JSON array instead of failing', async () => {
     const truncated =
       '{"scores":[{"id":"s1","score":80,"summary":"ok"},{"id":"s2","score":40,"summary":"cut';

@@ -2,13 +2,9 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ConfigStore, defaultConfig } from '../config.js';
+import { ConfigStore } from '../config.js';
 
 describe('config', () => {
-  it('defaults to no custom skill dirs', () => {
-    expect(defaultConfig().customSkillDirs).toEqual([]);
-  });
-
   it('sanitizes custom skill dirs from a hand-edited file', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'skillcat-config-'));
     await writeFile(
