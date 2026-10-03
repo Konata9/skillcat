@@ -36,7 +36,7 @@ skillcat/
 │  └─ src/
 │     ├─ index.ts         公共 API（消费者只从这里 import）
 │     ├─ manager.ts       SkillManager 门面：状态、刷新、操作编排
-│     ├─ manager/         门面协作者（state / settings / evaluation / doctor）
+│     ├─ manager/         门面协作者（state / settings / evaluation / optimization / doctor）
 │     ├─ scan.ts          扫描流水线（全局 + 各项目），供 manager 调用
 │     ├─ discovery.ts     文件系统发现（枚举 skill 目录）
 │     ├─ discovery/links.ts  各 agent 的链接状态计算
@@ -48,12 +48,12 @@ skillcat/
 │     ├─ rules/           独立规则模块（records / scopes / similarity / helpers）
 │     ├─ findings.ts      finding 排序（规则引擎与 AI 判定共用）
 │     ├─ keys.ts          skill 身份与投影（recordKey / skillRef …）
-│     ├─ evaluation/      LLM 评估（run / json / candidates / normalize / prompt / model / verdicts）
+│     ├─ evaluation/      LLM 评估与优化（run / json / candidates / normalize / optimize / prompt / model / verdicts）
 │     ├─ cli/             skills CLI 适配、操作构造（operations）、代理、远程搜索（remote-search/）
 │     ├─ coerce.ts        frontmatter / API 值的强制转换，unknown 错误 → message
 │     ├─ http.ts          带超时的 fetch + JSON 解析封装
 │     ├─ config.ts        config.json 持久化与净化
-│     ├─ sidecar.ts       annotations / state / evaluation sidecar
+│     ├─ sidecar.ts       annotations / state / evaluation / optimizer sidecar
 │     ├─ paths.ts         跨平台路径布局
 │     ├─ agents.ts        已知 agent 目录表
 │     └─ types/           按域拆分的类型定义
@@ -86,6 +86,9 @@ skillcat/
    注册的适配器把记录归一化、匹配到已扫描的 skill，写入 `runtime-events.json` 并广播。适配器
    是唯一的 agent 相关代码，新增 agent 只加一个适配器模块。详见
    [integrations.md](./integrations.md)。
+7. **AI 优化（可选，按需）**：在 skill 详情页的「优化建议」Tab 触发一次模型调用，以内置
+   `skill-optimizer` 的方法论为准则生成只读建议，写入 `optimizer.json` 并广播；重启后保留，
+   只有用户主动重新生成才覆盖。详见 [ai-evaluation.md](./ai-evaluation.md#skill-优化建议)。
 
 ## 进程与安全
 
@@ -127,6 +130,10 @@ Node 全局 `fetch` 会忽略进程启动后再设置的代理环境变量，因
 运行时依赖闭包（`tar` / `yaml` 等）拷贝到 `apps/desktop/resources/skills-cli/`，再由
 `electron-builder.yml` 中 `mac.extraResources` 放到应用的 `Resources/skills-cli/`（在 asar 之外，
 可直接执行）。Windows 暂不内置，运行时回退到系统 Node / `npx`。
+
+应用自身的 skill（`apps/desktop/resources/internal-skills/`，仓库内提交）不属于 macOS 专属：
+由 `electron-builder.yml` 顶层 `extraResources` 打进**各平台**产物的 `Resources/internal-skills/`。
+它既是 AI 优化建议的评审准则来源，也在「显示 internal skill」打开时作为普通 skill 展示。
 
 产物为未签名 macOS 应用（`electron-builder.yml` 中 `mac.identity: null`），输出到
 `apps/desktop/release/`（dmg + zip + `mac-arm64/SkillCat.app`）。

@@ -37,6 +37,7 @@ import { SidecarStore } from './sidecar.js';
 import { checkForUpdate, type UpdateCheckResult } from './update.js';
 import { DoctorService } from './manager/doctor.js';
 import { EvaluationController } from './manager/evaluation.js';
+import { OptimizationController } from './manager/optimization.js';
 import { SettingsController } from './manager/settings.js';
 import { createManagerState, type ManagerState, type RefreshOptions } from './manager/state.js';
 import type {
@@ -58,6 +59,7 @@ import type {
   RemoteSkillDetail,
   RuntimeSkillEvent,
   Scope,
+  SkillOptimization,
   SkillRecord,
 } from './types.js';
 
@@ -71,6 +73,7 @@ export class SkillManager {
 
   private readonly settingsController: SettingsController;
   private readonly evaluationController: EvaluationController;
+  private readonly optimizationController: OptimizationController;
   private readonly doctorService: DoctorService;
 
   private resolved: ResolvedCommand | null = null;
@@ -81,10 +84,12 @@ export class SkillManager {
   private copyHashCache = new Map<string, string>();
   private remoteFetch: FetchLike | null = null;
   private readonly bundledCli: BundledCli | undefined;
+  private readonly builtinSkillsDir: string | undefined;
 
   constructor(options: {
     configDir?: string;
     bundledCli?: BundledCli;
+    builtinSkillsDir?: string;
     modelCaller?: ModelCaller;
   } = {}) {
     const dir = options.configDir ?? getConfigDir();
@@ -92,6 +97,7 @@ export class SkillManager {
     this.sidecar = new SidecarStore(dir);
     this.bridge = new BridgeService({ configDir: dir });
     this.bundledCli = options.bundledCli;
+    this.builtinSkillsDir = options.builtinSkillsDir;
 
     this.settingsController = new SettingsController({
       configStore: this.configStore,
@@ -117,6 +123,15 @@ export class SkillManager {
       cli: () => this.cli,
       resolved: () => this.resolved,
     });
+    this.optimizationController = new OptimizationController({
+      configStore: this.configStore,
+      sidecar: this.sidecar,
+      state: this.state,
+      modelCaller: options.modelCaller,
+      remoteFetch: () => this.remoteFetch,
+      builtinSkillsDir: this.builtinSkillsDir,
+      emit: () => this.emit(),
+    });
 
     this.bridge.onActivity((events) => {
       this.emit();
@@ -134,6 +149,10 @@ export class SkillManager {
     this.state.verdicts = store?.verdicts ?? [];
     this.state.verdictsAt = store?.verdictsAt ?? null;
     this.state.verdictsSignature = store?.verdictsSignature ?? null;
+    // Persisted optimization results are restored so a restart never forces a
+    // fresh (token-billed) run; only an explicit regenerate replaces them.
+    const optimizer = await this.sidecar.loadOptimizer();
+    this.state.optimizations = new Map(Object.entries(optimizer));
     this.bridge.setActivitySettings(this.configStore.value.activity);
     await this.bridge.load();
     this.bridge.startWatching();
@@ -288,6 +307,7 @@ export class SkillManager {
         extraProjectPaths: options.projectPaths,
         deep: options.deep,
         copyHashCache: this.copyHashCache,
+        builtinSkillsDir: this.builtinSkillsDir,
       });
       const allRecords = scan.all;
 
@@ -513,6 +533,24 @@ export class SkillManager {
    */
   runCandidateReview(locale: EvaluationLocale): Promise<void> {
     return this.evaluationController.runCandidateReview(locale);
+  }
+
+  /**
+   * Produces read-only optimization suggestions for one skill using the
+   * built-in optimizer rubric. Requires a configured model.
+   */
+  optimizeSkill(record: SkillRecord, locale: EvaluationLocale): Promise<SkillOptimization> {
+    return this.optimizationController.optimizeSkill(record, locale);
+  }
+
+  /** Cached optimization result for a skill, or null. */
+  optimizationFor(record: SkillRecord): SkillOptimization | null {
+    return this.optimizationController.optimizationFor(record);
+  }
+
+  /** Whether the cached optimization no longer matches the skill or model. */
+  optimizationStale(record: SkillRecord): boolean {
+    return this.optimizationController.optimizationStale(record);
   }
 
   /** Checks the configured GitHub repo for a newer release (proxy-aware). */

@@ -1,16 +1,22 @@
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { evaluationFilePath, stateFilePath, annotationsFilePath } from '../paths.js';
+import {
+  annotationsFilePath,
+  evaluationFilePath,
+  optimizerFilePath,
+  stateFilePath,
+} from '../paths.js';
 import { SidecarStore } from '../sidecar.js';
+import type { SkillOptimization, SkillRef } from '../types.js';
 
 async function store(): Promise<{ dir: string; sidecar: SidecarStore }> {
   const dir = await mkdtemp(join(tmpdir(), 'skillcat-sidecar-'));
   return { dir, sidecar: new SidecarStore(dir) };
 }
 
-const goodSkill = { name: 'alpha', scope: 'global', path: '/tmp/alpha' };
+const goodSkill: SkillRef = { name: 'alpha', scope: 'global', path: '/tmp/alpha' };
 
 describe('SidecarStore evaluation sanitization', () => {
   it('coerces invalid verdict fields and drops malformed entries', async () => {
@@ -80,8 +86,7 @@ describe('SidecarStore evaluation sanitization', () => {
   });
 });
 
-describe('SidecarStore malformed files', () => {
-  it('falls back to empty state and annotations for non-object payloads', async () => {
+describe('SidecarStore malformed files', () => {  it('falls back to empty state and annotations for non-object payloads', async () => {
     const { dir, sidecar } = await store();
     await writeFile(stateFilePath(dir), JSON.stringify([1, 2, 3]));
     await writeFile(annotationsFilePath(dir), JSON.stringify('nope'));
@@ -94,5 +99,39 @@ describe('SidecarStore malformed files', () => {
     const { dir, sidecar } = await store();
     await writeFile(evaluationFilePath(dir), JSON.stringify(42));
     expect(await sidecar.loadEvaluation()).toBeNull();
+  });
+});
+
+describe('SidecarStore optimizer persistence', () => {
+  const optimization: SkillOptimization = {
+    skill: goodSkill,
+    generatedAt: '2026-01-01T00:00:00.000Z',
+    provider: 'openai',
+    model: 'gpt-4o',
+    locale: 'en',
+    signature: 'sig',
+    summary: 'Looks fine.',
+    suggestions: [{ title: 'Tighten', severity: 'low', rationale: '' }],
+  };
+
+  it('round-trips persisted optimization results', async () => {
+    const { dir, sidecar } = await store();
+    await sidecar.saveOptimizer({ 'global||alpha': optimization });
+    expect(await sidecar.loadOptimizer()).toEqual({ 'global||alpha': optimization });
+    expect(await readFile(optimizerFilePath(dir), 'utf8')).toContain('"signature": "sig"');
+  });
+
+  it('drops malformed entries from a corrupted store', async () => {
+    const { dir, sidecar } = await store();
+    await writeFile(
+      optimizerFilePath(dir),
+      JSON.stringify({
+        ok: { skill: goodSkill, suggestions: [] },
+        bad: { skill: null, suggestions: [] },
+        worse: 'not-an-object',
+        noSuggestions: { skill: goodSkill },
+      }),
+    );
+    expect(Object.keys(await sidecar.loadOptimizer())).toEqual(['ok']);
   });
 });

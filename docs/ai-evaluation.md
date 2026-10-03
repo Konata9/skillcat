@@ -1,7 +1,7 @@
 # AI 评估
 
 AI 评估是**可选**功能：SkillCat 本身不内置模型，需要用户自带密钥与端点。启用后可以为每个
-skill 评分，并让模型判定重复 / 冲突候选对。
+skill 评分、判定重复 / 冲突候选对，并在 skill 详情页生成只读的优化建议。
 
 ## 模型供应商
 
@@ -68,6 +68,21 @@ OpenAI 兼容模型经常输出不严格合法的 JSON。评估器做了多层�
 - `evaluationStale()` —— 评估签名不匹配
 - `verdictsStale()` —— 判定签名不匹配
 - 语言不匹配 —— 保存时的语言与当前界面语言不同
+
+## SKILL 优化建议
+
+除整体评分外，可在 skill 详情页的「优化建议」Tab 用同一个模型生成**只读**改进建议：
+
+- **入口**：详情页顶部 Tab（详情 / 优化建议）；**需先在设置中配置模型**，未配置时按钮禁用并提供
+  「去设置」。
+- **准则**：system prompt 以内置 skill `skill-optimizer`（产物 `Resources/internal-skills/`）的方法论
+  作为 rubric；同名用户 skill 不会被采用，避免提示词注入。内置 skill 未随包提供时退化为通用评估准则。
+- **输出**：`{ summary, suggestions[] }`，每条含 `title` / `severity`（`high` | `medium` | `low`）/
+  `rationale` 与可选的 `before`、`after`。**只读**：绝不写回 skill 文件。
+- **保留**：结果持久化到配置目录的 `optimizer.json`（按 skill 身份键控），重启后保留；只有用户主动
+  「重新生成」才覆盖，避免重复消耗 token。`optimizationSignature()`（skill 的 contentHash + 模型）
+  用于判断结果是否对应当前内容。
+- **调用**：与评分共用同一套模型接入与容错 JSON 解析（见下）。
 
 ## 远程榜单与搜索
 

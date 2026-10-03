@@ -1,10 +1,14 @@
 import * as React from 'react';
-import { useMemo, useState } from 'react';
-import type { SkillRecord } from '@skillcat/core';
+import { useEffect, useMemo, useState } from 'react';
+import type { SkillOptimization, SkillRecord } from '@skillcat/core';
 import { recordKey } from '@skillcat/core/keys';
 import { useSelection } from '@renderer/hooks/useSelection';
 import { useI18n } from '@renderer/lib/i18n';
-import { SkillDetail, type SkillDetailActions } from '../components/SkillDetail';
+import {
+  SkillDetail,
+  type SkillDetailActions,
+  type SkillDetailTab,
+} from '../components/skill-detail/SkillDetail';
 import { SkillList } from '../components/SkillList';
 import { EmptyState } from '../components/indicators';
 import { Input } from '../components/ui/input';
@@ -12,14 +16,35 @@ import { Input } from '../components/ui/input';
 export function SkillsView({
   records,
   activityCounts,
+  llmConfigured,
+  optimizations,
+  optimizingKey,
+  optimizationError,
+  onOptimize,
+  onOpenSettings,
   onOpen,
   onReveal,
   onEditTriggers,
   onUpdate,
   onRemove,
-}: { records: SkillRecord[]; activityCounts?: Record<string, number> } & SkillDetailActions): React.ReactElement {
+}: {
+  records: SkillRecord[];
+  activityCounts?: Record<string, number>;
+  llmConfigured: boolean;
+  optimizations: SkillOptimization[];
+  optimizingKey: string | null;
+  optimizationError: string | null;
+  onOptimize: (record: SkillRecord) => void;
+  onOpenSettings: () => void;
+} & SkillDetailActions): React.ReactElement {
   const { t } = useI18n();
   const [filter, setFilter] = useState('');
+  const [detailTab, setDetailTab] = useState<SkillDetailTab>('info');
+
+  const optimizationByKey = useMemo(
+    () => new Map(optimizations.map((entry) => [recordKey(entry.skill), entry])),
+    [optimizations],
+  );
 
   const filtered = useMemo(() => {
     const query = filter.trim().toLowerCase();
@@ -36,6 +61,11 @@ export function SkillsView({
     items: filtered,
     getKey: recordKey,
   });
+
+  // A newly selected skill always opens on the regular detail tab.
+  useEffect(() => {
+    setDetailTab('info');
+  }, [selectedKey]);
 
   return (
     <div className="grid min-h-0 flex-1 grid-rows-1 grid-cols-[minmax(320px,42%)_1fr]">
@@ -61,11 +91,19 @@ export function SkillsView({
           />
         </div>
       </section>
-      <section className="min-h-0 overflow-y-auto">
+      <section className="flex min-h-0 flex-col">
         {selected ? (
           <SkillDetail
             record={selected}
             triggerCount={activityCounts?.[recordKey(selected)]}
+            optimization={optimizationByKey.get(recordKey(selected)) ?? null}
+            optimizing={optimizingKey === recordKey(selected)}
+            optimizationError={optimizationError}
+            llmConfigured={llmConfigured}
+            tab={detailTab}
+            onTabChange={setDetailTab}
+            onOptimize={onOptimize}
+            onOpenSettings={onOpenSettings}
             onOpen={onOpen}
             onReveal={onReveal}
             onEditTriggers={onEditTriggers}

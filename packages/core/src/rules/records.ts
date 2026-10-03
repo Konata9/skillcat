@@ -47,6 +47,8 @@ export const danglingLinkRule: AnalysisRule = ({ records }) => {
 export const dirMissingLockRule: AnalysisRule = ({ records }) => {
   const findings: Finding[] = [];
   for (const record of records) {
+    // Built-in skills are app assets and never appear in a user lock file.
+    if (record.builtin) continue;
     if (record.lock !== null) continue;
     const key = recordKey(record);
     findings.push({
@@ -203,6 +205,8 @@ export const declaredLinkMissingRule: AnalysisRule = ({ records }) => {
 export const descriptionLintRule: AnalysisRule = ({ records }) => {
   const findings: Finding[] = [];
   for (const record of records) {
+    // Built-in skills are authored with the app; linting them is not user-facing.
+    if (record.builtin) continue;
     const lint = [];
     if (!record.description) lint.push(message('finding.descriptionLint.missingDescription'));
     else if (record.description.length < 20) {

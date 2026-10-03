@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { scanScope } from '../discovery.js';
 
 const SKILL_MD = [
@@ -164,5 +164,53 @@ describe('scanScope (project)', () => {
     });
 
     expect(result.records).toHaveLength(0);
+  });
+});
+
+describe('scanScope (built-in skills)', () => {
+  const originalHome = process.env.HOME;
+
+  afterEach(() => {
+    if (originalHome === undefined) delete process.env.HOME;
+    else process.env.HOME = originalHome;
+  });
+
+  it('hides built-in skills with internal ones, and tags them when shown', async () => {
+    const home = await mkdtemp(join(tmpdir(), 'skillcat-scan-builtin-home-'));
+    const builtinDir = await mkdtemp(join(tmpdir(), 'skillcat-scan-builtin-'));
+    await mkdir(join(builtinDir, 'skill-optimizer'), { recursive: true });
+    await writeFile(
+      join(builtinDir, 'skill-optimizer', 'SKILL.md'),
+      [
+        '---',
+        'name: skill-optimizer',
+        'description: Optimize a skill',
+        '---',
+        '# Optimizer',
+      ].join('\n'),
+    );
+    process.env.HOME = home;
+
+    const hidden = await scanScope({
+      scope: 'global',
+      annotations: {},
+      showInternal: false,
+      copyHashCache: new Map(),
+      builtinDir,
+    });
+    expect(hidden.records.find((entry) => entry.builtin)).toBeUndefined();
+
+    const shown = await scanScope({
+      scope: 'global',
+      annotations: {},
+      showInternal: true,
+      copyHashCache: new Map(),
+      builtinDir,
+    });
+    const record = shown.records.find((entry) => entry.builtin);
+    expect(record?.name).toBe('skill-optimizer');
+    expect(record?.lock).toBeNull();
+    expect(record?.links).toEqual([]);
+    expect(shown.orphans).toEqual([]);
   });
 });

@@ -75,9 +75,23 @@ function resolveBundledCli(): { node: string; cli: string } | undefined {
   return existsSync(cli) ? { node: process.execPath, cli } : undefined;
 }
 
+/**
+ * Skills shipped with the app (`resources/internal-skills`, staged as an extra
+ * resource). They are app assets, not user installs, and back SkillCat's own AI
+ * features. Returns undefined when the directory is missing (e.g. a bare dev
+ * checkout without the resources).
+ */
+function resolveBuiltinSkillsDir(): string | undefined {
+  const dir = app.isPackaged
+    ? join(process.resourcesPath, 'internal-skills')
+    : join(__dirname, '..', '..', 'resources', 'internal-skills');
+  return existsSync(dir) ? dir : undefined;
+}
+
 const manager = new SkillManager({
   configDir: resolveConfigDir(),
   bundledCli: resolveBundledCli(),
+  builtinSkillsDir: resolveBuiltinSkillsDir(),
 });
 
 /**

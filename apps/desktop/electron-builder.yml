@@ -9,6 +9,11 @@ files:
   - package.json
 asar: true
 npmRebuild: false
+# SkillCat-shipped built-in skills (tracked in git), shipped verbatim on every
+# platform so the manager can scan and use them regardless of OS.
+extraResources:
+  - from: resources/internal-skills
+    to: internal-skills
 mac:
   target:
     - target: dmg

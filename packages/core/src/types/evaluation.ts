@@ -96,3 +96,45 @@ export interface EvaluationEvent {
   /** Model reasoning delta, when the provider exposes one. */
   text?: string;
 }
+
+// --- Skill optimization (read-only suggestions) ----------------------------
+
+export type OptimizationSeverity = 'high' | 'medium' | 'low';
+
+/** One actionable, read-only suggestion for a skill. */
+export interface OptimizationSuggestion {
+  title: string;
+  severity: OptimizationSeverity;
+  /** Why it matters, referencing the skill's own content. */
+  rationale: string;
+  /** Optional excerpt the suggestion targets. */
+  before?: string;
+  /** Optional suggested rewrite. */
+  after?: string;
+}
+
+/**
+ * Read-only optimization result for a single skill. Never written to disk by
+ * SkillCat; it is produced on demand by the AI pipeline and shown in the UI.
+ */
+export interface SkillOptimization {
+  skill: SkillRef;
+  generatedAt: string;
+  provider: LlmProvider;
+  model: string;
+  locale: EvaluationLocale;
+  /**
+   * Fingerprint of the optimised input (skill content hash + model). Used to
+   * flag the result as stale when the skill or model changes.
+   */
+  signature: string;
+  summary: string;
+  suggestions: OptimizationSuggestion[];
+}
+
+/**
+ * Persisted read-only optimization results (`optimizer.json`), keyed by
+ * `recordKey`. Kept so a result survives restarts and is never re-billed unless
+ * the user explicitly regenerates it.
+ */
+export type OptimizerStore = Record<string, SkillOptimization>;

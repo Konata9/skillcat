@@ -22,6 +22,8 @@ export interface ScanInput {
   extraProjectPaths?: string[];
   deep?: boolean;
   copyHashCache: Map<string, string>;
+  /** App-shipped built-in skills dir; folded into the global scope. */
+  builtinSkillsDir?: string;
 }
 
 export interface ScanResult {
@@ -41,6 +43,7 @@ export async function scanAll(input: ScanInput): Promise<ScanResult> {
     deep: input.deep,
     copyHashCache: input.copyHashCache,
     customSkillDirs: input.customSkillDirs,
+    builtinDir: input.builtinSkillsDir,
   });
 
   const discovered = await discoverProjects(input.roots, {

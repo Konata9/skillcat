@@ -19,6 +19,7 @@ const api: SkillCatApi = {
   remoteSkillDetail: (slug) => ipcRenderer.invoke(CH.remoteSkillDetail, slug),
   evaluate: (locale) => ipcRenderer.invoke(CH.evaluate, locale),
   reviewCandidates: (locale) => ipcRenderer.invoke(CH.reviewCandidates, locale),
+  optimizeSkill: (ref, locale) => ipcRenderer.invoke(CH.optimizerRun, ref, locale),
   testLlm: (settings) => ipcRenderer.invoke(CH.testLlm, settings),
   checkUpdate: () => ipcRenderer.invoke(CH.checkUpdate),
   openExternal: (url) => ipcRenderer.invoke(CH.openExternal, url),

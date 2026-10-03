@@ -154,6 +154,14 @@ export function App(): React.ReactElement {
       name: record.name,
     });
 
+  const optimizeSkill = (record: SkillRecord) =>
+    void api
+      .optimizeSkill(
+        { scope: record.scope, projectPath: record.projectPath, name: record.name },
+        locale,
+      )
+      .catch(reportError);
+
   const saveSettings = async (patch: SettingsSavePatch): Promise<boolean> => {
     try {
       await api.setSettings({
@@ -231,6 +239,12 @@ export function App(): React.ReactElement {
             <SkillsView
               records={records}
               activityCounts={snapshot?.activityCounts}
+              llmConfigured={llmConfigured}
+              optimizations={snapshot?.optimizations ?? []}
+              optimizingKey={snapshot?.optimizing ?? null}
+              optimizationError={snapshot?.optimizationError ?? null}
+              onOptimize={optimizeSkill}
+              onOpenSettings={() => openSettings('llm')}
               onOpen={openSkill}
               onReveal={revealSkill}
               onEditTriggers={(record) => void editor.open(record)}

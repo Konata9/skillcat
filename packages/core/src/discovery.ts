@@ -83,6 +83,8 @@ export interface ScanScopeOptions {
   copyHashCache: Map<string, string>;
   /** Extra dirs from the config; global entries are used for the global scope only. */
   customSkillDirs?: string[];
+  /** App-shipped built-in skills dir; scanned in the global scope only. */
+  builtinDir?: string;
 }
 
 export interface ScanScopeResult {
@@ -103,15 +105,23 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
     .filter((entry) => isGlobalSkillDir(entry) === (options.scope === 'global'))
     .map((entry) => resolveSkillDir(entry, base));
 
-  const candidates = new Map<string, { dirName: string; path: string }>();
-  const addCandidate = async (dirName: string, path: string) => {
+  const candidates = new Map<string, { dirName: string; path: string; builtin: boolean }>();
+  const addCandidate = async (dirName: string, path: string, builtin: boolean) => {
     const real = (await safeRealpath(path)) ?? resolve(path);
-    if (!candidates.has(real)) candidates.set(real, { dirName, path });
+    if (!candidates.has(real)) candidates.set(real, { dirName, path, builtin });
   };
 
-  const scanDirs = [canonicalDir, ...agentDirs.map((item) => item.dir), ...customDirs];
+  const scanDirs: Array<{ dir: string; builtin: boolean }> = [
+    { dir: canonicalDir, builtin: false },
+    ...agentDirs.map((item) => ({ dir: item.dir, builtin: false })),
+    ...customDirs.map((dir) => ({ dir, builtin: false })),
+  ];
+  if (options.scope === 'global' && options.builtinDir) {
+    scanDirs.push({ dir: options.builtinDir, builtin: true });
+  }
+
   const seenDirs = new Set<string>();
-  for (const dir of scanDirs) {
+  for (const { dir, builtin } of scanDirs) {
     const key = resolve(dir);
     if (seenDirs.has(key)) continue;
     seenDirs.add(key);
@@ -120,7 +130,7 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
       if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
       const skillDir = join(dir, entry.name);
       if (!(await hasSkillMd(skillDir))) continue;
-      await addCandidate(entry.name, skillDir);
+      await addCandidate(entry.name, skillDir, builtin);
     }
   }
 
@@ -135,7 +145,7 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
       for (const skill of cliSkills) {
         declaredByName.set(skill.name, skill.agents);
         if (!known.has(resolve(skill.path)) && (await hasSkillMd(skill.path))) {
-          await addCandidate(skill.name, skill.path);
+          await addCandidate(skill.name, skill.path, false);
           known.add(resolve(skill.path));
         }
       }
@@ -145,30 +155,41 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
   }
 
   const records: SkillRecord[] = [];
-  for (const { dirName, path } of candidates.values()) {
+  for (const { dirName, path, builtin } of candidates.values()) {
     try {
       const parsed = await parseSkillDir(path, dirName);
-      if (parsed.internal && !options.showInternal) continue;
+      // Built-in skills are hidden together with user-internal skills when the
+      // `showInternal` toggle is off.
+      if (!options.showInternal && (parsed.internal || builtin)) continue;
       const contentHash = await computeSkillFolderHash(path);
-      const links = await computeLinks({
-        dirName,
-        skillPath: path,
-        canonicalDir,
-        agentDirs,
-        copyHashCache: options.copyHashCache,
-      });
-      const lockEntry = lock.skills[parsed.name] ?? lock.skills[dirName] ?? null;
-      const triggers = applyAnnotation(
-        parsed.triggers,
-        options.annotations[
-          annotationKey({
-            scope: options.scope,
-            projectPath: root,
-            name: parsed.name,
-            contentHash,
-          })
-        ],
-      );
+      // Built-in skills are not installed by the user: no agent links, no lock
+      // entry and no user annotations.
+      const links = builtin
+        ? []
+        : await computeLinks({
+            dirName,
+            skillPath: path,
+            canonicalDir,
+            agentDirs,
+            copyHashCache: options.copyHashCache,
+          });
+      const lockEntry = builtin
+        ? null
+        : (lock.skills[parsed.name] ?? lock.skills[dirName] ?? null);
+      const triggers = builtin
+        ? parsed.triggers
+        : applyAnnotation(
+            parsed.triggers,
+            options.annotations[
+              annotationKey({
+                scope: options.scope,
+                projectPath: root,
+                name: parsed.name,
+                contentHash,
+                builtin: false,
+              })
+            ],
+          );
 
       records.push({
         name: parsed.name,
@@ -190,6 +211,7 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
         sizeBytes: parsed.sizeBytes,
         triggers,
         internal: parsed.internal,
+        ...(builtin ? { builtin: true } : {}),
         installedAt: lockEntry?.installedAt ?? null,
         updatedAt: lockEntry?.updatedAt ?? null,
         mtimeMs: parsed.mtimeMs,
@@ -199,7 +221,9 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
     }
   }
 
-  const matched = new Set(records.map((record) => record.name));
+  // Only user-installed records satisfy a lock entry; a built-in skill must not
+  // mask an orphan whose directory was removed.
+  const matched = new Set(records.filter((record) => !record.builtin).map((record) => record.name));
   const orphans: OrphanLock[] = [];
   for (const [name, entry] of Object.entries(lock.skills)) {
     if (matched.has(name)) continue;

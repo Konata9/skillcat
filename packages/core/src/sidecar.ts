@@ -4,7 +4,7 @@
  */
 import { atomicWriteFile, ensureDir, readJsonSafe } from './fs-utils.js';
 import { pairKey } from './keys.js';
-import { annotationsFilePath, evaluationFilePath, stateFilePath } from './paths.js';
+import { annotationsFilePath, evaluationFilePath, optimizerFilePath, stateFilePath } from './paths.js';
 import type {
   AiPairVerdict,
   AnnotationsFile,
@@ -12,7 +12,9 @@ import type {
   EvaluationReport,
   EvaluationSeverity,
   EvaluationStore,
+  OptimizerStore,
   ScanState,
+  SkillOptimization,
   SkillRef,
 } from './types.js';
 
@@ -76,6 +78,24 @@ function legacyIssuesToVerdicts(raw: unknown): AiPairVerdict[] {
   return sanitizeVerdicts(raw).map((verdict) => ({ ...verdict, verdict: 'confirmed' }));
 }
 
+/**
+ * Drops corrupted entries from a persisted optimizer store: a bad file must
+ * never crash the detail view.
+ */
+function sanitizeOptimizer(raw: unknown): OptimizerStore {
+  if (!raw || typeof raw !== 'object') return {};
+  const store: OptimizerStore = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!value || typeof value !== 'object') continue;
+    const entry = value as Partial<SkillOptimization>;
+    if (!entry.skill || typeof entry.skill.name !== 'string' || !Array.isArray(entry.suggestions)) {
+      continue;
+    }
+    store[key] = value as SkillOptimization;
+  }
+  return store;
+}
+
 export class SidecarStore {
   readonly dir: string;
 
@@ -93,6 +113,10 @@ export class SidecarStore {
 
   private get evaluationPath(): string {
     return evaluationFilePath(this.dir);
+  }
+
+  private get optimizerPath(): string {
+    return optimizerFilePath(this.dir);
   }
 
   async loadAnnotations(): Promise<AnnotationsFile> {
@@ -156,5 +180,15 @@ export class SidecarStore {
   async saveEvaluation(store: EvaluationStore): Promise<void> {
     await ensureDir(this.dir);
     await atomicWriteFile(this.evaluationPath, `${JSON.stringify(store, null, 2)}\n`);
+  }
+
+  async loadOptimizer(): Promise<OptimizerStore> {
+    const raw = await readJsonSafe<unknown>(this.optimizerPath);
+    return sanitizeOptimizer(raw);
+  }
+
+  async saveOptimizer(store: OptimizerStore): Promise<void> {
+    await ensureDir(this.dir);
+    await atomicWriteFile(this.optimizerPath, `${JSON.stringify(store, null, 2)}\n`);
   }
 }

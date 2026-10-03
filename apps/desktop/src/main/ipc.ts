@@ -165,6 +165,9 @@ function toSnapshot(manager: SkillManager, version: string): Snapshot {
     evaluationProgress: manager.state.evaluationProgress,
     evaluationError: manager.state.evaluationError,
     activityCounts: manager.activityCounts(),
+    optimizations: [...manager.state.optimizations.values()],
+    optimizing: manager.state.optimizing,
+    optimizationError: manager.state.optimizationError,
   };
 }
 
@@ -293,6 +296,13 @@ export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
     [CH.reviewCandidates]: async (_event, rawLocale) => {
       const locale = z.enum(['zh', 'en']).parse(rawLocale);
       await manager.runCandidateReview(locale);
+    },
+    [CH.optimizerRun]: async (_event, rawRef, rawLocale) => {
+      const ref = RefSchema.parse(rawRef) as SkillRefLite;
+      const locale = z.enum(['zh', 'en']).parse(rawLocale);
+      const record = manager.findRecord(ref.scope, ref.projectPath, ref.name);
+      if (!record) throw new Error(`skill not found: ${ref.name}`);
+      return manager.optimizeSkill(record, locale);
     },
     [CH.testLlm]: async (_event, rawSettings) => {
       return manager.testLlm(LlmSchema.parse(rawSettings));

@@ -39,6 +39,7 @@ SkillCat 的所有持久化数据都放在**配置目录**，不写入 skill 目
 | `annotations.json` | 人工触发词标注，按 `scope\|project\|name\|contentHash` 键控 |
 | `state.json` | 上次扫描的内容哈希，用于检测漂移 |
 | `evaluation.json` | LLM 评估报告与 AI 判定 |
+| `optimizer.json` | 只读 SKILL 优化建议（按 skill 身份键控，手动重新生成才会覆盖） |
 | `runtime-spool.jsonl` | 运行监听插件的收件箱：插件逐行追加原始触发记录，SkillCat 消费后清空 |
 | `runtime-events.json` | 归一化并与扫描目录匹配后的触发历史（按保留期裁剪） |
 | `integrations.json` | 已安装集成清单（文件路径 + 内容哈希），用于可撤销卸载 |
@@ -57,7 +58,7 @@ SkillCat 的所有持久化数据都放在**配置目录**，不写入 skill 目
 | `proxy.bypass` | `string` | `''` | `NO_PROXY` 绕过列表，逗号分隔 |
 | `thresholds.overlap` | `number` | `0.3` | 触发词重叠阈值（0–1） |
 | `thresholds.duplicate` | `number` | `0.5` | 正文重复阈值（0–1） |
-| `showInternal` | `boolean` | `false` | 是否显示 internal skill |
+| `showInternal` | `boolean` | `false` | 是否显示 internal skill（含应用自带的内置 skill，如 `skill-optimizer`） |
 | `maxScanDepth` | `number` | `3` | 项目发现的最大深度（0–8），自动跳过 `node_modules` / `.git` 等 |
 | `customSkillDirs` | `string[]` | `[]` | 额外的 skill 容器目录 |
 | `activity` | `ActivitySettings` | 见下 | 运行触发记录的偏好 |
@@ -121,3 +122,5 @@ SkillCat 不会上传。
 - 项目 canonical skill 目录：`<project>/.agents/skills`
 - 项目锁文件：`<project>/skills-lock.json`
 - 各 agent 的目录表：`packages/core/src/agents.ts`
+- 应用自带的内置 skill：产物 `Resources/internal-skills/`（开发时为
+  `apps/desktop/resources/internal-skills/`）；只读、不参与安装/卸载

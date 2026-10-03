@@ -1,9 +1,11 @@
 /**
  * Canonical identity helpers for skill records.
  *
- * A skill is uniquely identified by `scope + projectPath + name`. The scanner,
- * the analysis engine, the annotation sidecar and the UI must all derive that
- * identity the same way, so the derivation lives in exactly one place.
+ * A skill is uniquely identified by `scope + projectPath + name`. Built-in
+ * (app-shipped) skills get a dedicated `builtin|name` identity so they never
+ * collide with a same-named user global skill. The scanner, the analysis
+ * engine, the annotation sidecar and the UI must all derive that identity the
+ * same way, so the derivation lives in exactly one place.
  *
  * `annotationKey` extends the identity with the content hash: annotations are
  * keyed per content revision and therefore expire automatically when a skill
@@ -25,6 +27,7 @@ export function skillRef(record: SkillRecord): SkillRef {
     scope: record.scope,
     projectPath: record.projectPath,
     path: record.path,
+    ...(record.builtin ? { builtin: true } : {}),
   };
 }
 
@@ -37,12 +40,20 @@ export function scopeNameKey(
   return `${scope}|${projectPath ?? ''}|${name}`;
 }
 
-export function recordKey(record: Pick<SkillRecord, 'scope' | 'projectPath' | 'name'>): string {
+/**
+ * Canonical identity. Built-in skills use a dedicated `builtin|name` tier so a
+ * same-named user global/project skill keeps a distinct key (and therefore a
+ * distinct annotation, finding id and evaluation signature entry).
+ */
+export function recordKey(
+  record: Pick<SkillRecord, 'scope' | 'projectPath' | 'name' | 'builtin'>,
+): string {
+  if (record.builtin) return `builtin||${record.name}`;
   return scopeNameKey(record.scope, record.projectPath, record.name);
 }
 
 export function annotationKey(
-  record: Pick<SkillRecord, 'scope' | 'projectPath' | 'name' | 'contentHash'>,
+  record: Pick<SkillRecord, 'scope' | 'projectPath' | 'name' | 'contentHash' | 'builtin'>,
 ): string {
   return `${recordKey(record)}|${record.contentHash}`;
 }

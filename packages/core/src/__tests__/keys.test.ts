@@ -8,6 +8,15 @@ describe('recordKey', () => {
       'project|/tmp/p|alpha',
     );
   });
+
+  it('gives built-in skills a dedicated tier distinct from a user global skill', () => {
+    expect(recordKey({ scope: 'global', name: 'skill-optimizer', builtin: true })).toBe(
+      'builtin||skill-optimizer',
+    );
+    expect(recordKey({ scope: 'global', name: 'skill-optimizer', builtin: false })).toBe(
+      'global||skill-optimizer',
+    );
+  });
 });
 
 describe('annotationKey', () => {

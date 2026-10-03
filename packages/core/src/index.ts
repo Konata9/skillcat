@@ -108,6 +108,11 @@ export {
 export { createEvaluationModel } from './evaluation/model.js';
 export { applyVerdicts } from './evaluation/verdicts.js';
 export {
+  optimizeSkill,
+  optimizationSignature,
+  type OptimizeOptions,
+} from './evaluation/optimize.js';
+export {
   buildScoringPrompt,
   buildVerdictPrompt,
   buildSummaryPrompt,

@@ -139,3 +139,44 @@ export function buildVerdictPrompt(input: {
   ].join('\n');
   return { system: systemPrompt(input.locale), prompt };
 }
+
+/**
+ * Builds the read-only optimization prompt for a single skill. The built-in
+ * `skill-optimizer` body, when present, is injected as the review rubric so the
+ * model follows the app's own methodology (a same-named user skill is never
+ * used for this).
+ */
+export function buildOptimizePrompt(input: {
+  locale: EvaluationLocale;
+  skill: CatalogSkill;
+  rubric?: string;
+}): { system: string; prompt: string } {
+  const rubric = input.rubric?.trim();
+  const system = [
+    systemPrompt(input.locale),
+    '',
+    'Your current task is to review ONE skill and propose read-only improvements.',
+    'Only reason about the provided skill. Never invent files, facts or neighbouring skills.',
+    'Prefer removing redundant rules and widening/narrowing triggers over adding boilerplate; "keep as is" is a valid conclusion.',
+    ...(rubric
+      ? ['', 'Apply this built-in review methodology as your rubric:', rubric]
+      : []),
+    '',
+    'Return exactly this JSON shape:',
+    '{"summary":"","suggestions":[{"title":"","severity":"high","rationale":"","before":"","after":""}]}',
+    '- "summary": 1-3 sentences on the skill\'s overall quality and the highest-impact fix.',
+    '- "severity": one of "high" | "medium" | "low".',
+    '- "before"/"after": optional short excerpts; leave empty when not applicable.',
+    '- At most 8 suggestions. Return an empty array when the skill is already good.',
+    '- Reply with a single JSON object and nothing else. No markdown, no code fences.',
+    `- Write every prose field in ${languageName(input.locale)}.`,
+  ].join('\n');
+
+  const prompt = [
+    'Review and optimize this skill.',
+    '',
+    'Skill:',
+    JSON.stringify(input.skill),
+  ].join('\n');
+  return { system, prompt };
+}

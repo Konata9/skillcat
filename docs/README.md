@@ -9,7 +9,7 @@
 | [architecture.md](architecture.md) | Core + UI 架构、仓库结构、进程模型与 IPC、构建与打包 |
 | [design.md](design.md) | 读写分离、统一身份、只读安全、作用域模型、分析分级 |
 | [analysis-rules.md](analysis-rules.md) | 完整的确定性 / 启发式规则表与相似度算法 |
-| [ai-evaluation.md](ai-evaluation.md) | LLM 评分、候选对判定、模型供应商、远程榜单与搜索 |
+| [ai-evaluation.md](ai-evaluation.md) | LLM 评分、候选对判定、只读优化建议、模型供应商、远程榜单与搜索 |
 | [configuration.md](configuration.md) | 配置与数据位置、`config.json` 字段、代理、迁移 |
 | [integrations.md](integrations.md) | 运行监听：适配器模型、OpenCode 集成、隐私与保留 |
 | [development.md](development.md) | 开发命令、项目结构、测试、新增 agent |

@@ -20,6 +20,7 @@ import type {
   RemoteSkillDetail,
   RuntimeSkillEvent,
   Scope,
+  SkillOptimization,
   SkillRecord,
   UpdateCheckResult,
 } from '@skillcat/core';
@@ -48,6 +49,11 @@ export interface Snapshot {
   evaluationError: string | null;
   /** Per-skill trigger counts (`scope|project|name` -> count). */
   activityCounts: Record<string, number>;
+  /** Transient read-only optimization results. */
+  optimizations: SkillOptimization[];
+  /** `recordKey` currently being optimized, or null. */
+  optimizing: string | null;
+  optimizationError: string | null;
 }
 
 export interface SkillRefLite {
@@ -95,6 +101,7 @@ export interface SkillCatApi {
   remoteSkillDetail(slug: string): Promise<RemoteSkillDetail>;
   evaluate(locale: 'zh' | 'en'): Promise<void>;
   reviewCandidates(locale: 'zh' | 'en'): Promise<void>;
+  optimizeSkill(ref: SkillRefLite, locale: 'zh' | 'en'): Promise<SkillOptimization>;
   testLlm(settings: LlmSettings): Promise<LlmTestResult>;
   checkUpdate(): Promise<UpdateCheckResult>;
   openExternal(url: string): Promise<void>;
@@ -138,6 +145,7 @@ export const CH = {
   remoteSkillDetail: 'search:detail',
   evaluate: 'evaluation:run',
   reviewCandidates: 'evaluation:review',
+  optimizerRun: 'optimizer:run',
   testLlm: 'llm:test',
   checkUpdate: 'app:check-update',
   openExternal: 'app:open-external',

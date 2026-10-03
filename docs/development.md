@@ -49,7 +49,7 @@ apps/desktop/    Electron 44 + electron-vite + React 19
 ├─ src/shared     IPC 契约（频道常量 + 类型）
 └─ src/renderer   React 界面
    ├─ components/ui  原语组件（button/badge/dialog/table/field/section…，仓库内自有源码）
-   ├─ components     业务组件与外壳
+   ├─ components     业务组件与外壳（含 skill-detail：详情页固定头部 + 详情/优化建议 Tab）
    ├─ hooks          API 驱动的状态（useOperations/useProjects/useScopes/useActivity/useSettingsDraft/…）
    ├─ views          页面组合（Skills/Analysis/Search/Activity/Settings）
    │  └─ settings    Settings 的子区块（General/Scanning/Cli/Network/Llm/Integrations/Logging/Updates + DoctorPanel + types）
@@ -132,6 +132,10 @@ asar 仅含 `out/` 与 `package.json`。
 `mac.extraResources` 打进产物；`dev` / `build` / `dist` / `dist:mac` 会先运行它，`dist:win` 不暂存
 （Windows 走系统 Node / `npx`）。升级内置 CLI：`pnpm --filter @skillcat/desktop update skills` 后
 重新构建。
+
+应用自带的 skill 位于 `apps/desktop/resources/internal-skills/`（仓库内直接提交，无需暂存脚本），
+由 `electron-builder.yml` 顶层 `extraResources` 打进**各平台**产物的 `Resources/internal-skills/`。
+新增内置 skill 时在该目录下新建 `<name>/SKILL.md` 即可。
 
 应用图标：`apps/desktop/build/icon.icns`（macOS）、`icon.ico`（Windows）、`icon.png`（Linux）。
 

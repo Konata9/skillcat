@@ -80,6 +80,11 @@ export function evaluationFilePath(configDir: string): string {
   return join(configDir, 'evaluation.json');
 }
 
+/** Persisted read-only skill optimization results. */
+export function optimizerFilePath(configDir: string): string {
+  return join(configDir, 'optimizer.json');
+}
+
 /** Inbox that installed bridge plugins append raw trigger records to. */
 export function runtimeSpoolFilePath(configDir: string): string {
   return join(configDir, 'runtime-spool.jsonl');

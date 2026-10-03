@@ -30,6 +30,7 @@ import 进浏览器包（renderer 不引入 Node 依赖）。
 - `annotations.json` —— 人工触发词标注
 - `state.json` —— 上次扫描的内容哈希（用于"自上次扫描后变化"提示）
 - `evaluation.json` —— LLM 评估报告与 AI 判定
+- `optimizer.json` —— 只读 SKILL 优化建议（按 skill 身份键控；只有用户主动重新生成才会覆盖）
 
 注册表只存项目路径；删除注册条目**不会删除任何文件**。
 
@@ -69,6 +70,15 @@ AI 评估不参与常规扫描，只在用户点击时运行，因为：
 - 结果具有时间点属性，需要与扫描内容做签名比对才能判断是否过期。
 
 因此评估结果保存后，UI 会通过 `evaluationSignature` 判断是否"过期"（staleness），并提示重新运行。
+
+## 内置 skill 与只读优化
+
+- 应用自带一份评审 skill `skill-optimizer`（`resources/internal-skills/`），作为 AI 优化的准则来源。
+  它以 `builtin|name` 身份参与扫描，随 `showInternal` 一起显隐；属于应用资产，永不写入用户目录、
+  不参与安装 / 更新 / 卸载。
+- 优化建议是**只读**的：模型只产出诊断与 before/after 建议，SkillCat 不修改任何 skill 文件；
+  结果存入 `optimizer.json`，只有用户主动重新生成才覆盖，避免重复消耗 token。
+- 评审准则只取内置 skill，不采用同名用户 skill，避免提示词注入；内置 skill 缺失时退化为通用准则。
 
 ## 状态新鲜度
 

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ModelCaller } from '../evaluation/evaluate.js';
+import { recordKey } from '../keys.js';
 import { SkillManager } from '../manager.js';
 
 const originalHome = process.env.HOME;
@@ -194,5 +195,153 @@ describe('SkillManager evaluation lifecycle', () => {
     await expect(manager.runEvaluation('en')).rejects.toThrow('boom');
     expect(manager.state.evaluationError).toBe('boom');
     expect(manager.state.evaluating).toBe(false);
+  });
+});
+
+describe('SkillManager built-in skills', () => {
+  it('scans app-shipped skills with a dedicated identity and no lock/links', async () => {
+    const home = await tempDir('skillcat-mgr-builtin-home-');
+    const configDir = await tempDir('skillcat-mgr-builtin-config-');
+    const builtinDir = await tempDir('skillcat-mgr-builtin-');
+    await mkdir(join(builtinDir, 'skill-optimizer'), { recursive: true });
+    await writeFile(
+      join(builtinDir, 'skill-optimizer', 'SKILL.md'),
+      ['---', 'name: skill-optimizer', 'description: Optimize a skill', '---', '# Optimizer'].join(
+        '\n',
+      ),
+    );
+
+    process.env.HOME = home;
+    process.env.SKILLCAT_CONFIG_DIR = configDir;
+    await writeFile(
+      join(configDir, 'config.json'),
+      JSON.stringify({ version: 1, skillsCommand: ['true'] }),
+    );
+
+    const manager = new SkillManager({ configDir, builtinSkillsDir: builtinDir });
+    await manager.init();
+    // Built-in skills follow the same visibility toggle as user-internal ones.
+    await manager.setShowInternal(true);
+    await manager.refresh();
+
+    const record = manager.allRecords().find((entry) => entry.name === 'skill-optimizer');
+    expect(record?.builtin).toBe(true);
+    expect(record?.lock).toBeNull();
+    expect(record?.links).toEqual([]);
+    expect(recordKey(record!)).toBe('builtin||skill-optimizer');
+    // Built-in skills never produce user-facing health findings.
+    expect(manager.state.findings.some((finding) => finding.rule === 'dir-missing-lock')).toBe(
+      false,
+    );
+    expect(manager.state.findings.some((finding) => finding.rule === 'description-lint')).toBe(
+      false,
+    );
+  });
+});
+
+describe('SkillManager optimization', () => {
+  it('refuses to optimize without a configured model', async () => {
+    const { manager } = await setup();
+    const record = manager.allRecords()[0]!;
+    await expect(manager.optimizeSkill(record, 'en')).rejects.toThrow('LLM is not configured');
+  });
+
+  it('stores read-only suggestions and clears the in-flight marker', async () => {
+    const optimizeCaller: ModelCaller = async () => ({
+      summary: 'Looks solid.',
+      suggestions: [{ title: 'Narrow triggers', severity: 'low' }],
+    });
+    const { manager } = await setup({ caller: optimizeCaller });
+    await manager.setLlm(llm);
+    await manager.refresh();
+
+    const record = manager.allRecords().find((entry) => entry.name === 'alpha')!;
+    const result = await manager.optimizeSkill(record, 'en');
+
+    expect(result.suggestions).toHaveLength(1);
+    expect(manager.optimizationFor(record)?.summary).toBe('Looks solid.');
+    expect(manager.state.optimizing).toBeNull();
+    expect(manager.optimizationStale(record)).toBe(false);
+  });
+
+  it('keeps the last result (flagged stale) when the skill changes on disk', async () => {
+    const optimizeCaller: ModelCaller = async () => ({
+      summary: 's',
+      suggestions: [{ title: 't', severity: 'low' }],
+    });
+    const { manager, home } = await setup({ caller: optimizeCaller });
+    await manager.setLlm(llm);
+    await manager.refresh();
+
+    const record = manager.allRecords().find((entry) => entry.name === 'alpha')!;
+    await manager.optimizeSkill(record, 'en');
+
+    await writeFile(
+      join(home, '.agents', 'skills', 'alpha', 'SKILL.md'),
+      skillMd('alpha', 'extra: changed'),
+    );
+    await manager.refresh();
+
+    const updated = manager.allRecords().find((entry) => entry.name === 'alpha')!;
+    // Retained (no token re-spend); flagged stale so the UI can hint.
+    expect(manager.optimizationFor(updated)?.summary).toBe('s');
+    expect(manager.optimizationStale(updated)).toBe(true);
+  });
+
+  it('persists results across a restart', async () => {
+    const optimizeCaller: ModelCaller = async () => ({
+      summary: 'kept',
+      suggestions: [{ title: 't', severity: 'low' }],
+    });
+    const { manager, configDir } = await setup({ caller: optimizeCaller });
+    await manager.setLlm(llm);
+    await manager.refresh();
+    const record = manager.allRecords().find((entry) => entry.name === 'alpha')!;
+    await manager.optimizeSkill(record, 'en');
+
+    // A fresh manager reads the saved result back without re-running the model.
+    const reopened = new SkillManager({ configDir, modelCaller: optimizeCaller });
+    await reopened.init();
+    await reopened.refresh();
+    const again = reopened.allRecords().find((entry) => entry.name === 'alpha')!;
+    expect(reopened.optimizationFor(again)?.summary).toBe('kept');
+  });
+
+  it('uses the shipped rubric even when built-in skills are hidden', async () => {
+    const home = await tempDir('skillcat-mgr-rubric-home-');
+    const configDir = await tempDir('skillcat-mgr-rubric-config-');
+    const builtinDir = await tempDir('skillcat-mgr-rubric-builtin-');
+    await mkdir(join(home, '.agents', 'skills', 'alpha'), { recursive: true });
+    await writeFile(join(home, '.agents', 'skills', 'alpha', 'SKILL.md'), skillMd('alpha'));
+    await mkdir(join(builtinDir, 'skill-optimizer'), { recursive: true });
+    await writeFile(
+      join(builtinDir, 'skill-optimizer', 'SKILL.md'),
+      ['---', 'name: skill-optimizer', 'description: Optimize', '---', 'RUBRIC-BODY-MARKER'].join('\n'),
+    );
+
+    process.env.HOME = home;
+    process.env.SKILLCAT_CONFIG_DIR = configDir;
+    await writeFile(
+      join(configDir, 'config.json'),
+      JSON.stringify({ version: 1, skillsCommand: ['true'] }),
+    );
+
+    let system = '';
+    const caller: ModelCaller = async (request) => {
+      system = request.system;
+      return { summary: '', suggestions: [] };
+    };
+    const manager = new SkillManager({ configDir, builtinSkillsDir: builtinDir, modelCaller: caller });
+    await manager.init();
+    await manager.setLlm(llm);
+    await manager.refresh();
+
+    // showInternal defaults to false: the built-in skill is not in the catalog...
+    expect(manager.allRecords().some((entry) => entry.builtin)).toBe(false);
+
+    // ...yet its rubric is still injected into the optimize prompt.
+    const record = manager.allRecords().find((entry) => entry.name === 'alpha')!;
+    await manager.optimizeSkill(record, 'en');
+    expect(system).toContain('RUBRIC-BODY-MARKER');
   });
 });

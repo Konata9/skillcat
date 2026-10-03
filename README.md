@@ -32,7 +32,8 @@ ever taking over your files behind your back.
 - **Reads are local and offline.** Scanning uses the filesystem and lock files only.
 - **Writes are delegated.** Every mutation runs through the official `skills` CLI, so there is one install path, not two.
 - **Analysis is explainable.** Deterministic rules and heuristics are labeled separately; each finding ships with evidence.
-- **AI is optional.** Bring your own model key to score skills and judge duplicate/conflict candidates.
+- **AI is optional.** Bring your own model key to score skills, judge duplicate/conflict candidates, and
+  generate read-only optimization suggestions.
 
 ## Screenshots
 
@@ -60,6 +61,9 @@ ever taking over your files behind your back.
   body duplication, missing trigger signals).
 - **AI evaluation** *(optional)* — score every skill with your own model, then judge the pre-filtered
   duplicate/conflict candidate pairs. Results are saved and shown alongside the rule findings.
+- **Optimization suggestions** *(optional)* — review a single skill with your model and get actionable,
+  read-only rewrite suggestions (before/after) grounded in the bundled `skill-optimizer` rubric. Results
+  are saved and kept until you regenerate them.
 - **Projects** — auto-discover projects under your scan roots by agent markers; pin and revisit them.
   The registry stores paths only; removing an entry never deletes files.
 - **Remote search & leaderboard** — browse the skills.sh leaderboard (all-time / trending / hot) and
@@ -159,3 +163,9 @@ pnpm test
 ## License
 
 [MIT](LICENSE) © 2026 konata9
+
+## Acknowledgements
+
+The bundled `skill-optimizer` skill is adapted from
+[chujianyun/skills](https://github.com/chujianyun/skills/tree/main/skills/skill-optimizer).
+Many thanks to [@chujianyun](https://github.com/chujianyun) for the excellent work.

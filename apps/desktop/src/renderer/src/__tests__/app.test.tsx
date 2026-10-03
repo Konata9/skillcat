@@ -2,7 +2,13 @@
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { EvaluationEvent, EvaluationReport, Finding, SkillRecord } from '@skillcat/core';
+import type {
+  EvaluationEvent,
+  EvaluationReport,
+  Finding,
+  SkillOptimization,
+  SkillRecord,
+} from '@skillcat/core';
 import type { SkillCatApi, Snapshot } from '@shared/contract';
 import { ApiProvider } from '../api';
 import { App } from '../App';
@@ -108,6 +114,9 @@ function snapshot(): Snapshot {
     evaluationProgress: null,
     evaluationError: null,
     activityCounts: {},
+    optimizations: [],
+    optimizing: null,
+    optimizationError: null,
   };
 }
 
@@ -199,6 +208,7 @@ function makeApi(): SkillCatApi {
     })),
     evaluate: vi.fn(async () => {}),
     reviewCandidates: vi.fn(async () => {}),
+    optimizeSkill: vi.fn(async () => ({} as SkillOptimization)),
     testLlm: vi.fn(async () => ({ ok: true, status: 200, message: 'ok' })),
     checkUpdate: vi.fn(async () => ({
       configured: false,
@@ -303,6 +313,36 @@ describe('App', () => {
         expect.objectContaining({ kind: 'update', names: ['alpha'], scope: 'global' }),
       );
     });
+  });
+
+  it('opens the optimization tab and gates it on the model configuration', async () => {
+    const api = makeApi();
+    renderApp(api);
+
+    fireEvent.click(await screen.findByText('alpha'));
+    // The default tab is the regular detail view, no optimize CTA yet.
+    expect(screen.queryByRole('button', { name: '生成优化建议' })).toBeNull();
+
+    fireEvent.click(await screen.findByRole('tab', { name: '优化建议' }));
+    const button = await screen.findByRole('button', { name: '生成优化建议' });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('需先在设置中配置大模型')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '去设置' })).toBeTruthy();
+  });
+
+  it('switches between the detail and optimization tabs', async () => {
+    const api = makeApi();
+    renderApp(api);
+
+    fireEvent.click(await screen.findByText('alpha'));
+    // Info tab is the default.
+    expect(await screen.findByText('描述')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('tab', { name: '优化建议' }));
+    expect(screen.getByRole('button', { name: '生成优化建议' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('tab', { name: '详情' }));
+    expect(await screen.findByText('描述')).toBeTruthy();
   });
 
   it('defaults to light theme and toggles to dark', async () => {

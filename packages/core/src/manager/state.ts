@@ -9,6 +9,7 @@ import type {
   EvaluationReport,
   Finding,
   OrphanLock,
+  SkillOptimization,
   SkillRecord,
 } from '../types.js';
 
@@ -31,6 +32,11 @@ export interface ManagerState {
   reviewing: boolean;
   evaluationProgress: EvaluationProgress | null;
   evaluationError: string | null;
+  /** Transient read-only optimization results, keyed by `recordKey`. */
+  optimizations: Map<string, SkillOptimization>;
+  /** `recordKey` currently being optimized, or null. */
+  optimizing: string | null;
+  optimizationError: string | null;
 }
 
 export interface RefreshOptions {
@@ -56,5 +62,8 @@ export function createManagerState(): ManagerState {
     reviewing: false,
     evaluationProgress: null,
     evaluationError: null,
+    optimizations: new Map(),
+    optimizing: null,
+    optimizationError: null,
   };
 }

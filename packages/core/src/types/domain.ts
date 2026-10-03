@@ -11,6 +11,8 @@ export interface SkillRef {
   scope: Scope;
   projectPath?: string;
   path: string;
+  /** SkillCat-shipped built-in skill; wins precedence in the app's own pipelines. */
+  builtin?: boolean;
 }
 
 export interface LockEntry {
@@ -99,6 +101,12 @@ export interface SkillRecord {
   sizeBytes: number;
   triggers: TriggerProfile;
   internal: boolean;
+  /**
+   * Scanned from the app's bundled `internal-skills` directory (path-derived,
+   * never from frontmatter). Built-in skills are app assets: they carry no lock
+   * entry, no agent links and no user annotations.
+   */
+  builtin?: boolean;
   installedAt: string | null;
   updatedAt: string | null;
   mtimeMs: number;

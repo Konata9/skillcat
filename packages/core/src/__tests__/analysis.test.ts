@@ -61,6 +61,24 @@ describe('analyzeSkills', () => {
     expect(findings[0]!.severity).toBe('error');
   });
 
+  it('does not lint or flag a missing lock on built-in skills', () => {
+    const findings = analyzeSkills({
+      records: [
+        record({
+          name: 'skill-optimizer',
+          builtin: true,
+          description: '',
+          triggers: { positive: [], negative: [], intents: [], hasWhenSignal: false },
+        }),
+      ],
+      orphans: [],
+      lastSeen: {},
+      thresholds,
+    });
+    expect(rules(findings)).not.toContain('dir-missing-lock');
+    expect(rules(findings)).not.toContain('description-lint');
+  });
+
   it('flags a declared agent link that is missing (id vs display name)', () => {
     const findings = analyzeSkills({
       records: [
