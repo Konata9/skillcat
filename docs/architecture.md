@@ -35,9 +35,11 @@ skillcat/
 ├─ packages/core/         @skillcat/core
 │  └─ src/
 │     ├─ index.ts         公共 API（消费者只从这里 import）
-│     ├─ manager.ts       SkillManager 门面：状态、配置、操作编排
+│     ├─ manager.ts       SkillManager 门面：状态、刷新、操作编排
+│     ├─ manager/         门面协作者（state / settings / evaluation / doctor）
 │     ├─ scan.ts          扫描流水线（全局 + 各项目），供 manager 调用
-│     ├─ discovery.ts     文件系统发现 + 链接状态计算
+│     ├─ discovery.ts     文件系统发现（枚举 skill 目录）
+│     ├─ discovery/links.ts  各 agent 的链接状态计算
 │     ├─ skill.ts         SKILL.md / frontmatter 解析
 │     ├─ triggers.ts      触发词提取与人工标注合并
 │     ├─ bridge/          运行触发监听：适配器注册表、收件箱、匹配、统计
@@ -45,11 +47,10 @@ skillcat/
 │     ├─ analysis.ts      规则引擎：ANALYSIS_RULES 注册表 + 结果排序
 │     ├─ rules/           独立规则模块（records / scopes / similarity / helpers）
 │     ├─ findings.ts      finding 排序（规则引擎与 AI 判定共用）
-│     ├─ refs.ts          skill 身份快照（规则与评估共用）
-│     ├─ errors.ts        unknown 错误 → message
-│     ├─ evaluation/      LLM 评估（evaluate / model / prompt / verdicts）
-│     ├─ cli/             skills CLI 适配、操作构造（operations）、代理、远程搜索
-│     ├─ coerce.ts        frontmatter / API 值的统一强制转换
+│     ├─ keys.ts          skill 身份与投影（recordKey / skillRef …）
+│     ├─ evaluation/      LLM 评估（run / json / candidates / normalize / prompt / model / verdicts）
+│     ├─ cli/             skills CLI 适配、操作构造（operations）、代理、远程搜索（remote-search/）
+│     ├─ coerce.ts        frontmatter / API 值的强制转换，unknown 错误 → message
 │     ├─ http.ts          带超时的 fetch + JSON 解析封装
 │     ├─ config.ts        config.json 持久化与净化
 │     ├─ sidecar.ts       annotations / state / evaluation sidecar

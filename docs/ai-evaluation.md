@@ -26,7 +26,7 @@ skill 评分，并让模型判定重复 / 冲突候选对。
 
 ## 评估流程
 
-`evaluateSkills()`（`packages/core/src/evaluation/evaluate.ts`）：
+`evaluateSkills()`（`packages/core/src/evaluation/run.ts`，由 `evaluation/evaluate.ts` 桶导出）：
 
 1. **编目**：把每个 skill 转成精简的 catalog 条目（名称、作用域、description、`when_to_use`、
    前 12 个正向触发词、正文摘要 1200 字、文件数）。

@@ -50,9 +50,9 @@ apps/desktop/    Electron 44 + electron-vite + React 19
 └─ src/renderer   React 界面
    ├─ components/ui  原语组件（button/badge/dialog/table/field/section…，仓库内自有源码）
    ├─ components     业务组件与外壳
-   ├─ hooks          API 驱动的状态（useOperations/useProjects/useScopes/useActivity/…）
+   ├─ hooks          API 驱动的状态（useOperations/useProjects/useScopes/useActivity/useSettingsDraft/…）
    ├─ views          页面组合（Skills/Analysis/Search/Activity/Settings）
-   │  └─ settings    Settings 的子区块（DoctorPanel/LlmSection/IntegrationsSection/LoggingSection/UpdatesSection）
+   │  └─ settings    Settings 的子区块（General/Scanning/Cli/Network/Llm/Integrations/Logging/Updates + DoctorPanel + types）
    └─ lib            cn()、格式化、i18n 字典与 Provider、主题、导航模型
 ```
 
@@ -110,6 +110,11 @@ electron-builder 读取它）、构建并发布 `v<version>`。
 同步由 `scripts/sync-app-version.mjs` 完成：`pnpm desktop` 与 `pnpm dist` 都会先运行它，也可单独
 执行 `pnpm sync-version`。因此应用内版本、产物名（`SkillCat-<version>-arm64.dmg`）与 release tag
 始终一致。
+
+发版时还需在 `CHANGELOG.md` 把 `[Unreleased]` 重命名为 `[<version>] - <date>`：**每个版本只列
+相对上一个版本的变化**，作为该次 Release 的说明。Release 工作流用
+`scripts/changelog-section.mjs` 抽取该版本的小节；找不到对应版本时回退到 `[Unreleased]`，
+两者都没有才使用 GitHub 自动生成的说明。不要把整份 changelog 塞进单次 Release。
 
 应用内"检查更新"从 `apps/desktop/package.json` 的 `repository` 字段解析出 `owner/repo`，
 查询 GitHub 的 `releases/latest` 并与当前版本比较。仓库暂无 release 时不会报错，而是提示

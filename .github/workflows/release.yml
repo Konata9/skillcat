@@ -110,13 +110,37 @@ jobs:
     if: needs.detect.outputs.changed == 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Release notes come from the changelog section for this version, so a
+      # release only ever lists the changes since the previous one — never the
+      # whole changelog.
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: node scripts/changelog-section.mjs "${{ needs.detect.outputs.version }}" --out release-notes.md
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
 
-      - name: Publish GitHub release
+      - name: Publish GitHub release (changelog notes)
+        if: steps.notes.outputs.found == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.detect.outputs.version }}
+          name: v${{ needs.detect.outputs.version }}
+          body_path: release-notes.md
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # No changelog section (e.g. a forced re-release of an old version):
+      # fall back to GitHub's auto-generated notes rather than publishing empty.
+      - name: Publish GitHub release (generated notes)
+        if: steps.notes.outputs.found != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.detect.outputs.version }}
