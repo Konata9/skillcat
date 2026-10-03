@@ -253,7 +253,7 @@ describe('App', () => {
     expect(await screen.findByText('alpha')).toBeTruthy();
     expect(screen.getByText('beta')).toBeTruthy();
 
-    fireEvent.click(screen.getByText('分析'));
+    fireEvent.click(screen.getByText('问题与评分'));
     expect((await screen.findAllByText('alpha 与 beta 触发词可能重叠')).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByText('设置'));
@@ -308,13 +308,13 @@ describe('App', () => {
     renderApp(api);
 
     await screen.findByText('alpha');
-    expect(screen.getByText('位置')).toBeTruthy();
+    expect(screen.getByText('作用域')).toBeTruthy();
     expect(document.documentElement.lang).toBe('zh-CN');
 
     fireEvent.click(screen.getByRole('button', { name: 'Switch to English' }));
 
-    expect(await screen.findByText('Locations')).toBeTruthy();
-    expect(screen.getByText('Analysis')).toBeTruthy();
+    expect(await screen.findByText('Scope')).toBeTruthy();
+    expect(screen.getByText('Issues & scores')).toBeTruthy();
     expect(document.documentElement.lang).toBe('en');
     expect(window.localStorage.getItem('skillcat-locale')).toBe('en');
 
@@ -323,7 +323,7 @@ describe('App', () => {
     const select = await screen.findByRole('combobox', { name: 'Language' });
     fireEvent.change(select, { target: { value: 'zh' } });
 
-    expect(await screen.findByText('位置')).toBeTruthy();
+    expect(await screen.findByText('作用域')).toBeTruthy();
     expect(document.documentElement.lang).toBe('zh-CN');
     expect(window.localStorage.getItem('skillcat-locale')).toBe('zh');
   });
@@ -334,7 +334,7 @@ describe('App', () => {
     vi.mocked(api.getSnapshot).mockResolvedValue(base);
     const { unmount } = renderApp(api);
 
-    fireEvent.click(await screen.findByText('分析'));
+    fireEvent.click(await screen.findByText('问题与评分'));
     const disabled = await screen.findByRole('button', { name: 'SKILL 评估' });
     expect((disabled as HTMLButtonElement).disabled).toBe(true);
     unmount();
@@ -349,7 +349,7 @@ describe('App', () => {
     });
     renderApp(configuredApi);
 
-    fireEvent.click(await screen.findByText('分析'));
+    fireEvent.click(await screen.findByText('问题与评分'));
     const enabled = await screen.findByRole('button', { name: 'SKILL 评估' });
     expect((enabled as HTMLButtonElement).disabled).toBe(false);
   });
@@ -364,7 +364,7 @@ describe('App', () => {
     });
     renderApp(api);
 
-    fireEvent.click(await screen.findByText('分析'));
+    fireEvent.click(await screen.findByText('问题与评分'));
 
     // Overview is selected by default and shows the summary and scores.
     expect(await screen.findByText('Overall summary.')).toBeTruthy();
@@ -386,7 +386,7 @@ describe('App', () => {
     });
     renderApp(api);
 
-    fireEvent.click(await screen.findByText('分析'));
+    fireEvent.click(await screen.findByText('问题与评分'));
     fireEvent.click(await screen.findByRole('button', { name: 'AI 复核候选' }));
     expect(api.reviewCandidates).toHaveBeenCalled();
   });
@@ -401,7 +401,7 @@ describe('App', () => {
     vi.mocked(api.getSnapshot).mockResolvedValue({ ...snapshot(), evaluating: true });
     renderApp(api);
 
-    fireEvent.click(await screen.findByText('分析'));
+    fireEvent.click(await screen.findByText('问题与评分'));
 
     await act(async () => {
       emit?.({ type: 'step', step: { code: 'eval.step.prepare', params: { count: 3 } } });
@@ -420,7 +420,7 @@ describe('App', () => {
     });
     renderApp(api);
 
-    fireEvent.click(await screen.findByText('分析'));
+    fireEvent.click(await screen.findByText('问题与评分'));
     fireEvent.click(await screen.findByRole('button', { name: 'SKILL 评估' }));
 
     expect(await screen.findByText(/将覆盖/)).toBeTruthy();
@@ -480,7 +480,7 @@ describe('App', () => {
     ]);
     renderApp(api);
 
-    fireEvent.click(await screen.findByText('搜索'));
+    fireEvent.click(await screen.findByText('Skills 市场'));
 
     expect(await screen.findByText('pdf-tools')).toBeTruthy();
     expect(api.leaderboard).toHaveBeenCalledWith('all-time');
@@ -498,12 +498,12 @@ describe('App', () => {
     ]);
     renderApp(api);
 
-    fireEvent.click(await screen.findByText('搜索'));
+    fireEvent.click(await screen.findByText('Skills 市场'));
     expect(await screen.findByText('pdf-tools')).toBeTruthy();
     expect(api.leaderboard).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByText('Skills'));
-    fireEvent.click(screen.getByText('搜索'));
+    fireEvent.click(screen.getByText('Skills 市场'));
 
     expect(await screen.findByText('pdf-tools')).toBeTruthy();
     expect(api.leaderboard).toHaveBeenCalledTimes(1);
@@ -516,7 +516,7 @@ describe('App', () => {
     ]);
     renderApp(api);
 
-    fireEvent.click(await screen.findByText('搜索'));
+    fireEvent.click(await screen.findByText('Skills 市场'));
     fireEvent.change(screen.getByPlaceholderText(/搜索 skills.sh/), {
       target: { value: 'pdf' },
     });
@@ -549,7 +549,7 @@ describe('App', () => {
     });
     renderApp(api);
 
-    fireEvent.click(await screen.findByText('搜索'));
+    fireEvent.click(await screen.findByText('Skills 市场'));
     fireEvent.change(screen.getByPlaceholderText(/搜索 skills.sh/), {
       target: { value: 'pdf' },
     });
@@ -642,6 +642,19 @@ describe('App', () => {
     expect(screen.getByText('有未保存的修改')).toBeTruthy();
   });
 
+  it('offers a setup shortcut when activity is empty and unconfigured', async () => {
+    const api = makeApi();
+    renderApp(api);
+
+    fireEvent.click(await screen.findByText('使用记录'));
+
+    const configure = await screen.findByRole('button', { name: '去设置' });
+    fireEvent.click(configure);
+
+    // Lands on Settings → Integrations.
+    expect(await screen.findByText('运行监听')).toBeTruthy();
+  });
+
   it('renders activity stats and clears the log', async () => {
     vi.stubGlobal(
       'ResizeObserver',
@@ -683,7 +696,7 @@ describe('App', () => {
     });
     renderApp(api);
 
-    fireEvent.click(await screen.findByText('运行记录'));
+    fireEvent.click(await screen.findByText('使用记录'));
 
     expect(await screen.findByText('总触发')).toBeTruthy();
     expect(screen.getAllByText('alpha').length).toBeGreaterThan(0);

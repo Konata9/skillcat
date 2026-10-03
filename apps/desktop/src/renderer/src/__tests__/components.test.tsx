@@ -149,9 +149,15 @@ describe('ConfirmFlows install targets', () => {
     installs: 3400,
   };
 
-  const globalScope = { key: 'global', label: '全局', path: null, count: 0 };
-  const demo = { key: 'project:/tmp/demo', label: 'demo', path: '/tmp/demo', count: 0 };
-  const other = { key: 'project:/tmp/other', label: 'other', path: '/tmp/other', count: 0 };
+  const globalScope = { key: 'global', label: '全局', path: null, count: 0, pinned: false };
+  const demo = { key: 'project:/tmp/demo', label: 'demo', path: '/tmp/demo', count: 0, pinned: false };
+  const other = {
+    key: 'project:/tmp/other',
+    label: 'other',
+    path: '/tmp/other',
+    count: 0,
+    pinned: false,
+  };
   const scopes = [globalScope, demo, other];
 
   function renderInstall(

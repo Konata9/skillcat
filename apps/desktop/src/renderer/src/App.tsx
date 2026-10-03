@@ -18,6 +18,7 @@ import { OperationDrawer } from './components/OperationDrawer';
 import { TriggerEditorModal } from './components/TriggerEditorModal';
 import { useAnnotationEditor } from './hooks/useAnnotationEditor';
 import { useActivity } from './hooks/useActivity';
+import { useBridges } from './hooks/useBridges';
 import { useEvaluationLog } from './hooks/useEvaluationLog';
 import { useOperations } from './hooks/useOperations';
 import { useProjects } from './hooks/useProjects';
@@ -28,9 +29,8 @@ import { useI18n } from './lib/i18n';
 import type { Tab } from './lib/navigation';
 import { ActivityView } from './views/ActivityView';
 import { AnalysisView } from './views/AnalysisView';
-import { ProjectsView } from './views/ProjectsView';
 import { SearchView } from './views/SearchView';
-import { SettingsView } from './views/SettingsView';
+import { SettingsView, type SettingsCategory } from './views/SettingsView';
 import { SkillsView } from './views/SkillsView';
 
 export function App(): React.ReactElement {
@@ -40,12 +40,19 @@ export function App(): React.ReactElement {
   const { t, scopeLabel, locale } = useI18n();
   const [tab, setTab] = useState<Tab>('skills');
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const [settingsCategory, setSettingsCategory] = useState<SettingsCategory>('general');
+
+  const openSettings = (category: SettingsCategory = 'general') => {
+    setSettingsCategory(category);
+    setTab('settings');
+  };
 
   // Cmd/Ctrl+, opens Settings, matching the platform convention.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === ',') {
         event.preventDefault();
+        setSettingsCategory('general');
         setTab('settings');
       }
     };
@@ -57,8 +64,13 @@ export function App(): React.ReactElement {
   const { op, startOp, cancelOp, closeOp } = useOperations(api, reportError);
   const evaluationLog = useEvaluationLog(api);
   const activity = useActivity(api, snapshot?.scannedAt ?? null);
+  const { bridges } = useBridges(api);
   const { projects, reload: reloadProjects } = useProjects(api, snapshot?.scannedAt);
-  const { scopes, scopeKey, setScopeKey, activeScope, records } = useScopes(snapshot, scopeLabel);
+  const { scopes, scopeKey, setScopeKey, activeScope, records } = useScopes(
+    snapshot,
+    scopeLabel,
+    projects,
+  );
   const editor = useAnnotationEditor(
     api,
     () => showStatus(t('status.annotationSaved')),
@@ -78,7 +90,6 @@ export function App(): React.ReactElement {
     analysis: String(findings.length),
     activity:
       activity.stats && activity.stats.total > 0 ? String(activity.stats.total) : '',
-    projects: String(projects.length),
     search: '',
     settings: '',
   };
@@ -94,8 +105,13 @@ export function App(): React.ReactElement {
     showStatus(t('status.projectRemoved'));
   };
 
-  const pinProject = (project: ProjectInfo) => {
-    void api.setProjectPinned(project.path, !project.pinned).then(reloadProjects);
+  const pinProject = (path: string, pinned: boolean) => {
+    void api.setProjectPinned(path, pinned).then(reloadProjects);
+  };
+
+  const unregisterProject = (path: string) => {
+    const project = projects.find((entry) => entry.path === path);
+    if (project) setConfirmState({ kind: 'project-remove', project });
   };
 
   const addProject = () => {
@@ -104,13 +120,6 @@ export function App(): React.ReactElement {
       await api.addProject(path);
       await reloadProjects();
       showStatus(t('status.projectAdded', { path }));
-    });
-  };
-
-  const rescanProjects = () => {
-    void api.refresh().then(async () => {
-      await reloadProjects();
-      showStatus(t('status.projectsRescanned'));
     });
   };
 
@@ -183,11 +192,14 @@ export function App(): React.ReactElement {
       <GlobalProgress active={globalLoading} />
       <AppSidebar
         tab={tab}
-        onSelectTab={setTab}
+        onSelectTab={(next) => (next === 'settings' ? openSettings() : setTab(next))}
         navCounts={navCounts}
         scopes={scopes}
         scopeKey={scopeKey}
         onSelectScope={selectScope}
+        onTogglePin={pinProject}
+        onAddProject={addProject}
+        onUnregister={unregisterProject}
         snapshot={snapshot}
         analysisCount={findings.length}
       />
@@ -218,7 +230,7 @@ export function App(): React.ReactElement {
             snapshot.config.roots.length === 0 &&
             snapshot.projects.length === 0
           }
-          onGoToSettings={() => setTab('settings')}
+          onGoToSettings={() => openSettings()}
         />
 
         <div className="flex min-h-0 flex-1 flex-col">
@@ -237,6 +249,8 @@ export function App(): React.ReactElement {
             <ActivityView
               events={activity.events}
               stats={activity.stats}
+              configured={bridges.some((bridge) => bridge.installed)}
+              onConfigure={() => openSettings('integrations')}
               onClear={async () => {
                 await api.clearActivity();
                 await activity.reload();
@@ -258,15 +272,6 @@ export function App(): React.ReactElement {
               processEvents={evaluationLog.events}
             />
           ) : null}
-          {tab === 'projects' ? (
-            <ProjectsView
-              projects={projects}
-              onPin={pinProject}
-              onRemove={(project) => setConfirmState({ kind: 'project-remove', project })}
-              onAdd={addProject}
-              onRescan={rescanProjects}
-            />
-          ) : null}
           {tab === 'search' ? (
             <SearchView
               onSearch={api.searchRemote}
@@ -282,6 +287,7 @@ export function App(): React.ReactElement {
               cliAvailable={snapshot.cliAvailable}
               cliSource={snapshot.cliSource}
               cliError={snapshot.cliError}
+              initialCategory={settingsCategory}
               onStatus={showStatus}
               onSave={saveSettings}
               onTestLlm={api.testLlm}

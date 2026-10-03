@@ -9,7 +9,7 @@
 agent 进程
   └─ SkillCat 安装的 bridge 插件 ──追加 JSON 行──▶ <configDir>/runtime-spool.jsonl
                                                        │ fs.watch
-SkillCat BridgeService ── 适配器归一化 ── 匹配扫描目录 ──▶ runtime-events.json ──▶ 运行记录页
+SkillCat BridgeService ── 适配器归一化 ── 匹配扫描目录 ──▶ runtime-events.json ──▶ 使用记录页
 ```
 
 - 插件只写**触发事实**：skill 名、触发词语（用户提示词片段）、任务、会话、时间。
@@ -50,4 +50,4 @@ SkillCat BridgeService ── 适配器归一化 ── 匹配扫描目录 ─�
 
 - 触发词语是用户提示词片段，属敏感数据，**只保存在本机配置目录**，不含 SKILL 正文，不上传。
 - 可在设置 → 集成的「记录偏好」中关闭记录、关闭触发词语保存，或调整保留天数（30–360 天）。
-- 「运行记录 → 清空记录」可随时删除全部历史。
+- 「使用记录 → 清空记录」可随时删除全部历史。

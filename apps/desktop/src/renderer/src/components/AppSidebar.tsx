@@ -5,12 +5,12 @@
 import * as React from 'react';
 import { useMemo, useState } from 'react';
 import type { Snapshot } from '@shared/contract';
-import { Languages, LoaderCircle, Moon, Search, Sun } from 'lucide-react';
+import { Languages, LoaderCircle, Moon, Plus, Search, Star, Sun, X } from 'lucide-react';
 import logoUrl from '@renderer/assets/logo.png';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useI18n } from '@renderer/lib/i18n';
-import { TAB_LABEL_KEY, TAB_ORDER, type Tab } from '@renderer/lib/navigation';
+import { TAB_HINT_KEY, TAB_LABEL_KEY, TAB_ORDER, type Tab } from '@renderer/lib/navigation';
 import { useTheme } from '@renderer/lib/theme';
 import { cn } from '@renderer/lib/utils';
 import type { ScopeOption } from '@renderer/hooks/useScopes';
@@ -22,6 +22,9 @@ export function AppSidebar({
   scopes,
   scopeKey,
   onSelectScope,
+  onTogglePin,
+  onAddProject,
+  onUnregister,
   snapshot,
   analysisCount,
 }: {
@@ -31,6 +34,9 @@ export function AppSidebar({
   scopes: ScopeOption[];
   scopeKey: string;
   onSelectScope: (key: string) => void;
+  onTogglePin: (path: string, pinned: boolean) => void;
+  onAddProject: () => void;
+  onUnregister: (path: string) => void;
   snapshot: Snapshot | null;
   analysisCount: number;
 }): React.ReactElement {
@@ -61,25 +67,50 @@ export function AppSidebar({
       </div>
 
       <nav className="flex flex-col gap-0.5 px-2 pb-3">
-        {TAB_ORDER.map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onSelectTab(key)}
-            className={cn(
-              'focus-ring flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
-              tab === key && 'bg-primary/10 text-primary',
-            )}
-          >
-            <span>{t(TAB_LABEL_KEY[key])}</span>
-            {navCounts[key] ? (
-              <span className="text-[11px] text-muted-foreground">{navCounts[key]}</span>
-            ) : null}
-          </button>
-        ))}
+        {TAB_ORDER.map((key) => {
+          const hintKey = TAB_HINT_KEY[key];
+          return (
+            <React.Fragment key={key}>
+              {key === 'settings' ? <div className="my-1 border-t border-border" /> : null}
+              <button
+                type="button"
+                onClick={() => onSelectTab(key)}
+                className={cn(
+                  'focus-ring flex items-start justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
+                  tab === key && 'bg-primary/10 text-primary',
+                )}
+              >
+                <span className="flex min-w-0 flex-col">
+                  <span>{t(TAB_LABEL_KEY[key])}</span>
+                  {hintKey ? (
+                    <span className="truncate text-[11px] font-normal text-muted-foreground">
+                      {t(hintKey)}
+                    </span>
+                  ) : null}
+                </span>
+                {navCounts[key] ? (
+                  <span className="mt-0.5 text-[11px] text-muted-foreground">
+                    {navCounts[key]}
+                  </span>
+                ) : null}
+              </button>
+            </React.Fragment>
+          );
+        })}
       </nav>
 
-      <div className="section-label px-4 pt-2 pb-1">{t('app.scopeHeading')}</div>
+      <div className="section-label flex items-center justify-between px-4 pt-2 pb-1">
+        <span>{t('app.scopeHeading')}</span>
+        <button
+          type="button"
+          aria-label={t('projects.add')}
+          title={t('projects.add')}
+          onClick={onAddProject}
+          className="focus-ring rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Plus className="size-3.5" />
+        </button>
+      </div>
       {hasProjects ? (
         <div className="relative px-2 pb-1.5">
           <Search className="pointer-events-none absolute top-1/2 left-3.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -93,21 +124,61 @@ export function AppSidebar({
         </div>
       ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-        {visibleScopes.map((scope) => (
-          <button
-            key={scope.key}
-            type="button"
-            onClick={() => onSelectScope(scope.key)}
-            className={cn(
-              'focus-ring block w-full truncate rounded-md px-2.5 py-1.5 text-left text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
-              scopeKey === scope.key && 'bg-accent text-foreground',
-            )}
-          >
-            <span className="truncate">
-              {scope.label} <span className="text-[11px] text-muted-foreground">({scope.count})</span>
-            </span>
-          </button>
-        ))}
+        {visibleScopes.map((scope) => {
+          const isProject = scope.path !== null;
+          return (
+            <div
+              key={scope.key}
+              className={cn(
+                'group flex items-center gap-0.5 rounded-md transition-colors hover:bg-accent',
+                scopeKey === scope.key && 'bg-accent',
+              )}
+            >
+              <button
+                type="button"
+                onClick={() => onSelectScope(scope.key)}
+                className={cn(
+                  'focus-ring min-w-0 flex-1 truncate rounded-md px-2.5 py-1.5 text-left text-muted-foreground transition-colors hover:text-foreground',
+                  scopeKey === scope.key && 'text-foreground',
+                )}
+              >
+                <span className="truncate">
+                  {scope.label}{' '}
+                  <span className="text-[11px] text-muted-foreground">({scope.count})</span>
+                </span>
+              </button>
+              {isProject ? (
+                <>
+                  <button
+                    type="button"
+                    aria-label={scope.pinned ? t('projects.unpin') : t('projects.pin')}
+                    title={scope.pinned ? t('projects.unpin') : t('projects.pin')}
+                    onClick={() => onTogglePin(scope.path as string, !scope.pinned)}
+                    className={cn(
+                      'focus-ring shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-foreground',
+                      scope.pinned
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+                    )}
+                  >
+                    <Star
+                      className={cn('size-3.5', scope.pinned && 'fill-warning text-warning')}
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t('projects.unregister')}
+                    title={t('projects.unregister')}
+                    onClick={() => onUnregister(scope.path as string)}
+                    className="focus-ring mr-1 shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-colors group-hover:opacity-100 group-focus-within:opacity-100 hover:text-foreground"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </>
+              ) : null}
+            </div>
+          );
+        })}
         {query && projectCount === 0 ? (
           <div className="px-2.5 py-2 text-[11px] text-muted-foreground">
             {t('app.scopeNoMatch')}

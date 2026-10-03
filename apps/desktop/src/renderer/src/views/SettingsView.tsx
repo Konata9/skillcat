@@ -37,7 +37,14 @@ import { IntegrationsSection, type ActivityForm } from './settings/IntegrationsS
 import { LlmSection, type LlmForm } from './settings/LlmSection';
 import { UpdatesSection } from './settings/UpdatesSection';
 
-type SettingsCategory = 'general' | 'scanning' | 'cli' | 'network' | 'llm' | 'integrations' | 'updates';
+export type SettingsCategory =
+  | 'general'
+  | 'scanning'
+  | 'cli'
+  | 'network'
+  | 'llm'
+  | 'integrations'
+  | 'updates';
 
 const CATEGORY_ORDER: SettingsCategory[] = [
   'general',
@@ -66,6 +73,7 @@ export function SettingsView({
   cliAvailable,
   cliSource,
   cliError,
+  initialCategory = 'general',
   onSave,
   onStatus,
   onPickDirectory,
@@ -86,6 +94,7 @@ export function SettingsView({
   cliAvailable: boolean;
   cliSource: string;
   cliError?: string;
+  initialCategory?: SettingsCategory;
   onSave: (patch: {
     roots: string[];
     proxy: { url: string; bypass: string };
@@ -111,7 +120,7 @@ export function SettingsView({
 }): React.ReactElement {
   const { t, locale, setLocale } = useI18n();
   const reportError = useReportError(onStatus);
-  const [category, setCategory] = useState<SettingsCategory>('general');
+  const [category, setCategory] = useState<SettingsCategory>(initialCategory);
   const [roots, setRoots] = useState(config.roots.join('\n'));
   const [skillDirs, setSkillDirs] = useState(config.customSkillDirs.join('\n'));
   const [proxyEnabled, setProxyEnabled] = useState(Boolean(config.proxy.url));

@@ -51,7 +51,7 @@ apps/desktop/    Electron 44 + electron-vite + React 19
    ├─ components/ui  原语组件（button/badge/dialog/table/field/section…，仓库内自有源码）
    ├─ components     业务组件与外壳
    ├─ hooks          API 驱动的状态（useOperations/useProjects/useScopes/useActivity/…）
-   ├─ views          页面组合（Skills/Analysis/Projects/Search/Activity/Settings）
+   ├─ views          页面组合（Skills/Analysis/Search/Activity/Settings）
    │  └─ settings    Settings 的子区块（DoctorPanel/LlmSection/IntegrationsSection/UpdatesSection）
    └─ lib            cn()、格式化、i18n 字典与 Provider、主题、导航模型
 ```

@@ -21,7 +21,6 @@ import {
 } from 'recharts';
 import { useI18n } from '@renderer/lib/i18n';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { EmptyState } from '../components/indicators';
 import { Button } from '../components/ui/button';
 import { Select } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
@@ -74,10 +73,15 @@ function unique(values: Array<string | null>): string[] {
 export function ActivityView({
   events,
   stats,
+  configured,
+  onConfigure,
   onClear,
 }: {
   events: RuntimeSkillEvent[];
   stats: ActivityStats | null;
+  /** Whether a runtime-monitoring bridge has ever been installed. */
+  configured: boolean;
+  onConfigure?: () => void;
   onClear: () => Promise<void>;
 }): React.ReactElement {
   const { t, relativeTime } = useI18n();
@@ -124,10 +128,17 @@ export function ActivityView({
 
   if (!stats || stats.total === 0) {
     return (
-      <EmptyState>
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-5 py-10 text-center text-muted-foreground">
         <div className="font-medium text-foreground">{t('activity.empty')}</div>
-        <div className="mt-1 max-w-[52ch] text-[12px]">{t('activity.emptyHint')}</div>
-      </EmptyState>
+        <div className="mt-1 text-[12px] whitespace-nowrap">
+          {configured ? t('activity.emptyHintConfigured') : t('activity.emptyHint')}
+        </div>
+        {!configured && onConfigure ? (
+          <Button size="sm" className="mt-4" onClick={onConfigure}>
+            {t('activity.configure')}
+          </Button>
+        ) : null}
+      </div>
     );
   }
 

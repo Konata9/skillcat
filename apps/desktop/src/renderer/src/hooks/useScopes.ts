@@ -4,7 +4,7 @@
  * returns the records of the active scope.
  */
 import { useEffect, useMemo, useState } from 'react';
-import type { Scope, SkillRecord } from '@skillcat/core';
+import type { ProjectInfo, Scope, SkillRecord } from '@skillcat/core';
 import { projectName } from '@renderer/lib/format';
 import type { Snapshot } from '@shared/contract';
 
@@ -13,6 +13,7 @@ export interface ScopeOption {
   label: string;
   path: string | null;
   count: number;
+  pinned: boolean;
 }
 
 export interface ScopesController {
@@ -26,28 +27,31 @@ export interface ScopesController {
 export function useScopes(
   snapshot: Snapshot | null,
   scopeLabel: (scope: Scope, projectPath?: string) => string,
+  projects: ProjectInfo[] = [],
 ): ScopesController {
   const [scopeKey, setScopeKey] = useState('global');
 
   const scopes = useMemo<ScopeOption[]>(() => {
-    const list: ScopeOption[] = [
-      {
-        key: 'global',
-        label: scopeLabel('global'),
-        path: null,
-        count: snapshot?.global.length ?? 0,
-      },
-    ];
-    for (const project of snapshot?.projects ?? []) {
-      list.push({
-        key: `project:${project.path}`,
-        label: projectName(project.path),
-        path: project.path,
-        count: project.records.length,
-      });
-    }
-    return list;
-  }, [snapshot, scopeLabel]);
+    const pinnedByPath = new Map(projects.map((project) => [project.path, project.pinned]));
+    const projectScopes: ScopeOption[] = (snapshot?.projects ?? []).map((project) => ({
+      key: `project:${project.path}`,
+      label: projectName(project.path),
+      path: project.path,
+      count: project.records.length,
+      pinned: pinnedByPath.get(project.path) === true,
+    }));
+    // Pinned projects float to the top; Array.sort is stable, so ties keep scan order.
+    projectScopes.sort((a, b) => Number(b.pinned) - Number(a.pinned));
+
+    const global: ScopeOption = {
+      key: 'global',
+      label: scopeLabel('global'),
+      path: null,
+      count: snapshot?.global.length ?? 0,
+      pinned: false,
+    };
+    return [global, ...projectScopes];
+  }, [snapshot, scopeLabel, projects]);
 
   useEffect(() => {
     if (!scopes.some((scope) => scope.key === scopeKey)) setScopeKey('global');

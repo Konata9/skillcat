@@ -24,7 +24,7 @@ export const en: Record<MessageKey, MessageValue> = {
   'app.evaluateRunning': 'Evaluating… {done}/{total}',
   'app.reviewCandidates': 'Review candidates',
   'app.reviewing': 'Reviewing…',
-  'app.scopeHeading': 'Locations',
+  'app.scopeHeading': 'Scope',
   'app.scopeSearchPlaceholder': 'Search projects',
   'app.scopeNoMatch': 'No matching projects',
   'app.scopeSummary': '{label} · {count}',
@@ -34,11 +34,14 @@ export const en: Record<MessageKey, MessageValue> = {
 
   // ---- navigation ----
   'nav.skills': 'Skills',
-  'nav.analysis': 'Analysis',
-  'nav.activity': 'Activity',
-  'nav.projects': 'Projects',
-  'nav.search': 'Search',
+  'nav.analysis': 'Issues & scores',
+  'nav.activity': 'Usage log',
+  'nav.search': 'Skills market',
   'nav.settings': 'Settings',
+  'nav.skills.hint': 'Installed locally',
+  'nav.analysis.hint': 'Rule findings · AI scores',
+  'nav.activity.hint': 'Triggers and stats',
+  'nav.search.hint': 'skills.sh · search & install',
 
   // ---- shared ----
   'common.cancel': 'Cancel',
@@ -62,7 +65,6 @@ export const en: Record<MessageKey, MessageValue> = {
   'status.saveFailed': 'Save failed: {message}',
   'status.projectRemoved': 'Project unregistered (no files were deleted)',
   'status.projectAdded': 'Project added: {path}',
-  'status.projectsRescanned': 'Projects rediscovered',
   'status.settingsSaved': 'Settings saved and refreshed',
   'status.configReloaded': 'Config reloaded and rescanned',
   'status.doctorOk': 'Doctor finished: no issues found',
@@ -213,21 +215,8 @@ export const en: Record<MessageKey, MessageValue> = {
   'finding.aiIssue.detail': '{detail}',
   'finding.aiIssue.suggestion': '{suggestion}',
 
-  // ---- projects view ----
-  'projects.summary': {
-    one: '{n} project (auto-discovered under scan roots; pinned first)',
-    other: '{n} projects (auto-discovered under scan roots; pinned first)',
-  },
+  // ---- project actions (sidebar scope list) ----
   'projects.add': 'Add project',
-  'projects.rescan': 'Rediscover',
-  'projects.empty':
-    'No projects yet. Add scan roots in Settings, or add a project manually.',
-  'projects.tableProject': 'Project',
-  'projects.tablePath': 'Path',
-  'projects.tableSkills': 'skills',
-  'projects.tableMarkers': 'Markers',
-  'projects.registered': 'Registered',
-  'projects.scanError': 'Scan error',
   'projects.pin': 'Pin',
   'projects.unpin': 'Unpin',
   'projects.unregister': 'Unregister',
@@ -474,7 +463,9 @@ export const en: Record<MessageKey, MessageValue> = {
   'activity.table.source': 'Source',
   'activity.empty': 'No triggers recorded yet',
   'activity.emptyHint':
-    'Install the OpenCode integration in Settings → Integrations; SKILL activations will show up here.',
+    "Install an agent's runtime monitoring integration in Settings → Integrations; SKILL activations will show up here.",
+  'activity.emptyHintConfigured': 'Runtime monitoring is on; waiting for a SKILL to fire.',
+  'activity.configure': 'Open settings',
   'activity.clear': 'Clear',
   'activity.clearTitle': 'Clear activity',
   'activity.clearBody': 'This deletes all {count} trigger records and cannot be undone.',
