@@ -18,7 +18,8 @@ import {
 } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';
 
-export const SKIP_DIRS = new Set(['.git', 'node_modules']);
+/** Dirs skipped when hashing / walking a single skill folder. */
+export const WALK_SKIP_DIRS = new Set(['.git', 'node_modules']);
 
 export async function pathExists(path: string): Promise<boolean> {
   try {
@@ -115,7 +116,7 @@ export async function walkFiles(
   for (const entry of entries) {
     const fullPath = join(currentDir, entry.name);
     if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(entry.name)) continue;
+      if (WALK_SKIP_DIRS.has(entry.name)) continue;
       await walkFiles(baseDir, fullPath, results);
     } else if (entry.isFile()) {
       let size = 0;
@@ -166,7 +167,7 @@ async function collectContents(
     entries.map(async (entry) => {
       const fullPath = join(currentDir, entry.name);
       if (entry.isDirectory()) {
-        if (SKIP_DIRS.has(entry.name)) return;
+        if (WALK_SKIP_DIRS.has(entry.name)) return;
         await collectContents(baseDir, fullPath, results);
       } else if (entry.isFile()) {
         try {

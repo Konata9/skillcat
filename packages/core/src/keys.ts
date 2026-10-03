@@ -12,8 +12,21 @@
  * This module is deliberately dependency-free (type-only imports), which makes
  * it safe to import from browser contexts via the `@skillcat/core/keys`
  * subpath export.
+ *
+ * It also owns the identity projection (`skillRef`), shared by the rule engine
+ * and the evaluation layer so both reference skills the same way.
  */
 import type { SkillRecord, SkillRef } from './types.js';
+
+/** Minimal identity snapshot of a scanned skill record. */
+export function skillRef(record: SkillRecord): SkillRef {
+  return {
+    name: record.name,
+    scope: record.scope,
+    projectPath: record.projectPath,
+    path: record.path,
+  };
+}
 
 /** `scope|projectPath|name` identity for a skill, before hashing. */
 export function scopeNameKey(

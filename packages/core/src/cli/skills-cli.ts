@@ -7,7 +7,7 @@ import { createInterface } from 'node:readline';
 import type { Readable } from 'node:stream';
 import { execa } from 'execa';
 import { z } from 'zod';
-import { toErrorMessage } from '../errors.js';
+import { toErrorMessage } from '../coerce.js';
 import type { AsyncOp, CliSkill, Scope } from '../types.js';
 import { cleanOutputLine } from './ansi.js';
 

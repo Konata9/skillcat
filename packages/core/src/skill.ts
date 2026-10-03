@@ -4,8 +4,7 @@
  */
 import { basename, join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
-import { coerceString, coerceTrimmed } from './coerce.js';
-import { toErrorMessage } from './errors.js';
+import { coerceString, coerceTrimmed, toErrorMessage } from './coerce.js';
 import { pathExists, readFileSafe, walkFiles, type WalkedFile } from './fs-utils.js';
 import { extractTriggers } from './triggers.js';
 import type { SkillFileInfo, TriggerProfile } from './types.js';

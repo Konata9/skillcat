@@ -4,7 +4,7 @@
  * filled in and this queries the public releases API.
  */
 import type { FetchLike } from './cli/remote-search.js';
-import { toErrorMessage } from './errors.js';
+import { toErrorMessage } from './coerce.js';
 import { fetchResponse } from './http.js';
 
 export interface UpdateCheckResult {

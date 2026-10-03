@@ -11,7 +11,7 @@ import type {
   Thresholds,
 } from '../types.js';
 
-export { skillRef as ref } from '../refs.js';
+export { skillRef as ref } from '../keys.js';
 
 export interface AnalysisContext {
   records: SkillRecord[];

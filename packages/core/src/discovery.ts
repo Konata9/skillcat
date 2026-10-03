@@ -2,18 +2,19 @@
  * Filesystem discovery: read the lock file, enumerate skill candidates across
  * the canonical dir and every agent dir, parse them and compute link states.
  * Read-only by design; an optional CLI pass can enrich declared agents.
+ *
+ * Link-state analysis lives in `discovery/links.ts`.
  */
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { AGENTS, type AgentDef } from './agents.js';
+import { AGENTS } from './agents.js';
 import type { SkillsCli } from './cli/skills-cli.js';
+import { computeLinks, type AgentDirInfo } from './discovery/links.js';
 import {
   computeSkillFolderHash,
   isDirectory,
-  lstatSafe,
   readJsonSafe,
   readdirSafe,
-  readlinkSafe,
   safeRealpath,
 } from './fs-utils.js';
 import { annotationKey } from './keys.js';
@@ -28,13 +29,14 @@ import {
 import { hasSkillMd, parseSkillDir } from './skill.js';
 import { applyAnnotation } from './triggers.js';
 import type {
-  AgentLink,
   AnnotationsFile,
   LockEntry,
   OrphanLock,
   Scope,
   SkillRecord,
 } from './types.js';
+
+export type { AgentDirInfo } from './discovery/links.js';
 
 export interface LockFile {
   version: number;
@@ -55,11 +57,6 @@ export async function readLock(path: string): Promise<LockFile> {
     version: typeof raw.version === 'number' ? raw.version : 0,
     skills,
   };
-}
-
-export interface AgentDirInfo {
-  agent: AgentDef;
-  dir: string;
 }
 
 export async function collectAgentDirs(scope: Scope, root?: string): Promise<AgentDirInfo[]> {
@@ -216,116 +213,4 @@ export async function scanScope(options: ScanScopeOptions): Promise<ScanScopeRes
   }
 
   return { records, orphans };
-}
-
-async function computeLinks(args: {
-  dirName: string;
-  skillPath: string;
-  canonicalDir: string;
-  agentDirs: AgentDirInfo[];
-  copyHashCache: Map<string, string>;
-}): Promise<AgentLink[]> {
-  const links: AgentLink[] = [];
-  const canonicalPath = resolve(join(args.canonicalDir, args.dirName));
-  const selfPath = resolve(args.skillPath);
-  const seen = new Set<string>();
-
-  const candidatesByAgent = new Map<string, AgentDirInfo[]>();
-  for (const info of args.agentDirs) {
-    const key = `${info.agent.id}:${resolve(info.dir)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const list = candidatesByAgent.get(info.agent.id);
-    if (list) list.push(info);
-    else candidatesByAgent.set(info.agent.id, [info]);
-  }
-
-  for (const candidates of candidatesByAgent.values()) {
-    let fallback: AgentDirInfo | null = null;
-    let found = false;
-    for (const { agent, dir } of candidates) {
-      const expected = join(dir, args.dirName);
-      const stats = await lstatSafe(expected);
-      if (!stats) {
-        fallback ??= { agent, dir };
-        continue;
-      }
-      found = true;
-
-      if (resolve(expected) === canonicalPath || resolve(expected) === selfPath) {
-        links.push({
-          agentId: agent.id,
-          display: agent.display,
-          dir,
-          path: expected,
-          state: 'canonical',
-        });
-        continue;
-      }
-
-      if (stats.isSymbolicLink()) {
-        const real = await safeRealpath(expected);
-        if (real) {
-          links.push({
-            agentId: agent.id,
-            display: agent.display,
-            dir,
-            path: expected,
-            state: 'symlink-ok',
-            target: real,
-          });
-        } else {
-          links.push({
-            agentId: agent.id,
-            display: agent.display,
-            dir,
-            path: expected,
-            state: 'symlink-dangling',
-            target: (await readlinkSafe(expected)) ?? undefined,
-          });
-        }
-        continue;
-      }
-
-      if (stats.isDirectory()) {
-        let copyHash = args.copyHashCache.get(expected);
-        if (!copyHash) {
-          copyHash = await computeSkillFolderHash(expected);
-          args.copyHashCache.set(expected, copyHash);
-        }
-        links.push({
-          agentId: agent.id,
-          display: agent.display,
-          dir,
-          path: expected,
-          state: 'copy',
-          copyHash,
-        });
-        continue;
-      }
-
-      links.push({
-        agentId: agent.id,
-        display: agent.display,
-        dir,
-        path: expected,
-        state: 'missing',
-      });
-    }
-
-    // An agent with several candidate dirs resolves the skill through any one
-    // of them, so report "missing" once — at the highest-priority dir — only
-    // when none of the candidates contains it.
-    if (!found && fallback) {
-      links.push({
-        agentId: fallback.agent.id,
-        display: fallback.agent.display,
-        dir: fallback.dir,
-        path: join(fallback.dir, args.dirName),
-        state: 'missing',
-      });
-    }
-  }
-
-  return links;
 }

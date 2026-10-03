@@ -1,8 +1,14 @@
 /**
  * Shared coercion helpers for untrusted frontmatter / API values. Parsing paths
  * (local SKILL.md, remote skill detail, trigger extraction, LLM catalog) must
- * interpret YAML scalars, arrays and absence the same way.
+ * interpret YAML scalars, arrays and absence the same way. Also normalizes a
+ * thrown value into a message, the other "unknown in, canonical out" concern.
  */
+
+/** Normalizes an unknown thrown value into a message. */
+export function toErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 /** Coerce a value to a display string; arrays join on newlines. */
 export function coerceString(value: unknown): string {

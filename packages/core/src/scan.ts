@@ -5,7 +5,7 @@
  */
 import type { SkillsCli } from './cli/skills-cli.js';
 import { scanScope } from './discovery.js';
-import { toErrorMessage } from './errors.js';
+import { toErrorMessage } from './coerce.js';
 import { discoverProjects } from './projects.js';
 import type { AnnotationsFile, OrphanLock, SkillRecord } from './types.js';
 

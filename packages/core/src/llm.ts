@@ -4,7 +4,7 @@
  * Anthropic speaks the OpenAI-compatible chat-completions API.
  */
 import type { LlmSettings } from './types.js';
-import { toErrorMessage } from './errors.js';
+import { toErrorMessage } from './coerce.js';
 import { fetchResponse } from './http.js';
 import type { FetchLike, FetchLikeInit } from './cli/remote-search.js';
 

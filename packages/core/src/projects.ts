@@ -10,7 +10,8 @@ import { isDirectory, pathExists, readdirSafe, safeRealpath } from './fs-utils.j
 import { expandHome, getProjectLockPath, getProjectSkillsDir, isGlobalSkillDir } from './paths.js';
 import { hasSkillMd } from './skill.js';
 
-const SKIP_DIRS = new Set([
+/** Dirs pruned while walking project roots looking for skill markers. */
+const PROJECT_SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', 'out', '.next', '.nuxt', '.cache', '.turbo',
   'vendor', 'coverage', 'target', 'Pods', '.venv', 'venv', '__pycache__', '.idea',
   '.vscode', 'Library', '.Trash', 'tmp', 'temp', '.pnpm-store', '.yarn',
@@ -81,7 +82,7 @@ export async function discoverProjects(
     const entries = await readdirSafe(real, { withFileTypes: true });
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
-      if (entry.name.startsWith('.') || SKIP_DIRS.has(entry.name)) continue;
+      if (entry.name.startsWith('.') || PROJECT_SKIP_DIRS.has(entry.name)) continue;
       queue.push({ dir: join(real, entry.name), depth: current.depth + 1 });
     }
   }

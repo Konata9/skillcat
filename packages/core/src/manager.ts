@@ -4,10 +4,14 @@
  * project registry, annotations, remote search, CLI ops) to any UI.
  *
  * UI-agnostic: listeners receive change notifications, never rendered strings.
+ *
+ * The facade only orchestrates. Configuration/project mutations live in
+ * `manager/settings.ts`, the LLM review pipeline in `manager/evaluation.ts`,
+ * and the diagnostic report in `manager/doctor.ts`.
  */
-import { basename, join } from 'node:path';
+import { basename } from 'node:path';
 import { resolveSkillsCommand, type BundledCli, type ResolvedCommand } from './cli/env.js';
-import { buildProxyEnv, isValidProxyUrl, normalizeProxyUrl } from './cli/proxy.js';
+import { buildProxyEnv } from './cli/proxy.js';
 import {
   fetchLeaderboardApi,
   fetchRemoteSkillDetail,
@@ -17,48 +21,37 @@ import {
 } from './cli/remote-search.js';
 import { runAdd, runInit, runRemove, runUpdate } from './cli/operations.js';
 import { SkillsCli } from './cli/skills-cli.js';
-import { ConfigStore, normalizeCustomSkillDirs, sanitizeLlm } from './config.js';
-import { sanitizeActivity } from './bridge/limits.js';
-import { sanitizeLogging } from './logging.js';
+import { ConfigStore } from './config.js';
 import { getLogger } from './logger.js';
 import { analyzeSkills } from './analysis.js';
-import { readLock } from './discovery.js';
-import { toErrorMessage } from './errors.js';
+import { toErrorMessage } from './coerce.js';
 import { BridgeService } from './bridge/service.js';
 import { scanAll } from './scan.js';
-import {
-  evaluateSkills,
-  evaluationSignature,
-  reviewCandidatePairs,
-  type ModelCaller,
-} from './evaluation/evaluate.js';
+import { evaluationSignature, type ModelCaller } from './evaluation/evaluate.js';
 import { applyVerdicts } from './evaluation/verdicts.js';
 import { annotationKey, recordKey } from './keys.js';
-import { isLlmConfigured, testLlmConnection, type LlmTestResult } from './llm.js';
-import { getConfigDir, getGlobalLockPath, getProjectLockPath, logsDir } from './paths.js';
+import { testLlmConnection, type LlmTestResult } from './llm.js';
+import { getConfigDir } from './paths.js';
 import { discoverProjects } from './projects.js';
 import { SidecarStore } from './sidecar.js';
 import { checkForUpdate, type UpdateCheckResult } from './update.js';
+import { DoctorService } from './manager/doctor.js';
+import { EvaluationController } from './manager/evaluation.js';
+import { SettingsController } from './manager/settings.js';
+import { createManagerState, type ManagerState, type RefreshOptions } from './manager/state.js';
 import type {
   ActivitySettings,
   ActivityStats,
   AddTarget,
-  AiPairVerdict,
   Annotation,
   AppConfig,
   AsyncOp,
   BridgeStatus,
-  DoctorReport,
-  DoctorWarning,
   EvaluationEvent,
   EvaluationLocale,
-  EvaluationProgress,
-  EvaluationReport,
-  Finding,
   LeaderboardKind,
   LlmSettings,
   LoggingSettings,
-  OrphanLock,
   ProjectInfo,
   ProxySettings,
   RemoteSkill,
@@ -68,54 +61,17 @@ import type {
   SkillRecord,
 } from './types.js';
 
-export interface ManagerState {
-  loading: boolean;
-  scannedAt: string | null;
-  global: SkillRecord[];
-  projects: Map<string, SkillRecord[]>;
-  orphans: OrphanLock[];
-  findings: Finding[];
-  projectErrors: Map<string, string>;
-  /** Rule-engine findings before AI verdicts are applied. */
-  baseFindings: Finding[];
-  /** Latest saved LLM evaluation, loaded from disk and refreshed on demand. */
-  evaluation: EvaluationReport | null;
-  verdicts: AiPairVerdict[];
-  verdictsAt: string | null;
-  verdictsSignature: string | null;
-  evaluating: boolean;
-  reviewing: boolean;
-  evaluationProgress: EvaluationProgress | null;
-  evaluationError: string | null;
-}
-
-export interface RefreshOptions {
-  deep?: boolean;
-  projectPaths?: string[];
-}
+export type { ManagerState, RefreshOptions };
 
 export class SkillManager {
   readonly configStore: ConfigStore;
   readonly sidecar: SidecarStore;
   readonly bridge: BridgeService;
-  readonly state: ManagerState = {
-    loading: false,
-    scannedAt: null,
-    global: [],
-    projects: new Map(),
-    orphans: [],
-    findings: [],
-    projectErrors: new Map(),
-    baseFindings: [],
-    evaluation: null,
-    verdicts: [],
-    verdictsAt: null,
-    verdictsSignature: null,
-    evaluating: false,
-    reviewing: false,
-    evaluationProgress: null,
-    evaluationError: null,
-  };
+  readonly state: ManagerState = createManagerState();
+
+  private readonly settingsController: SettingsController;
+  private readonly evaluationController: EvaluationController;
+  private readonly doctorService: DoctorService;
 
   private resolved: ResolvedCommand | null = null;
   private cli: SkillsCli | null = null;
@@ -125,8 +81,6 @@ export class SkillManager {
   private copyHashCache = new Map<string, string>();
   private remoteFetch: FetchLike | null = null;
   private readonly bundledCli: BundledCli | undefined;
-  /** Test seam: overrides the model transport used by the evaluation pipeline. */
-  private readonly modelCaller: ModelCaller | undefined;
 
   constructor(options: {
     configDir?: string;
@@ -138,7 +92,32 @@ export class SkillManager {
     this.sidecar = new SidecarStore(dir);
     this.bridge = new BridgeService({ configDir: dir });
     this.bundledCli = options.bundledCli;
-    this.modelCaller = options.modelCaller;
+
+    this.settingsController = new SettingsController({
+      configStore: this.configStore,
+      bridge: this.bridge,
+      state: this.state,
+      resolveCli: () => this.resolveCli(),
+      emit: () => this.emit(),
+    });
+    this.evaluationController = new EvaluationController({
+      configStore: this.configStore,
+      sidecar: this.sidecar,
+      state: this.state,
+      modelCaller: options.modelCaller,
+      remoteFetch: () => this.remoteFetch,
+      allRecords: () => this.allRecords(),
+      emit: () => this.emit(),
+      emitEvaluation: (event) => this.emitEvaluation(event),
+      currentSignature: () => this.currentSignature(),
+      rebuildFindings: () => this.rebuildFindings(),
+    });
+    this.doctorService = new DoctorService({
+      configStore: this.configStore,
+      cli: () => this.cli,
+      resolved: () => this.resolved,
+    });
+
     this.bridge.onActivity((events) => {
       this.emit();
       for (const listener of this.activityListeners) listener(events);
@@ -162,12 +141,8 @@ export class SkillManager {
   }
 
   /** Persists diagnostic-log preferences; the host applies them to its logger. */
-  async setLogging(settings: LoggingSettings): Promise<void> {
-    const next = sanitizeLogging(settings);
-    await this.configStore.update((config) => {
-      config.logging = next;
-    });
-    this.emit();
+  setLogging(settings: LoggingSettings): Promise<void> {
+    return this.settingsController.setLogging(settings);
   }
 
   /** Guarantees `config.json` exists and returns its path (for open / reveal). */
@@ -365,31 +340,17 @@ export class SkillManager {
 
   /** Whether the saved evaluation no longer matches the scanned skills. */
   evaluationStale(): boolean {
-    const report = this.state.evaluation;
-    if (!report) return false;
-    const signature = this.currentSignature();
-    return signature !== null && signature !== report.signature;
+    return this.evaluationController.evaluationStale();
   }
 
   /** Whether the saved AI verdicts no longer match the scanned skills. */
   verdictsStale(): boolean {
-    if (this.state.verdicts.length === 0 || !this.state.verdictsSignature) return false;
-    const signature = this.currentSignature();
-    return signature !== null && signature !== this.state.verdictsSignature;
+    return this.evaluationController.verdictsStale();
   }
 
   /** Re-applies the saved verdicts to the current rule findings. */
   private rebuildFindings(): void {
     this.state.findings = applyVerdicts(this.state.baseFindings, this.state.verdicts);
-  }
-
-  private async saveEvaluationStore(): Promise<void> {
-    await this.sidecar.saveEvaluation({
-      report: this.state.evaluation,
-      verdicts: this.state.verdicts,
-      verdictsAt: this.state.verdictsAt,
-      verdictsSignature: this.state.verdictsSignature,
-    });
   }
 
   findRecord(scope: Scope, projectPath: string | undefined, name: string): SkillRecord | undefined {
@@ -451,100 +412,48 @@ export class SkillManager {
     });
   }
 
-  async addProject(path: string, options: { alias?: string; pinned?: boolean } = {}): Promise<void> {
-    await this.configStore.update((config) => {
-      const existing = config.projects.find((entry) => entry.path === path);
-      if (existing) {
-        if (options.alias !== undefined) existing.alias = options.alias;
-        if (options.pinned !== undefined) existing.pinned = options.pinned;
-      } else {
-        config.projects.push({ path, alias: options.alias, pinned: options.pinned });
-      }
-      config.recent = [path, ...config.recent.filter((item) => item !== path)].slice(0, 20);
-    });
-    this.emit();
+  addProject(path: string, options: { alias?: string; pinned?: boolean } = {}): Promise<void> {
+    return this.settingsController.addProject(path, options);
   }
 
-  async removeProject(path: string): Promise<void> {
-    await this.configStore.update((config) => {
-      config.projects = config.projects.filter((entry) => entry.path !== path);
-      config.recent = config.recent.filter((item) => item !== path);
-    });
-    this.state.projects.delete(path);
-    this.emit();
+  removeProject(path: string): Promise<void> {
+    return this.settingsController.removeProject(path);
   }
 
-  async setProjectPinned(path: string, pinned: boolean): Promise<void> {
-    await this.configStore.update((config) => {
-      const existing = config.projects.find((entry) => entry.path === path);
-      if (existing) existing.pinned = pinned;
-      else config.projects.push({ path, pinned });
-    });
-    this.emit();
+  setProjectPinned(path: string, pinned: boolean): Promise<void> {
+    return this.settingsController.setProjectPinned(path, pinned);
   }
 
-  async setRoots(roots: string[]): Promise<void> {
-    await this.configStore.update((config) => {
-      config.roots = [...new Set(roots.filter(Boolean))];
-    });
-    this.emit();
+  setRoots(roots: string[]): Promise<void> {
+    return this.settingsController.setRoots(roots);
   }
 
-  async setSkillsCommand(command: string[] | null): Promise<void> {
-    await this.configStore.update((config) => {
-      config.skillsCommand = command;
-    });
-    await this.resolveCli();
-    this.emit();
+  setSkillsCommand(command: string[] | null): Promise<void> {
+    return this.settingsController.setSkillsCommand(command);
   }
 
-  async setProxy(proxy: Partial<ProxySettings>): Promise<void> {
-    await this.configStore.update((config) => {
-      if (proxy.url !== undefined) config.proxy.url = proxy.url;
-      if (proxy.bypass !== undefined) config.proxy.bypass = proxy.bypass;
-    });
-    // Child processes read the proxy from their environment, so the CLI adapter
-    // is rebuilt with the new vars.
-    await this.resolveCli();
-    this.emit();
+  setProxy(proxy: Partial<ProxySettings>): Promise<void> {
+    return this.settingsController.setProxy(proxy);
   }
 
-  async setThresholds(thresholds: { overlap?: number; duplicate?: number }): Promise<void> {
-    await this.configStore.update((config) => {
-      if (thresholds.overlap !== undefined) config.thresholds.overlap = thresholds.overlap;
-      if (thresholds.duplicate !== undefined) config.thresholds.duplicate = thresholds.duplicate;
-    });
-    this.emit();
+  setThresholds(thresholds: { overlap?: number; duplicate?: number }): Promise<void> {
+    return this.settingsController.setThresholds(thresholds);
   }
 
-  async setShowInternal(showInternal: boolean): Promise<void> {
-    await this.configStore.update((config) => {
-      config.showInternal = showInternal;
-    });
-    this.emit();
+  setShowInternal(showInternal: boolean): Promise<void> {
+    return this.settingsController.setShowInternal(showInternal);
   }
 
-  async setLlm(llm: LlmSettings): Promise<void> {
-    await this.configStore.update((config) => {
-      config.llm = sanitizeLlm(llm);
-    });
-    this.emit();
+  setLlm(llm: LlmSettings): Promise<void> {
+    return this.settingsController.setLlm(llm);
   }
 
-  async setCustomSkillDirs(dirs: string[]): Promise<void> {
-    await this.configStore.update((config) => {
-      config.customSkillDirs = normalizeCustomSkillDirs(dirs);
-    });
-    this.emit();
+  setCustomSkillDirs(dirs: string[]): Promise<void> {
+    return this.settingsController.setCustomSkillDirs(dirs);
   }
 
-  async setActivity(settings: ActivitySettings): Promise<void> {
-    const next = sanitizeActivity(settings);
-    await this.configStore.update((config) => {
-      config.activity = next;
-    });
-    this.bridge.setActivitySettings(next);
-    this.emit();
+  setActivity(settings: ActivitySettings): Promise<void> {
+    return this.settingsController.setActivity(settings);
   }
 
   async loadAnnotation(record: SkillRecord): Promise<Annotation | null> {
@@ -591,117 +500,19 @@ export class SkillManager {
   }
 
   /**
-   * Coalesces per-token reasoning deltas so the renderer is not flooded with
-   * one broadcast per character.
-   */
-  private createEventSink(): { onEvent: (event: EvaluationEvent) => void; flush: () => void } {
-    let reasoningBuffer = '';
-    const flush = () => {
-      if (!reasoningBuffer) return;
-      this.emitEvaluation({ type: 'reasoning', text: reasoningBuffer });
-      reasoningBuffer = '';
-    };
-    const onEvent = (event: EvaluationEvent) => {
-      if (event.type === 'reasoning') {
-        reasoningBuffer += event.text ?? '';
-        if (reasoningBuffer.length >= 160) flush();
-        return;
-      }
-      flush();
-      this.emitEvaluation(event);
-    };
-    return { onEvent, flush };
-  }
-
-  /**
    * Runs the LLM evaluation over every scanned skill and saves the report plus
    * the AI pair verdicts. Only called explicitly (button press).
    */
-  async runEvaluation(locale: EvaluationLocale): Promise<void> {
-    const settings = this.configStore.value.llm;
-    if (!isLlmConfigured(settings)) throw new Error('LLM is not configured');
-    const records = this.allRecords();
-    if (records.length === 0) throw new Error('no skills to evaluate');
-
-    this.state.evaluating = true;
-    this.state.evaluationProgress = { done: 0, total: 0 };
-    this.state.evaluationError = null;
-    this.emit();
-
-    const sink = this.createEventSink();
-    try {
-      const { report, verdicts } = await evaluateSkills({
-        records,
-        settings,
-        locale,
-        fetchImpl: this.remoteFetch ?? fetch,
-        caller: this.modelCaller,
-        onEvent: sink.onEvent,
-        onProgress: (progress) => {
-          this.state.evaluationProgress = progress;
-          this.emit();
-        },
-      });
-      this.state.evaluation = report;
-      this.state.verdicts = verdicts;
-      this.state.verdictsAt = report.generatedAt;
-      this.state.verdictsSignature = report.signature;
-      this.rebuildFindings();
-      await this.saveEvaluationStore();
-    } catch (error) {
-      this.state.evaluationError = toErrorMessage(error);
-      getLogger().error('evaluation failed', toErrorMessage(error));
-      throw error;
-    } finally {
-      sink.flush();
-      this.emitEvaluation({ type: 'done' });
-      this.state.evaluating = false;
-      this.state.evaluationProgress = null;
-      this.emit();
-    }
+  runEvaluation(locale: EvaluationLocale): Promise<void> {
+    return this.evaluationController.runEvaluation(locale);
   }
 
   /**
    * Reviews only the heuristic candidate pairs and updates the AI verdicts,
    * keeping the existing report. Backs the "review candidates" button.
    */
-  async runCandidateReview(locale: EvaluationLocale): Promise<void> {
-    const settings = this.configStore.value.llm;
-    if (!isLlmConfigured(settings)) throw new Error('LLM is not configured');
-    const records = this.allRecords();
-    if (records.length === 0) throw new Error('no skills to evaluate');
-
-    this.state.reviewing = true;
-    this.state.evaluationProgress = null;
-    this.state.evaluationError = null;
-    this.emit();
-
-    const sink = this.createEventSink();
-    try {
-      const verdicts = await reviewCandidatePairs({
-        records,
-        settings,
-        locale,
-        fetchImpl: this.remoteFetch ?? fetch,
-        caller: this.modelCaller,
-        onEvent: sink.onEvent,
-      });
-      this.state.verdicts = verdicts;
-      this.state.verdictsAt = new Date().toISOString();
-      this.state.verdictsSignature = this.currentSignature();
-      this.rebuildFindings();
-      await this.saveEvaluationStore();
-    } catch (error) {
-      this.state.evaluationError = toErrorMessage(error);
-      getLogger().error('candidate review failed', toErrorMessage(error));
-      throw error;
-    } finally {
-      sink.flush();
-      this.emitEvaluation({ type: 'done' });
-      this.state.reviewing = false;
-      this.state.evaluationProgress = null;
-      this.emit();
-    }
+  runCandidateReview(locale: EvaluationLocale): Promise<void> {
+    return this.evaluationController.runCandidateReview(locale);
   }
 
   /** Checks the configured GitHub repo for a newer release (proxy-aware). */
@@ -743,50 +554,7 @@ export class SkillManager {
     return this.cli;
   }
 
-  async doctor(): Promise<DoctorReport> {
-    const warnings: DoctorWarning[] = [];
-    const config = this.configStore.value;
-    const lockFiles: DoctorReport['lockFiles'] = [];
-
-    const globalLock = getGlobalLockPath();
-    const globalLockData = await readLock(globalLock);
-    lockFiles.push({
-      path: globalLock,
-      ok: Object.keys(globalLockData.skills).length > 0 || globalLockData.version > 0,
-      count: Object.keys(globalLockData.skills).length,
-    });
-    for (const entry of config.projects) {
-      const path = getProjectLockPath(entry.path);
-      const lock = await readLock(path);
-      const count = Object.keys(lock.skills).length;
-      if (count > 0) lockFiles.push({ path, ok: true, count });
-    }
-
-    let version: string | null = null;
-    if (this.cli) {
-      version = await this.cli.version();
-      if (!version) warnings.push({ code: 'doctor.cliVersionFailed' });
-    } else {
-      warnings.push({
-        code: 'doctor.cliUnavailable',
-        params: { error: this.resolved?.error ?? 'unknown error' },
-      });
-    }
-    if (config.roots.length === 0) warnings.push({ code: 'doctor.noRoots' });
-    if (!isValidProxyUrl(config.proxy.url)) warnings.push({ code: 'doctor.invalidProxy' });
-
-    return {
-      ok: warnings.length === 0,
-      configDir: this.configStore.dir,
-      logPath: join(logsDir(this.configStore.dir), 'main.log'),
-      cli: {
-        command: this.resolved?.command ?? null,
-        version,
-        error: this.resolved?.error,
-      },
-      proxy: isValidProxyUrl(config.proxy.url) ? normalizeProxyUrl(config.proxy.url) : null,
-      lockFiles,
-      warnings,
-    };
+  doctor() {
+    return this.doctorService.report();
   }
 }
