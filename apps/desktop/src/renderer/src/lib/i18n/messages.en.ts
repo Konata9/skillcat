@@ -247,8 +247,7 @@ export const en: Record<MessageKey, MessageValue> = {
   'search.detailError': 'Could not load details: {message}',
   'search.detailCopy': 'Copy command',
   'search.detailCopied': 'Copied',
-  'search.detailViewSource': 'View on skills.sh',
-  'search.detailInstallAction': 'Install this skill',
+  'search.detailInstallAction': 'Install skill',
 
   // ---- settings view ----
   'settings.category.general': 'General',

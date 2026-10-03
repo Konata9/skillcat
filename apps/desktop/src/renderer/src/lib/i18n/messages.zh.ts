@@ -236,8 +236,7 @@ export const zh = {
   'search.detailError': '无法加载详情：{message}',
   'search.detailCopy': '复制命令',
   'search.detailCopied': '已复制',
-  'search.detailViewSource': '在 skills.sh 查看',
-  'search.detailInstallAction': '安装此 skill',
+  'search.detailInstallAction': '安装 SKILL',
 
   // ---- settings view ----
   'settings.category.general': '通用',

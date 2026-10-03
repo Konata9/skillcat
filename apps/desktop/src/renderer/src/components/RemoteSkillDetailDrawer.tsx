@@ -83,31 +83,43 @@ export function RemoteSkillDetailDrawer({
               <DialogPrimitive.Title className="truncate text-[15px] font-semibold">
                 {skill?.name ?? ''}
               </DialogPrimitive.Title>
-              {skill ? (
-                <button
-                  type="button"
-                  className="focus-ring mt-0.5 block max-w-full truncate rounded-sm font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-                  onClick={() => openExternal(`https://skills.sh/${skill.slug}`)}
-                >
-                  {skill.source}
-                </button>
-              ) : null}
+              <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                {skill ? (
+                  <button
+                    type="button"
+                    className="focus-ring inline-flex min-w-0 max-w-full items-center gap-1 rounded-sm font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+                    onClick={() => openExternal(`https://skills.sh/${skill.slug}`)}
+                  >
+                    <span className="truncate">{skill.source}</span>
+                    <ExternalLink className="size-3 shrink-0" />
+                  </button>
+                ) : null}
+                {skill?.isOfficial ? <Badge tone="accent">{t('search.official')}</Badge> : null}
+                <Badge>
+                  <Download className="size-3" />
+                  {formatInstalls(skill?.installs ?? 0) || '—'}
+                </Badge>
+              </div>
             </div>
-            <DialogPrimitive.Close className="focus-ring rounded-sm p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-              <X className="size-4" />
-              <span className="sr-only">{t('common.close')}</span>
-            </DialogPrimitive.Close>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <Button
+                size="sm"
+                variant="primary"
+                className="whitespace-nowrap"
+                disabled={!skill}
+                onClick={() => skill && onInstall(skill)}
+              >
+                <Download />
+                {t('search.detailInstallAction')}
+              </Button>
+              <DialogPrimitive.Close className="focus-ring rounded-sm p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                <X className="size-4" />
+                <span className="sr-only">{t('common.close')}</span>
+              </DialogPrimitive.Close>
+            </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-6">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {skill?.isOfficial ? <Badge tone="accent">{t('search.official')}</Badge> : null}
-              <Badge>
-                <Download className="size-3" />
-                {formatInstalls(skill?.installs ?? 0) || '—'}
-              </Badge>
-            </div>
-
             {loading ? (
               <div className="px-5 py-10 text-center text-muted-foreground">
                 {t('search.loading')}
@@ -163,27 +175,6 @@ export function RemoteSkillDetailDrawer({
                 ) : null}
               </>
             ) : null}
-          </div>
-
-          <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={!skill}
-              onClick={() => skill && openExternal(`https://skills.sh/${skill.slug}`)}
-            >
-              <ExternalLink />
-              {t('search.detailViewSource')}
-            </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              disabled={!skill}
-              onClick={() => skill && onInstall(skill)}
-            >
-              <Download />
-              {t('search.detailInstallAction')}
-            </Button>
           </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
