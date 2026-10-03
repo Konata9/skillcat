@@ -44,7 +44,7 @@ packages/core/   纯 TS，零 UI 依赖：发现、解析、触发词、相似�
                  LLM 评估、CLI 适配、项目注册表
                  （分析/诊断以 { code, params } 返回，不含展示文案）
 apps/desktop/    Electron 44 + electron-vite + React 19
-├─ src/main       主进程：SkillManager + IPC（zod 校验）+ 状态广播
+├─ src/main       主进程：SkillManager + IPC（zod 校验）+ 状态广播 + 诊断日志（electron-log）
 ├─ src/preload    contextBridge 暴露类型化 API
 ├─ src/shared     IPC 契约（频道常量 + 类型）
 └─ src/renderer   React 界面
@@ -52,15 +52,17 @@ apps/desktop/    Electron 44 + electron-vite + React 19
    ├─ components     业务组件与外壳
    ├─ hooks          API 驱动的状态（useOperations/useProjects/useScopes/useActivity/…）
    ├─ views          页面组合（Skills/Analysis/Search/Activity/Settings）
-   │  └─ settings    Settings 的子区块（DoctorPanel/LlmSection/IntegrationsSection/UpdatesSection）
+   │  └─ settings    Settings 的子区块（DoctorPanel/LlmSection/IntegrationsSection/LoggingSection/UpdatesSection）
    └─ lib            cn()、格式化、i18n 字典与 Provider、主题、导航模型
 ```
 
 ## 模块导入约束
 
 - 消费者只从 `@skillcat/core` 入口 import；内部模块是实现细节。
-- 渲染进程**只能** import 类型与纯函数子路径（`@skillcat/core/keys`、`/proxy`、`/llm`、`/activity`）。
+- 渲染进程**只能** import 类型与纯函数子路径（`@skillcat/core/keys`、`/proxy`、`/llm`、`/activity`、`/logging`）。
   其余入口会经 `index → execa` 把 Node 依赖带进浏览器包。
+- 日志统一走 `electron-log`（主进程 `src/main/logger.ts`）。core 通过 `setLogger` 注入的
+  `CoreLogger` 接口记录，保持零 Electron 依赖；渲染进程经 `electron-log/renderer` 转发。
 - core 不产出面向展示的字符串。分析与诊断信息以 `{ code, params }` 结构化返回，由 UI 翻译；
   `FindingCode` / `DoctorWarningCode` 与 i18n 字典 key 之间有编译期覆盖校验。
 

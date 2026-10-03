@@ -70,6 +70,14 @@ export {
   defaultActivitySettings,
   sanitizeActivity,
 } from './bridge/limits.js';
+export {
+  LOG_LEVELS,
+  LOG_SIZE_MAX_MB,
+  LOG_SIZE_MIN_MB,
+  defaultLoggingSettings,
+  sanitizeLogging,
+} from './logging.js';
+export { setLogger, getLogger, type CoreLogger } from './logger.js';
 export { BridgeService, type BridgeServiceOptions } from './bridge/service.js';
 export { BRIDGE_ADAPTERS, listBridgeAdapters, getBridgeAdapter } from './bridge/registry.js';
 export { computeActivityStats } from './bridge/stats.js';
@@ -119,6 +127,7 @@ export {
   configFilePath,
   stateFilePath,
   annotationsFilePath,
+  logsDir,
 } from './paths.js';
 export {
   computeSkillFolderHash,

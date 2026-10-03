@@ -9,6 +9,8 @@ import type {
   LlmProvider,
   LlmSettings,
   LlmTestResult,
+  LogLevel,
+  LoggingSettings,
   UpdateCheckResult,
 } from '@skillcat/core';
 import {
@@ -18,6 +20,7 @@ import {
   ACTIVITY_RETENTION_MIN,
 } from '@skillcat/core/activity';
 import { getLlmPreset } from '@skillcat/core/llm';
+import { LOG_SIZE_MAX_MB, LOG_SIZE_MIN_MB } from '@skillcat/core/logging';
 import { isValidProxyUrl, normalizeProxyUrl } from '@skillcat/core/proxy';
 import { useAsyncAction } from '@renderer/hooks/useAsyncAction';
 import { useReportError } from '@renderer/hooks/useReportError';
@@ -35,6 +38,7 @@ import { Tooltip } from '../components/ui/tooltip';
 import { DoctorPanel } from './settings/DoctorPanel';
 import { IntegrationsSection, type ActivityForm } from './settings/IntegrationsSection';
 import { LlmSection, type LlmForm } from './settings/LlmSection';
+import { LoggingSection, type LoggingForm } from './settings/LoggingSection';
 import { UpdatesSection } from './settings/UpdatesSection';
 
 export type SettingsCategory =
@@ -44,6 +48,7 @@ export type SettingsCategory =
   | 'network'
   | 'llm'
   | 'integrations'
+  | 'logging'
   | 'updates';
 
 const CATEGORY_ORDER: SettingsCategory[] = [
@@ -53,6 +58,7 @@ const CATEGORY_ORDER: SettingsCategory[] = [
   'network',
   'llm',
   'integrations',
+  'logging',
   'updates',
 ];
 
@@ -63,6 +69,7 @@ const CATEGORY_LABEL: Record<SettingsCategory, MessageKey> = {
   network: 'settings.category.network',
   llm: 'settings.category.llm',
   integrations: 'settings.category.integrations',
+  logging: 'settings.category.logging',
   updates: 'settings.category.updates',
 };
 
@@ -87,6 +94,8 @@ export function SettingsView({
   onListBridges,
   onInstallBridge,
   onUninstallBridge,
+  onRevealLogs,
+  onClearLogs,
 }: {
   config: AppConfig;
   configPath: string;
@@ -104,6 +113,7 @@ export function SettingsView({
     customSkillDirs: string[];
     llm: LlmSettings;
     activity: ActivitySettings;
+    logging: LoggingSettings;
   }) => Promise<boolean>;
   onStatus: (message: string) => void;
   onPickDirectory: () => Promise<string | null>;
@@ -117,6 +127,8 @@ export function SettingsView({
   onListBridges: () => Promise<BridgeStatus[]>;
   onInstallBridge: (id: string) => Promise<void>;
   onUninstallBridge: (id: string) => Promise<void>;
+  onRevealLogs: () => Promise<void>;
+  onClearLogs: () => Promise<void>;
 }): React.ReactElement {
   const { t, locale, setLocale } = useI18n();
   const reportError = useReportError(onStatus);
@@ -146,6 +158,9 @@ export function SettingsView({
   const [activityPhraseChars, setActivityPhraseChars] = useState(
     String(config.activity.maxPhraseChars),
   );
+  const [loggingEnabled, setLoggingEnabled] = useState(config.logging.enabled);
+  const [loggingLevel, setLoggingLevel] = useState<LogLevel>(config.logging.level);
+  const [loggingSize, setLoggingSize] = useState(String(config.logging.maxTotalMb));
   const [bridges, setBridges] = useState<BridgeStatus[]>([]);
   const [bridgeBusy, setBridgeBusy] = useState<string | null>(null);
   const updateRequested = useRef(false);
@@ -173,6 +188,9 @@ export function SettingsView({
     setActivityStorePhrase(config.activity.storePhrase);
     setActivityRetention(String(config.activity.retentionDays));
     setActivityPhraseChars(String(config.activity.maxPhraseChars));
+    setLoggingEnabled(config.logging.enabled);
+    setLoggingLevel(config.logging.level);
+    setLoggingSize(String(config.logging.maxTotalMb));
   }, [config, dirty]);
 
   useEffect(() => {
@@ -194,6 +212,7 @@ export function SettingsView({
     const duplicateValue = Number.parseFloat(duplicate);
     const retentionValue = Number.parseInt(activityRetention, 10);
     const phraseValue = Number.parseInt(activityPhraseChars, 10);
+    const loggingSizeValue = Number.parseInt(loggingSize, 10);
     onSave({
       roots: roots
         .split('\n')
@@ -231,6 +250,13 @@ export function SettingsView({
         maxPhraseChars: Number.isFinite(phraseValue)
           ? Math.min(ACTIVITY_PHRASE_MAX, Math.max(ACTIVITY_PHRASE_MIN, phraseValue))
           : config.activity.maxPhraseChars,
+      },
+      logging: {
+        enabled: loggingEnabled,
+        level: loggingLevel,
+        maxTotalMb: Number.isFinite(loggingSizeValue)
+          ? Math.min(LOG_SIZE_MAX_MB, Math.max(LOG_SIZE_MIN_MB, loggingSizeValue))
+          : config.logging.maxTotalMb,
       },
     })
       .then((ok) => {
@@ -336,6 +362,24 @@ export function SettingsView({
     setPhraseChars: (value) => {
       markDirty();
       setActivityPhraseChars(value);
+    },
+  };
+
+  const loggingForm: LoggingForm = {
+    enabled: loggingEnabled,
+    level: loggingLevel,
+    maxTotalMb: loggingSize,
+    setEnabled: (value) => {
+      markDirty();
+      setLoggingEnabled(value);
+    },
+    setLevel: (value) => {
+      markDirty();
+      setLoggingLevel(value);
+    },
+    setMaxTotalMb: (value) => {
+      markDirty();
+      setLoggingSize(value);
     },
   };
 
@@ -633,6 +677,19 @@ export function SettingsView({
                 onInstall={installBridge}
                 onUninstall={uninstallBridge}
                 activity={activityForm}
+              />
+            ) : null}
+
+            {category === 'logging' ? (
+              <LoggingSection
+                form={loggingForm}
+                logDir={`${configPath.replace(/[\\/][^\\/]*$/, '')}/logs`}
+                onReveal={onRevealLogs}
+                onClear={() =>
+                  onClearLogs()
+                    .then(() => onStatus(t('settings.loggingCleared')))
+                    .catch(reportError)
+                }
               />
             ) : null}
 

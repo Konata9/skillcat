@@ -23,6 +23,10 @@ export function DoctorPanel({ doctor }: { doctor: DoctorReport | null }): React.
         <div className="text-muted-foreground">
           {t('settings.doctorConfigDir', { path: doctor.configDir })}
         </div>
+        {/* deslop-ignore-next-line 34: 日志路径是数据值 */}
+        <div className="font-mono text-[11px] text-muted-foreground">
+          {t('settings.doctorLogPath', { path: doctor.logPath })}
+        </div>
         <div className="text-muted-foreground">
           {doctor.proxy
             ? t('settings.doctorProxy', { url: doctor.proxy })

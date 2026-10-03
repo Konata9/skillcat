@@ -59,6 +59,7 @@ const coreSource = {
   '@skillcat/core/proxy': resolve('../../packages/core/src/cli/proxy.ts'),
   '@skillcat/core/llm': resolve('../../packages/core/src/llm.ts'),
   '@skillcat/core/activity': resolve('../../packages/core/src/bridge/limits.ts'),
+  '@skillcat/core/logging': resolve('../../packages/core/src/logging.ts'),
   '@skillcat/core': resolve('../../packages/core/src/index.ts'),
 };
 

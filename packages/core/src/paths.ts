@@ -94,3 +94,8 @@ export function runtimeEventsFilePath(configDir: string): string {
 export function integrationsFilePath(configDir: string): string {
   return join(configDir, 'integrations.json');
 }
+
+/** Directory holding the rotating diagnostic logs. */
+export function logsDir(configDir: string): string {
+  return join(configDir, 'logs');
+}

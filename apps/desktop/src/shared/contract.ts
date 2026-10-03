@@ -13,6 +13,7 @@ import type {
   LeaderboardKind,
   LlmSettings,
   LlmTestResult,
+  LoggingSettings,
   OrphanLock,
   ProjectInfo,
   RemoteSkill,
@@ -75,6 +76,7 @@ export interface SettingsPatch {
   customSkillDirs?: string[];
   llm?: LlmSettings;
   activity?: ActivitySettings;
+  logging?: LoggingSettings;
 }
 
 export interface SkillCatApi {
@@ -111,6 +113,8 @@ export interface SkillCatApi {
   activityStats(): Promise<ActivityStats>;
   activityEvents(): Promise<RuntimeSkillEvent[]>;
   clearActivity(): Promise<void>;
+  revealLogs(): Promise<void>;
+  clearLogs(): Promise<void>;
   onStateChanged(callback: (snapshot: Snapshot) => void): () => void;
   onOpEvent(callback: (event: OpEvent) => void): () => void;
   onEvaluationEvent(callback: (event: EvaluationEvent) => void): () => void;
@@ -152,6 +156,8 @@ export const CH = {
   activityStats: 'activity:stats',
   activityEvents: 'activity:events',
   activityClear: 'activity:clear',
+  logsReveal: 'logs:reveal',
+  logsClear: 'logs:clear',
 } as const;
 
 export type Channel = (typeof CH)[keyof typeof CH];

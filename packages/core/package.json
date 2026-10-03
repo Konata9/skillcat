@@ -25,6 +25,10 @@
     "./activity": {
       "types": "./dist/bridge/limits.d.ts",
       "default": "./dist/bridge/limits.js"
+    },
+    "./logging": {
+      "types": "./dist/logging.d.ts",
+      "default": "./dist/logging.js"
     }
   },
   "files": [

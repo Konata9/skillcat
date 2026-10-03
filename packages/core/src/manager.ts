@@ -5,7 +5,7 @@
  *
  * UI-agnostic: listeners receive change notifications, never rendered strings.
  */
-import { basename } from 'node:path';
+import { basename, join } from 'node:path';
 import { resolveSkillsCommand, type BundledCli, type ResolvedCommand } from './cli/env.js';
 import { buildProxyEnv, isValidProxyUrl, normalizeProxyUrl } from './cli/proxy.js';
 import {
@@ -19,6 +19,8 @@ import { runAdd, runInit, runRemove, runUpdate } from './cli/operations.js';
 import { SkillsCli } from './cli/skills-cli.js';
 import { ConfigStore, normalizeCustomSkillDirs, sanitizeLlm } from './config.js';
 import { sanitizeActivity } from './bridge/limits.js';
+import { sanitizeLogging } from './logging.js';
+import { getLogger } from './logger.js';
 import { analyzeSkills } from './analysis.js';
 import { readLock } from './discovery.js';
 import { toErrorMessage } from './errors.js';
@@ -33,7 +35,7 @@ import {
 import { applyVerdicts } from './evaluation/verdicts.js';
 import { annotationKey, recordKey } from './keys.js';
 import { isLlmConfigured, testLlmConnection, type LlmTestResult } from './llm.js';
-import { getConfigDir, getGlobalLockPath, getProjectLockPath } from './paths.js';
+import { getConfigDir, getGlobalLockPath, getProjectLockPath, logsDir } from './paths.js';
 import { discoverProjects } from './projects.js';
 import { SidecarStore } from './sidecar.js';
 import { checkForUpdate, type UpdateCheckResult } from './update.js';
@@ -55,6 +57,7 @@ import type {
   Finding,
   LeaderboardKind,
   LlmSettings,
+  LoggingSettings,
   OrphanLock,
   ProjectInfo,
   ProxySettings,
@@ -143,6 +146,8 @@ export class SkillManager {
   }
 
   async init(): Promise<void> {
+    const logger = getLogger();
+    logger.info('initializing', { configDir: this.configStore.dir });
     await this.configStore.load();
     await this.resolveCli();
     const store = await this.sidecar.loadEvaluation();
@@ -153,6 +158,16 @@ export class SkillManager {
     this.bridge.setActivitySettings(this.configStore.value.activity);
     await this.bridge.load();
     this.bridge.startWatching();
+    logger.info('initialized');
+  }
+
+  /** Persists diagnostic-log preferences; the host applies them to its logger. */
+  async setLogging(settings: LoggingSettings): Promise<void> {
+    const next = sanitizeLogging(settings);
+    await this.configStore.update((config) => {
+      config.logging = next;
+    });
+    this.emit();
   }
 
   /** Guarantees `config.json` exists and returns its path (for open / reveal). */
@@ -163,6 +178,7 @@ export class SkillManager {
 
   /** Re-reads `config.json` after an external edit and rescans everything. */
   async reloadConfig(): Promise<void> {
+    getLogger().info('config reload requested');
     await this.configStore.load();
     await this.resolveCli();
     await this.refresh();
@@ -216,11 +232,13 @@ export class SkillManager {
   }
 
   async installBridge(id: string): Promise<void> {
+    getLogger().info('bridge install requested', { id });
     await this.bridge.install(id);
     this.emit();
   }
 
   async uninstallBridge(id: string): Promise<void> {
+    getLogger().info('bridge uninstall requested', { id });
     await this.bridge.uninstall(id);
     this.emit();
   }
@@ -246,6 +264,14 @@ export class SkillManager {
     this.resolved = await resolveSkillsCommand(this.configStore.value.skillsCommand, {
       bundled: this.bundledCli,
     });
+    if (this.resolved.command) {
+      getLogger().info('skills CLI resolved', {
+        command: this.resolved.command,
+        source: this.resolved.source,
+      });
+    } else {
+      getLogger().warn('skills CLI unavailable', { error: this.resolved.error ?? 'unknown' });
+    }
     this.cli = this.resolved.command
       ? new SkillsCli(this.resolved.command, {
           // Resolved env (PATH from a login shell) first, so the proxy vars
@@ -266,6 +292,8 @@ export class SkillManager {
   }
 
   async refresh(options: RefreshOptions = {}): Promise<void> {
+    const logger = getLogger();
+    logger.debug('scan started', { deep: options.deep === true });
     this.state.loading = true;
     this.emit();
     try {
@@ -309,6 +337,15 @@ export class SkillManager {
       await this.bridge.ingest();
 
       this.state.scannedAt = new Date().toISOString();
+      logger.info('scan finished', {
+        global: this.state.global.length,
+        projects: this.state.projects.size,
+        findings: this.state.findings.length,
+        errors: this.state.projectErrors.size,
+      });
+    } catch (error) {
+      logger.error('scan failed', toErrorMessage(error));
+      throw error;
     } finally {
       this.state.loading = false;
       this.emit();
@@ -613,6 +650,7 @@ export class SkillManager {
       await this.saveEvaluationStore();
     } catch (error) {
       this.state.evaluationError = toErrorMessage(error);
+      getLogger().error('evaluation failed', toErrorMessage(error));
       throw error;
     } finally {
       sink.flush();
@@ -655,6 +693,7 @@ export class SkillManager {
       await this.saveEvaluationStore();
     } catch (error) {
       this.state.evaluationError = toErrorMessage(error);
+      getLogger().error('candidate review failed', toErrorMessage(error));
       throw error;
     } finally {
       sink.flush();
@@ -676,14 +715,20 @@ export class SkillManager {
    * a single stream and one final result.
    */
   runAdd(source: string, targets: AddTarget[]): AsyncOp {
+    getLogger().info('install requested', {
+      source,
+      targets: targets.map((target) => target.scope),
+    });
     return runAdd(this.ensureCli(), source, targets);
   }
 
   runRemove(name: string, options: { scope: Scope; cwd?: string }): AsyncOp {
+    getLogger().info('remove requested', { name, scope: options.scope });
     return runRemove(this.ensureCli(), name, options);
   }
 
   runUpdate(names: string[], options: { scope: Scope; cwd?: string }): AsyncOp {
+    getLogger().info('update requested', { count: names.length, scope: options.scope });
     return runUpdate(this.ensureCli(), names, options);
   }
 
@@ -733,6 +778,7 @@ export class SkillManager {
     return {
       ok: warnings.length === 0,
       configDir: this.configStore.dir,
+      logPath: join(logsDir(this.configStore.dir), 'main.log'),
       cli: {
         command: this.resolved?.command ?? null,
         version,

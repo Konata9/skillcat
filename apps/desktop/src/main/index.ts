@@ -5,6 +5,7 @@ import {
   APP_NAME,
   getConfigDir,
   isValidProxyUrl,
+  logsDir,
   normalizeProxyUrl,
   SkillManager,
   type ProxySettings,
@@ -12,6 +13,7 @@ import {
 import pkg from '../../package.json';
 import { bootstrap } from './bootstrap';
 import { registerIpc } from './ipc';
+import { applyLogging, clearLogs, installCoreLogger, setupLogging } from './logger';
 
 app.setName('SkillCat');
 
@@ -158,7 +160,10 @@ app.whenReady().then(async () => {
     if (!icon.isEmpty()) app.dock?.setIcon(icon);
   }
 
+  setupLogging(manager.configStore.dir);
+  installCoreLogger();
   await bootstrap(manager);
+  applyLogging(manager.config.logging);
   await applyProxy(manager.config.proxy);
   manager.setRemoteFetch((url, init) => net.fetch(url, init));
 
@@ -173,6 +178,12 @@ app.whenReady().then(async () => {
     ipc: ipcMain,
     broadcast,
     applyProxy,
+    applyLogging,
+    revealLogs: async () => {
+      const error = await shell.openPath(logsDir(manager.configStore.dir));
+      if (error) throw new Error(error);
+    },
+    clearLogs,
     openSkill: async (path) => {
       const error = await shell.openPath(path);
       if (error) throw new Error(error);

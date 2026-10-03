@@ -9,6 +9,18 @@ import { SkillList } from '../components/SkillList';
 import { TriggersPanel } from '../components/TriggersPanel';
 import { SettingsView } from '../views/SettingsView';
 
+vi.mock('electron-log/renderer', () => {
+  const noop = () => {};
+  const log = {
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    errorHandler: { startCatching: noop },
+  };
+  return { default: log, ...log };
+});
+
 function record(partial: Partial<SkillRecord> & { name: string }): SkillRecord {
   return {
     scope: 'global',
@@ -257,6 +269,7 @@ describe('SettingsView LLM', () => {
         model: 'gpt-4o',
       },
       activity: { enabled: true, storePhrase: true, retentionDays: 90, maxPhraseChars: 300 },
+      logging: { enabled: true, level: 'info', maxTotalMb: 5 },
     };
   }
 
@@ -288,7 +301,7 @@ describe('SettingsView LLM', () => {
           onOpenExternal={async () => {}}
           onDoctor={async () => ({
             ok: true,
-            configDir: '/tmp/config',
+            configDir: '/tmp/config', logPath: '/tmp/config/logs/main.log',
             cli: { command: null, version: null },
             proxy: null,
             lockFiles: [],
@@ -297,6 +310,8 @@ describe('SettingsView LLM', () => {
           onListBridges={async () => []}
           onInstallBridge={async () => {}}
           onUninstallBridge={async () => {}}
+          onRevealLogs={async () => {}}
+          onClearLogs={async () => {}}
         />,
       ),
     );
@@ -362,6 +377,7 @@ describe('SettingsView proxy', () => {
         model: 'gpt-4o',
       },
       activity: { enabled: true, storePhrase: true, retentionDays: 90, maxPhraseChars: 300 },
+      logging: { enabled: true, level: 'info', maxTotalMb: 5 },
     };
   }
 
@@ -393,7 +409,7 @@ describe('SettingsView proxy', () => {
         onOpenExternal={async () => {}}
         onDoctor={async () => ({
           ok: true,
-          configDir: '/tmp/config',
+          configDir: '/tmp/config', logPath: '/tmp/config/logs/main.log',
           cli: { command: ['npx', '-y', 'skills'], version: '1.0.0' },
           proxy: null,
           lockFiles: [],
@@ -402,6 +418,8 @@ describe('SettingsView proxy', () => {
         onListBridges={async () => []}
         onInstallBridge={async () => {}}
         onUninstallBridge={async () => {}}
+        onRevealLogs={async () => {}}
+        onClearLogs={async () => {}}
       />
     );
 
@@ -441,6 +459,65 @@ describe('SettingsView proxy', () => {
     await waitFor(() => {
       expect(onSave).toHaveBeenLastCalledWith(
         expect.objectContaining({ proxy: { url: '', bypass: '' } }),
+      );
+    });
+  });
+
+  it('edits and saves the logging preferences', async () => {
+    const onSave = vi.fn(async () => true);
+    render(
+      wrap(
+        <SettingsView
+          config={config({ url: '', bypass: '' })}
+          configPath="/tmp/config/config.json"
+          appVersion="0.1.0"
+          cliAvailable
+          cliSource="path"
+          onSave={onSave}
+          onStatus={() => {}}
+          onPickDirectory={async () => null}
+          onOpenConfig={async () => {}}
+          onRevealConfig={() => {}}
+          onReloadConfig={async () => {}}
+          onTestLlm={async () => ({ ok: true, status: 200, message: 'ok' })}
+          onCheckUpdate={async () => ({
+            configured: false,
+            repo: '',
+            current: '0.1.0',
+            latest: null,
+            hasUpdate: false,
+            url: null,
+            publishedAt: null,
+          })}
+          onOpenExternal={async () => {}}
+          onDoctor={async () => ({
+            ok: true,
+            configDir: '/tmp/config', logPath: '/tmp/config/logs/main.log',
+            cli: { command: null, version: null },
+            proxy: null,
+            lockFiles: [],
+            warnings: [],
+          })}
+          onListBridges={async () => []}
+          onInstallBridge={async () => {}}
+          onUninstallBridge={async () => {}}
+          onRevealLogs={async () => {}}
+          onClearLogs={async () => {}}
+        />,
+      ),
+    );
+
+    fireEvent.click(screen.getByText('日志'));
+    expect(await screen.findByText('日志大小上限')).toBeTruthy();
+    expect(screen.getByText('/tmp/config/logs')).toBeTruthy();
+
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '12' } });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'warn' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存并刷新' }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ logging: { enabled: true, level: 'warn', maxTotalMb: 12 } }),
       );
     });
   });

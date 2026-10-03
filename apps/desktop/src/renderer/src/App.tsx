@@ -5,7 +5,14 @@
  */
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import type { ProjectInfo, RemoteSkill, SkillRecord, LlmSettings, ActivitySettings } from '@skillcat/core';
+import type {
+  ProjectInfo,
+  RemoteSkill,
+  SkillRecord,
+  LlmSettings,
+  ActivitySettings,
+  LoggingSettings,
+} from '@skillcat/core';
 import { isLlmConfigured } from '@skillcat/core/llm';
 import type { OpStart } from '@shared/contract';
 import { useApi, useSnapshot, useStatus } from './api';
@@ -162,6 +169,7 @@ export function App(): React.ReactElement {
     customSkillDirs: string[];
     llm: LlmSettings;
     activity: ActivitySettings;
+    logging: LoggingSettings;
   }): Promise<boolean> => {
     try {
       await api.setSettings({
@@ -172,6 +180,7 @@ export function App(): React.ReactElement {
         customSkillDirs: patch.customSkillDirs,
         llm: patch.llm,
         activity: patch.activity,
+        logging: patch.logging,
       });
       await api.setRoots(patch.roots);
       showStatus(t('status.settingsSaved'));
@@ -306,6 +315,8 @@ export function App(): React.ReactElement {
               onListBridges={() => api.listBridges()}
               onInstallBridge={(id) => api.installBridge(id)}
               onUninstallBridge={(id) => api.uninstallBridge(id)}
+              onRevealLogs={() => api.revealLogs()}
+              onClearLogs={() => api.clearLogs()}
             />
           ) : null}
         </div>

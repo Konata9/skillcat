@@ -14,6 +14,18 @@ export interface Thresholds {
   duplicate: number;
 }
 
+/** Severity levels written to the on-disk log file. */
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+export interface LoggingSettings {
+  /** Whether file logging is enabled. */
+  enabled: boolean;
+  /** Minimum level written to the log file. */
+  level: LogLevel;
+  /** Total on-disk log budget in megabytes, split across the current file and one archive. */
+  maxTotalMb: number;
+}
+
 export interface ProxySettings {
   /** Proxy URL, e.g. `http://127.0.0.1:7890`. Empty string means a direct connection. */
   url: string;
@@ -54,4 +66,6 @@ export interface AppConfig {
   llm: LlmSettings;
   /** Runtime trigger-observation preferences. */
   activity: ActivitySettings;
+  /** Local diagnostic log file preferences. */
+  logging: LoggingSettings;
 }

@@ -6,6 +6,31 @@ import { SkillManager } from '@skillcat/core';
 import { CH, EVENTS, type OpEvent, type Snapshot } from '../../shared/contract';
 import { registerIpc, type IpcMainLike } from '../ipc';
 
+// The main-process logger pulls in electron-log, which expects a live Electron
+// runtime; stub it so the IPC contract can be exercised in plain Node.
+vi.mock('electron-log/main', () => {
+  const noop = () => {};
+  const log = {
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    transports: {
+      file: {
+        level: 'silly',
+        maxSize: 0,
+        format: '',
+        resolvePathFn: undefined,
+        getFile: () => ({ path: '/tmp/main.log', clear: () => true }),
+      },
+      console: { level: 'silly', format: '' },
+    },
+    hooks: [] as unknown[],
+    errorHandler: { startCatching: noop },
+  };
+  return { default: log, ...log };
+});
+
 type Handler = (event: unknown, ...args: unknown[]) => unknown;
 
 const originalHome = process.env.HOME;
@@ -85,6 +110,9 @@ beforeAll(async () => {
     revealConfig: () => {},
     pickDirectory: async () => null,
     applyProxy: async () => {},
+    applyLogging: () => {},
+    revealLogs: async () => {},
+    clearLogs: async () => {},
     appVersion: '0.1.0',
     checkUpdate: async () => ({
       configured: false,

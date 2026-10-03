@@ -125,6 +125,8 @@ export interface DoctorWarning {
 export interface DoctorReport {
   ok: boolean;
   configDir: string;
+  /** Path to the diagnostic log file, so users can attach it to a bug report. */
+  logPath: string;
   cli: {
     command: string[] | null;
     version: string | null;

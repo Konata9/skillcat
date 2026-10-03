@@ -6,6 +6,7 @@
 import { dirname } from 'node:path';
 import { atomicWriteFile, ensureDir, pathExists, readJsonSafe } from './fs-utils.js';
 import { defaultActivitySettings, sanitizeActivity } from './bridge/limits.js';
+import { defaultLoggingSettings, sanitizeLogging } from './logging.js';
 import { defaultLlmSettings, getLlmPreset, LLM_PROVIDERS } from './llm.js';
 import { configFilePath, getConfigDir } from './paths.js';
 import type { AppConfig, LlmProvider, LlmSettings } from './types.js';
@@ -24,6 +25,7 @@ export function defaultConfig(): AppConfig {
     customSkillDirs: [],
     llm: defaultLlmSettings(),
     activity: defaultActivitySettings(),
+    logging: defaultLoggingSettings(),
   };
 }
 
@@ -122,6 +124,7 @@ function sanitize(raw: unknown): AppConfig {
     customSkillDirs: normalizeCustomSkillDirs(input.customSkillDirs),
     llm: sanitizeLlm(input.llm),
     activity: sanitizeActivity(input.activity),
+    logging: sanitizeLogging(input.logging),
   };
 }
 

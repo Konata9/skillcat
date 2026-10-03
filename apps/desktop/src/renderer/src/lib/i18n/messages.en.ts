@@ -255,6 +255,7 @@ export const en: Record<MessageKey, MessageValue> = {
   'settings.category.cli': 'CLI',
   'settings.category.network': 'Network',
   'settings.category.llm': 'Language model',
+  'settings.category.logging': 'Logs',
   'settings.category.updates': 'Updates',
   'settings.unsaved': 'Unsaved changes',
   'settings.updateVersion': 'Current version: {version}',
@@ -338,6 +339,7 @@ export const en: Record<MessageKey, MessageValue> = {
   'settings.doctorCliVersion': 'CLI: {command} (v{version})',
   'settings.doctorCliUnset': 'not configured',
   'settings.doctorConfigDir': 'Config dir: {path}',
+  'settings.doctorLogPath': 'Log: {path}',
 
   // ---- doctor warnings ----
   'doctor.noRoots': 'No scan roots configured yet',
@@ -441,6 +443,22 @@ export const en: Record<MessageKey, MessageValue> = {
   'settings.activityHint':
     'Trigger phrases are stored only in the local config dir, never the SKILL body, and can be cleared any time.',
   'settings.activityCleared': 'Activity cleared',
+
+  // ---- logging (settings) ----
+  'settings.loggingHeading': 'Logs',
+  'settings.loggingHint':
+    'Write diagnostic logs to a local file to help troubleshoot issues. Logs never contain keys, SKILL bodies, or trigger phrases.',
+  'settings.loggingEnable': 'Enable logging',
+  'settings.loggingLevelLabel': 'Log level',
+  'settings.loggingSizeLabel': 'Log size limit',
+  'settings.loggingSizeHint':
+    'Range {min}–{max} MB; on overflow the file rotates, keeping only the current file and one archive.',
+  'settings.loggingDirLabel': 'Log directory',
+  'settings.loggingReveal': 'Open log directory',
+  'settings.loggingClear': 'Clear logs',
+  'settings.loggingClearTitle': 'Clear logs',
+  'settings.loggingClearBody': 'Deletes the current log file and its archive. This cannot be undone.',
+  'settings.loggingCleared': 'Logs cleared',
 
   // ---- activity view ----
   'activity.subtitle': 'SKILL activations: agent, trigger phrase, task and counts',

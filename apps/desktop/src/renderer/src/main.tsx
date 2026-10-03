@@ -1,10 +1,14 @@
 import React from 'react';
+import log from 'electron-log/renderer';
 import { createRoot } from 'react-dom/client';
 import { ApiProvider } from './api';
 import { App } from './App';
 import { I18nProvider } from './lib/i18n';
 import { applyTheme, getStoredTheme } from './lib/theme';
 import './index.css';
+
+// Forward uncaught renderer errors/rejections to the main-process log file.
+log.errorHandler.startCatching({ showDialog: false });
 
 applyTheme(getStoredTheme());
 

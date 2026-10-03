@@ -244,6 +244,7 @@ export const zh = {
   'settings.category.cli': 'CLI',
   'settings.category.network': '网络',
   'settings.category.llm': '大模型',
+  'settings.category.logging': '日志',
   'settings.category.updates': '更新',
   'settings.unsaved': '有未保存的修改',
   'settings.updateVersion': '当前版本：{version}',
@@ -327,6 +328,7 @@ export const zh = {
   'settings.doctorCliVersion': 'CLI：{command}（v{version}）',
   'settings.doctorCliUnset': '未配置',
   'settings.doctorConfigDir': '配置目录：{path}',
+  'settings.doctorLogPath': '日志：{path}',
 
   // ---- doctor warnings ----
   'doctor.noRoots': '尚未设置扫描根目录',
@@ -414,6 +416,21 @@ export const zh = {
   'settings.activityPhraseChars': '触发词语最大长度（{min}–{max} 字）',
   'settings.activityHint': '触发词语只保存在本机配置目录，不含 SKILL 正文，可随时清空。',
   'settings.activityCleared': '已清空运行记录',
+
+  // ---- logging (settings) ----
+  'settings.loggingHeading': '日志',
+  'settings.loggingHint':
+    '记录诊断日志到本地文件，便于排查问题。日志不会包含密钥、SKILL 正文或触发词语。',
+  'settings.loggingEnable': '启用日志',
+  'settings.loggingLevelLabel': '日志等级',
+  'settings.loggingSizeLabel': '日志大小上限',
+  'settings.loggingSizeHint': '范围 {min}–{max} MB，超出后自动轮转，仅保留当前文件与一份归档。',
+  'settings.loggingDirLabel': '日志目录',
+  'settings.loggingReveal': '打开日志目录',
+  'settings.loggingClear': '清空日志',
+  'settings.loggingClearTitle': '清空日志',
+  'settings.loggingClearBody': '将删除当前日志文件及其归档，且不可恢复。',
+  'settings.loggingCleared': '已清空日志',
 
   // ---- activity view ----
   'activity.subtitle': 'SKILL 的触发情况：触发 Agent、触发词语、任务与次数统计',

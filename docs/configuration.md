@@ -42,6 +42,7 @@ SkillCat 的所有持久化数据都放在**配置目录**，不写入 skill 目
 | `runtime-spool.jsonl` | 运行监听插件的收件箱：插件逐行追加原始触发记录，SkillCat 消费后清空 |
 | `runtime-events.json` | 归一化并与扫描目录匹配后的触发历史（按保留期裁剪） |
 | `integrations.json` | 已安装集成清单（文件路径 + 内容哈希），用于可撤销卸载 |
+| `logs/main.log` | 诊断日志（按大小轮转，超限时归档为 `main.old.log`，总量受设置约束） |
 
 ### `config.json` 字段
 
@@ -60,6 +61,7 @@ SkillCat 的所有持久化数据都放在**配置目录**，不写入 skill 目
 | `maxScanDepth` | `number` | `3` | 项目发现的最大深度（0–8），自动跳过 `node_modules` / `.git` 等 |
 | `customSkillDirs` | `string[]` | `[]` | 额外的 skill 容器目录 |
 | `activity` | `ActivitySettings` | 见下 | 运行触发记录的偏好 |
+| `logging` | `LoggingSettings` | 见下 | 本地诊断日志偏好 |
 | `llm` | `LlmSettings` | 见下 | 语言模型设置 |
 
 `customSkillDirs` 的解析规则：以 `~` 开头或绝对路径 → 全局作用域；其余 → 每个项目根下的相对
@@ -75,6 +77,18 @@ SkillCat 的所有持久化数据都放在**配置目录**，不写入 skill 目
 | `maxPhraseChars` | `number` | `300` | 触发词语最大长度，限制 40–4000 |
 
 触发词语可能包含用户输入内容，只保存在本机配置目录，可通过「使用记录 → 清空记录」删除。
+
+### `logging` 字段
+
+| 字段 | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | `true` | 是否写入诊断日志文件；关闭后不再写盘 |
+| `level` | `debug \| info \| warn \| error` | `info` | 写入文件的最低等级 |
+| `maxTotalMb` | `number` | `5` | 日志总量上限（MB），限制 1–30 |
+
+日志写入 `logs/main.log`，采用 `electron-log` 原生的**按大小轮转**：超过上限时当前文件归档为
+`main.old.log`（仅保留一份归档），因此总量约为 `maxTotalMb`。日志**不会**记录 API Key、
+代理凭据、SKILL 正文、触发词语或用户 prompt。可在「设置 → 日志」中打开日志目录或清空。
 
 ### `llm` 字段
 

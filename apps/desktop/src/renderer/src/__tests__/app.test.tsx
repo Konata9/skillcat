@@ -9,6 +9,20 @@ import { App } from '../App';
 import { resetLeaderboardCache } from '../hooks/useLeaderboard';
 import { I18nProvider } from '../lib/i18n';
 
+// Renderer logging forwards over an Electron IPC bridge that does not exist in
+// jsdom; stub it to keep the tests quiet and deterministic.
+vi.mock('electron-log/renderer', () => {
+  const noop = () => {};
+  const log = {
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    errorHandler: { startCatching: noop },
+  };
+  return { default: log, ...log };
+});
+
 function record(partial: Partial<SkillRecord> & { name: string }): SkillRecord {
   return {
     scope: 'global',
@@ -80,6 +94,7 @@ function snapshot(): Snapshot {
         model: 'gpt-4o',
       },
       activity: { enabled: true, storePhrase: true, retentionDays: 90, maxPhraseChars: 300 },
+      logging: { enabled: true, level: 'info', maxTotalMb: 5 },
     },
     configPath: '/tmp/config/config.json',
     cliAvailable: true,
@@ -205,7 +220,7 @@ function makeApi(): SkillCatApi {
     reloadConfig: vi.fn(async () => {}),
     doctor: vi.fn(async () => ({
       ok: true,
-      configDir: '/tmp/config',
+      configDir: '/tmp/config', logPath: '/tmp/config/logs/main.log',
       cli: { command: ['npx', '-y', 'skills'], version: '1.0.0' },
       proxy: null,
       lockFiles: [],
@@ -217,6 +232,8 @@ function makeApi(): SkillCatApi {
     activityStats: vi.fn(async () => emptyActivityStats()),
     activityEvents: vi.fn(async () => []),
     clearActivity: vi.fn(async () => {}),
+    revealLogs: vi.fn(async () => {}),
+    clearLogs: vi.fn(async () => {}),
     onStateChanged: vi.fn(() => () => {}),
     onOpEvent: vi.fn(() => () => {}),
     onEvaluationEvent: vi.fn(() => () => {}),
@@ -276,7 +293,7 @@ describe('App', () => {
     renderApp(api);
 
     fireEvent.click(await screen.findByText('alpha'));
-    fireEvent.click(screen.getByRole('button', { name: '更新' }));
+    fireEvent.click(await screen.findByRole('button', { name: '更新' }));
     expect(await screen.findByText(/将 alpha 更新到最新版本/)).toBeTruthy();
 
     const dialog = screen.getByRole('dialog');
@@ -606,7 +623,7 @@ describe('App', () => {
     renderApp(api);
 
     await screen.findByText('alpha');
-    fireEvent.click(screen.getByRole('button', { name: '编辑触发词' }));
+    fireEvent.click(await screen.findByRole('button', { name: '编辑触发词' }));
 
     fireEvent.change(await screen.findByPlaceholderText('新增触发词，例如 周报'), {
       target: { value: '周报' },

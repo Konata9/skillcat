@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import 'electron-log/preload';
 import type { EvaluationEvent, RuntimeSkillEvent } from '@skillcat/core';
 import { CH, EVENTS, type OpEvent, type SkillCatApi, type Snapshot } from '../shared/contract';
 
@@ -36,6 +37,8 @@ const api: SkillCatApi = {
   activityStats: () => ipcRenderer.invoke(CH.activityStats),
   activityEvents: () => ipcRenderer.invoke(CH.activityEvents),
   clearActivity: () => ipcRenderer.invoke(CH.activityClear),
+  revealLogs: () => ipcRenderer.invoke(CH.logsReveal),
+  clearLogs: () => ipcRenderer.invoke(CH.logsClear),
   onStateChanged: (callback) => {
     const listener = (_event: unknown, snapshot: Snapshot) => callback(snapshot);
     ipcRenderer.on(EVENTS.stateChanged, listener);

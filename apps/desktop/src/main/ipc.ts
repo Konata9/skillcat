@@ -1,5 +1,11 @@
 import { join } from 'node:path';
-import type { AsyncOp, ProxySettings, SkillManager, UpdateCheckResult } from '@skillcat/core';
+import type {
+  AsyncOp,
+  LoggingSettings,
+  ProxySettings,
+  SkillManager,
+  UpdateCheckResult,
+} from '@skillcat/core';
 import { z } from 'zod';
 import {
   CH,
@@ -9,6 +15,7 @@ import {
   type SkillRefLite,
   type Snapshot,
 } from '../shared/contract';
+import { log } from './logger';
 
 export interface IpcMainLike {
   handle(
@@ -29,6 +36,12 @@ export interface IpcDeps {
   pickDirectory: () => Promise<string | null>;
   /** Applies the proxy to the Electron session used by the in-process fetch. */
   applyProxy: (proxy: ProxySettings) => Promise<void>;
+  /** Applies logging preferences to the live electron-log transports. */
+  applyLogging: (settings: LoggingSettings) => void;
+  /** Opens the logs directory in the OS file manager. */
+  revealLogs: () => Promise<void>;
+  /** Empties the current log file and removes its archive. */
+  clearLogs: () => Promise<void>;
   /** The packaged app version, surfaced in the snapshot for the updates view. */
   appVersion: string;
   checkUpdate: () => Promise<UpdateCheckResult>;
@@ -113,6 +126,13 @@ const SettingsSchema = z.object({
       storePhrase: z.boolean(),
       retentionDays: z.number().int().min(30).max(360),
       maxPhraseChars: z.number().int().min(40).max(4000),
+    })
+    .optional(),
+  logging: z
+    .object({
+      enabled: z.boolean(),
+      level: z.enum(['debug', 'info', 'warn', 'error']),
+      maxTotalMb: z.number().int().min(1).max(30),
     })
     .optional(),
 });
@@ -217,7 +237,17 @@ export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
       if (patch.customSkillDirs !== undefined) await manager.setCustomSkillDirs(patch.customSkillDirs);
       if (patch.llm !== undefined) await manager.setLlm(patch.llm);
       if (patch.activity !== undefined) await manager.setActivity(patch.activity);
+      if (patch.logging !== undefined) {
+        await manager.setLogging(patch.logging);
+        deps.applyLogging(manager.config.logging);
+      }
       await manager.refresh();
+    },
+
+    [CH.logsReveal]: () => deps.revealLogs(),
+    [CH.logsClear]: async () => {
+      await deps.clearLogs();
+      log.info('logs cleared');
     },
 
     [CH.annotationGet]: async (_event, rawRef) => {
@@ -290,6 +320,8 @@ export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
           }
           const result = await op.result;
           ok = result.ok;
+          if (ok) log.info(`operation succeeded: ${op.title}`);
+          else log.warn(`operation failed: ${op.title} (code ${String(result.code)})`);
           broadcast(EVENTS.opEvent, { opId: op.id, done: true, ok });
           await manager.refresh();
         } catch {
@@ -344,7 +376,15 @@ export function registerIpc(manager: SkillManager, deps: IpcDeps): void {
   };
 
   for (const [channel, handler] of Object.entries(handlers)) {
-    ipc.handle(channel, handler);
+    ipc.handle(channel, async (event, ...args) => {
+      try {
+        return await handler(event, ...args);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        log.error(`ipc ${channel} failed: ${message}`);
+        throw error;
+      }
+    });
   }
 
   manager.onChange(() => broadcast(EVENTS.stateChanged, toSnapshot(manager, deps.appVersion)));
