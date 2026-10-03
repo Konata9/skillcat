@@ -7,15 +7,14 @@
     "template": "landing-page-en",
     "formats": ["html"],
     "page_target": 1,
-    "narrative": "Category first, then a real tour of the app, then the safety model, then install and FAQ",
+    "narrative": "Management first, then read-only optimization, then trigger statistics, then skills.sh discovery, then the safety model, install and FAQ",
     "required_facts": ["licence", "platforms", "version", "agent count"],
     "required_assets": [
       "assets/img/en/skills.png",
       "assets/img/en/analysis.png",
-      "assets/img/en/search.png",
-      "assets/img/en/projects.png",
-      "assets/img/en/settings-updates.png",
       "assets/img/en/optimization.png",
+      "assets/img/en/usage-records.png",
+      "assets/img/en/search.png",
       "assets/img/logo.png"
     ],
     "acceptance_checks": [
@@ -31,13 +30,14 @@
   "content": {
     "category": "agent skill manager",
     "product_name": "SkillCat",
-    "tagline": "Inventory every agent skill, find what's wrong, and manage it safely.",
+    "tagline": "Inventory every agent skill, find what's wrong, optimize it read-only, and see what actually fires.",
     "facts": [
       "Free · MIT licensed",
       "macOS + Windows",
       "v1.2.0",
       "Reads offline",
       "90+ agents",
+      "Read-only optimizer",
       "No account needed"
     ],
     "cta": {
@@ -54,20 +54,16 @@
         "caption": "Findings from deterministic rules and heuristics, each shipped with the evidence that produced it."
       },
       {
-        "image": "assets/img/en/search.png",
-        "caption": "Browse the skills.sh leaderboard, inspect a SKILL.md, then install into the current scope."
-      },
-      {
-        "image": "assets/img/en/projects.png",
-        "caption": "Projects discovered automatically from the agent markers under your scan roots."
-      },
-      {
-        "image": "assets/img/en/settings-updates.png",
-        "caption": "Light and dark themes, English or Chinese, proxy support, and a diagnostic doctor."
-      },
-      {
         "image": "assets/img/en/optimization.png",
         "caption": "Read-only optimization suggestions for one skill: a summary, severity-ranked fixes and before/after excerpts."
+      },
+      {
+        "image": "assets/img/en/usage-records.png",
+        "caption": "Runtime activity: total triggers, triggers per day, top skills and a log of the skills that actually fired."
+      },
+      {
+        "image": "assets/img/en/search.png",
+        "caption": "Browse the skills.sh leaderboard, inspect a SKILL.md, then install into the current scope."
       }
     ],
     "features": [
@@ -77,9 +73,9 @@
         "description": "Scans global, per-project and custom directories, then reports the source, the lock metadata and the real link state of every skill: symlinked, dangling, or a drifted copy."
       },
       {
-        "name": "Trigger profiling",
-        "subtitle": "Positive and negative",
-        "description": "Extracts what dispatches each skill from when_to_use, dispatch_intent, descriptions and \"When to Use\" sections. You can annotate triggers by hand in a sidecar; skill files are never rewritten."
+        "name": "Projects",
+        "subtitle": "Auto-discovered",
+        "description": "Finds projects under your scan roots by their agent markers. Pin the ones you revisit. The registry stores paths only, and removing an entry never deletes a file."
       },
       {
         "name": "Analysis",
@@ -87,9 +83,9 @@
         "description": "Deterministic rules read disk facts: dangling links, missing lock records, copy drift, local edits, cross-scope shadowing and source conflicts. Heuristics surface trigger overlap, negative contradictions and body duplication, each with a confidence score."
       },
       {
-        "name": "AI evaluation",
-        "subtitle": "Optional, your own key",
-        "description": "Score every skill with your own model, then judge the pre-filtered duplicate and conflict candidates. Results are saved with a signature, so the UI can tell you when an evaluation has gone stale."
+        "name": "Safe operations",
+        "subtitle": "One install path",
+        "description": "Every change streams progress into a drawer with a confirmation step and can be cancelled. Writes are delegated to the official skills CLI, so there is one install path, not two."
       },
       {
         "name": "Optimization suggestions",
@@ -97,9 +93,14 @@
         "description": "Ask your model to review a single skill and return read-only rewrite suggestions with before/after excerpts, grounded in a bundled reviewer skill. Nothing is written back; results are saved and kept until you regenerate them."
       },
       {
-        "name": "Projects",
-        "subtitle": "Auto-discovered",
-        "description": "Finds projects under your scan roots by their agent markers. Pin the ones you revisit. The registry stores paths only, and removing an entry never deletes a file."
+        "name": "Trigger profiling",
+        "subtitle": "Positive and negative",
+        "description": "Extracts what dispatches each skill from when_to_use, dispatch_intent, descriptions and \"When to Use\" sections. You can annotate triggers by hand in a sidecar; skill files are never rewritten."
+      },
+      {
+        "name": "Runtime activity",
+        "subtitle": "Optional, local-only",
+        "description": "Install the OpenCode bridge to record which skills actually fire, with the trigger phrase, task and per-day and per-skill charts. Reversible in one click, and stored only in your local config directory."
       },
       {
         "name": "Remote search",
@@ -107,9 +108,9 @@
         "description": "Browse the public index and the all-time, trending and hot leaderboards, read a SKILL.md before you commit, then install straight into the current scope."
       },
       {
-        "name": "Safe operations",
-        "subtitle": "One install path",
-        "description": "Every change streams progress into a drawer with a confirmation step and can be cancelled. Writes are delegated to the official skills CLI, so there is one install path, not two."
+        "name": "AI evaluation",
+        "subtitle": "Optional, your own key",
+        "description": "Score every skill with your own model, then judge the pre-filtered duplicate and conflict candidates. Results are saved with a signature, so the UI can tell you when an evaluation has gone stale."
       }
     ],
     "principles": [
@@ -127,7 +128,7 @@
       },
       {
         "title": "AI is optional and explicit",
-        "description": "Scoring and duplicate judgement run only when you ask, with your own key and endpoint. Nothing leaves your machine by default."
+        "description": "Scoring, duplicate judgement and optimization suggestions run only when you ask, with your own key and endpoint. The optimizer is read-only. Nothing leaves your machine by default."
       }
     ],
     "faq": [
@@ -137,7 +138,7 @@
       },
       {
         "q": "Does it need an API key?",
-        "a": "No. Inventory, trigger profiling and the rule engine all run without a model. An API key is only needed if you switch on the optional AI evaluation."
+        "a": "No. Inventory, trigger profiling and the rule engine all run without a model. An API key is only needed for the optional AI evaluation and the read-only optimization suggestions."
       },
       {
         "q": "Which agents does it know about?",
@@ -145,11 +146,15 @@
       },
       {
         "q": "Does it modify my skills?",
-        "a": "Not silently. Scanning is read-only, and annotations live in a sidecar file in the config directory. Any change to a skill directory goes through the official skills CLI, with an explicit confirmation step."
+        "a": "Not silently. Scanning is read-only, and annotations live in a sidecar file in the config directory. Optimization suggestions are read-only too: they return before/after excerpts and never write to a skill. Any real change goes through the official skills CLI, with an explicit confirmation step."
       },
       {
         "q": "Does it work offline?",
-        "a": "Yes. Scanning and analysis use only the filesystem and lock files. Network access is limited to the optional remote search, leaderboard and AI evaluation."
+        "a": "Yes. Scanning, analysis and the usage log use only the filesystem and lock files, and the log stays local. Network access is limited to the optional remote search, leaderboard and AI evaluation."
+      },
+      {
+        "q": "Does it record what I type?",
+        "a": "Only if you switch on runtime activity. With the optional OpenCode bridge installed, SkillCat logs which skill fired, the trigger phrase, the task and the time — stored locally in your config directory, never uploaded, with a retention window you set and a one-click clear. Uninstall the bridge and nothing is recorded."
       },
       {
         "q": "Is it free?",

@@ -1,5 +1,5 @@
 /* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt
- * enrichment: real product screenshots (scroll-snap carousel) + graphite code card · nav: N1b · footer: Ft1
+ * enrichment: real product screenshots in four feature pillars + graphite code card · nav: N1b · footer: Ft1
  * Hallmark · pre-emit critique: P5 H5 E5 S4 R5 V5
  * Diversification: first Hallmark run for this project (no prior .hallmark/log.json entry)
  * Paper band: cool light · Display: grotesk-sans · Accent: electric cobalt
@@ -40,12 +40,9 @@
   --color-accent-2: oklch(50% 0.19 256);
   --color-accent-ink: oklch(99% 0.004 250);
   --color-accent-soft: oklch(95.5% 0.028 256);
-  --color-accent-line: oklch(87% 0.055 256);
 
   /* Graphite — the page's one dark beat */
   --color-graphite: oklch(22% 0.016 260);
-  --color-graphite-2: oklch(26% 0.018 260);
-  --color-graphite-3: oklch(32% 0.02 260);
   --color-graphite-ink: oklch(91% 0.01 252);
   --color-graphite-ink-2: oklch(82% 0.014 254);
   --color-graphite-muted: oklch(78% 0.018 255);
@@ -53,9 +50,6 @@
 
   /* Status — only inside the code card and finding rows */
   --color-ok: oklch(74% 0.16 152);
-  --color-warn: oklch(80% 0.13 78);
-  --color-err: oklch(70% 0.18 25);
-  --color-err-soft: oklch(95% 0.03 25);
 
   /* Focus */
   --color-focus: oklch(58% 0.2 256);
@@ -84,7 +78,6 @@
   --text-base: 0.9375rem;
   --text-md: 1.0625rem;
   --text-lg: 1.1875rem;
-  --text-xl: 1.5rem;
   --text-2xl: clamp(1.5rem, 1.15rem + 1.4vw, 2rem);
   --text-3xl: clamp(1.875rem, 1.3rem + 2.2vw, 2.75rem);
   --text-display: clamp(2.25rem, 1.35rem + 3.9vw, 4.25rem);
@@ -114,6 +107,5 @@
 
   /* Motion */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --dur: 600ms;
   --dur-fast: 160ms;
 }

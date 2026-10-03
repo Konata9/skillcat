@@ -54,24 +54,24 @@ ever taking over your files behind your back.
 - **Inventory** — global and per-project skills across 79 known agents (Claude Code, Codex, Cursor,
   OpenCode, Gemini CLI, Windsurf, Trae, …), with source, lock metadata, and real link state
   (symlink / dangling / copy drift).
-- **Trigger profiling** — extract positive and negative triggers from `when_to_use`, `dispatch_intent`,
-  descriptions, and "When to Use" sections. Annotate manually in a sidecar without touching skill files.
+- **Projects** — auto-discover projects under your scan roots by agent markers; pin and revisit them.
+  The registry stores paths only; removing an entry never deletes files.
 - **Analysis** — deterministic rules (dangling links, missing lock records, copy drift, local edits,
   cross-scope shadowing, source conflicts) plus heuristics (trigger overlap, negative contradictions,
   body duplication, missing trigger signals).
-- **AI evaluation** *(optional)* — score every skill with your own model, then judge the pre-filtered
-  duplicate/conflict candidate pairs. Results are saved and shown alongside the rule findings.
+- **Safe operations** — every change streams progress into a drawer with a confirmation step and can
+  be cancelled.
 - **Optimization suggestions** *(optional)* — review a single skill with your model and get actionable,
   read-only rewrite suggestions (before/after) grounded in the bundled `skill-optimizer` rubric. Results
   are saved and kept until you regenerate them.
-- **Projects** — auto-discover projects under your scan roots by agent markers; pin and revisit them.
-  The registry stores paths only; removing an entry never deletes files.
-- **Remote search & leaderboard** — browse the skills.sh leaderboard (all-time / trending / hot) and
-  search the public index, then install straight into the current scope.
+- **Trigger profiling** — extract positive and negative triggers from `when_to_use`, `dispatch_intent`,
+  descriptions, and "When to Use" sections. Annotate manually in a sidecar without touching skill files.
 - **Runtime activity** *(optional)* — install an agent bridge (OpenCode today) to record which skills
   actually fire, with trigger phrase, task and per-agent/per-day charts.
-- **Safe operations** — every change streams progress into a drawer with a confirmation step and can
-  be cancelled.
+- **Remote search & leaderboard** — browse the skills.sh leaderboard (all-time / trending / hot) and
+  search the public index, then install straight into the current scope.
+- **AI evaluation** *(optional)* — score every skill with your own model, then judge the pre-filtered
+  duplicate/conflict candidate pairs. Results are saved and shown alongside the rule findings.
 - **Desktop polish** — light/dark themes, Chinese/English UI (follows system language), proxy support,
   and a diagnostic `doctor`.
 

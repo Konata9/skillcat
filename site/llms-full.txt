@@ -1,6 +1,6 @@
 # SkillCat — full reference for AI assistants
 
-> SkillCat is a local-first agent skill manager for macOS and Windows. It inventories every SKILL.md bundle installed across 90+ agents, explains what triggers each skill, flags concrete problems with the evidence that produced them, and delegates every write to the official `skills` CLI.
+> SkillCat is a local-first agent skill manager for macOS and Windows. It inventories every SKILL.md bundle installed across 90+ agents, explains what triggers each skill, flags concrete problems with the evidence that produced them, returns read-only optimization suggestions, records which skills actually fire, and delegates every write to the official `skills` CLI.
 
 Canonical page: https://skillcat.pages.dev/
 Chinese page: https://skillcat.pages.dev/zh/
@@ -32,33 +32,37 @@ Free. Open source under the MIT license. No account, no subscription and no tele
 
 Scans the global canonical directory, per-project directories, every known agent directory and any custom directories you configure. For each skill it reports the source, the lock metadata, the content hash and the real link state per agent: symlinked, dangling, or a copy that has drifted from the canonical content. Over 90 agent directories are known, including Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Windsurf and Trae.
 
-### Trigger profiling
+### Projects
 
-Extracts what dispatches each skill from `when_to_use`, `dispatch_intent`, the description, and "When to Use" sections in the body, each with a different weight. Positive and negative triggers are separated. You can annotate triggers by hand in a sidecar file; skill files are never rewritten.
+Discovers projects under your scan roots by their agent markers, and lets you pin the ones you revisit. The registry stores paths only, and removing an entry never deletes a file.
 
 ### Analysis
 
 Deterministic rules read disk facts: dangling links, missing lock records, copy drift, local edits, cross-scope shadowing and source conflicts. Heuristic rules surface trigger overlap, negative contradictions and body duplication, each with a confidence score and the shared terms that caused the match. Deterministic and heuristic findings are labelled separately so you always know which is a fact and which is a guess. Thresholds are configurable (trigger overlap defaults to 0.3, body duplication to 0.5).
 
-### AI evaluation (optional)
+### Safe operations
 
-Scoring and duplicate/conflict judgement only run when you ask, using your own API key and endpoint. Built-in provider presets include Claude, ChatGPT, Gemini, DeepSeek, Qwen, GLM, Kimi, MiniMax, Mimo and a local Ollama option. Results are saved with a signature, so the app can tell you when an evaluation has gone stale. Inventory, trigger profiling and the rule engine all work without a model.
+Every change streams progress into a drawer with a confirmation step and can be cancelled. Writes are delegated to the official `skills` CLI.
 
 ### Optimization suggestions (optional)
 
 Reviews a single skill with your own model and returns read-only improvement suggestions: a summary plus severity-ranked items, each with optional `before`/`after` excerpts. The review criteria come from a bundled reviewer skill; no skill file is ever rewritten. Results are saved to `optimizer.json` and kept until you explicitly regenerate them, so a viewing pass never re-spends tokens.
 
-### Projects
+### Trigger profiling
 
-Discovers projects under your scan roots by their agent markers, and lets you pin the ones you revisit. The registry stores paths only, and removing an entry never deletes a file.
+Extracts what dispatches each skill from `when_to_use`, `dispatch_intent`, the description, and "When to Use" sections in the body, each with a different weight. Positive and negative triggers are separated. You can annotate triggers by hand in a sidecar file; skill files are never rewritten.
+
+### Runtime activity (optional)
+
+Install the OpenCode bridge to record which skills actually fire: the skill, the trigger phrase, the task and the session. A usage log shows total triggers, triggers per day, the skills that fire most, and a table of recent triggers. Same-sentence multi-triggers are aggregated as a conflict signal. The bridge is a one-click install and a one-click uninstall, and its data is stored only in your local config directory, with a retention window and a one-click clear. Nothing is uploaded.
 
 ### Remote search and leaderboard
 
 Browses the skills.sh public index and the all-time, trending and hot leaderboards. You can read a SKILL.md before installing, then install straight into the current scope.
 
-### Safe operations
+### AI evaluation (optional)
 
-Every change streams progress into a drawer with a confirmation step and can be cancelled. Writes are delegated to the official `skills` CLI.
+Scoring and duplicate/conflict judgement only run when you ask, using your own API key and endpoint. Built-in provider presets include Claude, ChatGPT, Gemini, DeepSeek, Qwen, GLM, Kimi, MiniMax, Mimo and a local Ollama option. Results are saved with a signature, so the app can tell you when an evaluation has gone stale. Inventory, trigger profiling and the rule engine all work without a model.
 
 ### Desktop polish
 
@@ -76,16 +80,19 @@ Light and dark themes, English and Chinese UI following the system language, pro
 The CLI installs skills. SkillCat shows you the state of everything you have already installed: it reads what the CLI and your agents wrote to disk, explains each skill, and flags concrete problems before they bite.
 
 **Does it need an API key?**
-No. Inventory, trigger profiling and the rule engine all run without a model. An API key is only needed if you switch on the optional AI evaluation.
+No. Inventory, trigger profiling and the rule engine all run without a model. An API key is only needed if you switch on the optional AI evaluation or the read-only optimization suggestions.
 
 **Which agents does it know about?**
 Over 90 known agent directories, including Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Windsurf and Trae. You can add your own skill directories as well.
 
 **Does it modify my skills?**
-Not silently. Scanning is read-only, and annotations live in a sidecar file in the config directory. Any change to a skill directory goes through the official `skills` CLI, with an explicit confirmation step.
+Not silently. Scanning is read-only, and annotations live in a sidecar file in the config directory. Optimization suggestions are read-only too: they return before/after excerpts and never write to a skill. Any real change goes through the official `skills` CLI, with an explicit confirmation step.
 
 **Does it work offline?**
-Yes. Scanning and analysis use only the filesystem and lock files. Network access is limited to the optional remote search, leaderboard and AI evaluation.
+Yes. Scanning, analysis and the usage log use only the filesystem and lock files, and the log stays local. Network access is limited to the optional remote search, leaderboard and AI evaluation.
+
+**Does it record what I type?**
+Only if you switch on runtime activity. With the optional OpenCode bridge installed, SkillCat logs which skill fired, the trigger phrase, the task and the time — stored locally in your config directory, never uploaded, with a retention window you set and a one-click clear. Uninstall the bridge and nothing is recorded.
 
 **Is it free?**
 Yes. SkillCat is MIT-licensed and open source, with no account, no subscription and no telemetry.

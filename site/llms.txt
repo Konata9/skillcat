@@ -1,6 +1,6 @@
 # SkillCat
 
-> SkillCat is a local-first agent skill manager for macOS and Windows: it inventories every SKILL.md bundle you have installed across 90+ agents, explains what triggers each one, flags concrete problems with evidence, and manages installs through the official skills CLI.
+> SkillCat is a local-first agent skill manager for macOS and Windows: it inventories every SKILL.md bundle you have installed across 90+ agents, explains what triggers each one, flags concrete problems with evidence, generates read-only optimization suggestions, records which skills actually fire, and manages installs through the official skills CLI.
 
 ## Author
 
@@ -24,14 +24,15 @@ Free. Open source under the MIT license. No account, no subscription, no telemet
 ## Features
 
 - Inventory across 90+ known agents, with source, lock metadata and real link state (symlink / dangling / copy drift)
-- Trigger profiling from `when_to_use`, `dispatch_intent`, descriptions and "When to Use" sections, with manual annotation in a sidecar that never rewrites skill files
+- Project discovery from agent markers under your scan roots
 - Deterministic analysis: dangling links, missing lock records, copy drift, local edits, cross-scope shadowing, source conflicts
 - Heuristic analysis: trigger overlap, negative contradictions, body duplication — each with a confidence score and the shared terms
-- Optional AI evaluation: score skills and judge duplicate/conflict candidates with your own model key
-- Optional read-only optimization: ask your model to review one skill and return before/after improvement suggestions
-- Project discovery from agent markers under your scan roots
-- Remote search and the skills.sh leaderboard (all-time / trending / hot)
 - Safe operations: every change is confirmed, streamed and cancellable, and delegated to the official skills CLI
+- Optional read-only optimization: ask your model to review one skill and return before/after improvement suggestions without rewriting any file
+- Trigger profiling from `when_to_use`, `dispatch_intent`, descriptions and "When to Use" sections, with manual annotation in a sidecar that never rewrites skill files
+- Optional runtime activity: install the OpenCode bridge to record which skills actually fire, with the trigger phrase, task and per-day and per-skill charts, stored locally only
+- Remote search and the skills.sh leaderboard (all-time / trending / hot)
+- Optional AI evaluation: score skills and judge duplicate/conflict candidates with your own model key
 
 ## Key pages
 

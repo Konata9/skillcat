@@ -6,7 +6,7 @@
     <title>SkillCat — 本地优先的 agent skill 管理器</title>
     <meta
       name="description"
-      content="SkillCat 清点你机器上跨 90+ 个 agent 安装的每一个 skill，说明它们的触发条件，把具体问题连同证据一起指出来，并通过官方 skills CLI 管理安装。"
+      content="SkillCat 清点你机器上跨 90+ 个 agent 安装的每一个 skill，说明它们的触发条件，把具体问题连同证据一起指出来，生成只读优化建议并记录真实触发统计，并通过官方 skills CLI 管理安装。"
     />
     <meta name="generator" content="SkillCat site" />
     <link rel="canonical" href="https://skillcat.pages.dev/zh/" />
@@ -20,7 +20,7 @@
     <meta property="og:title" content="SkillCat — 本地优先的 agent skill 管理器" />
     <meta
       property="og:description"
-      content="清点每一个 agent skill，找出问题，安全地管理它们。免费、MIT 开源、离线读取。"
+      content="清点每一个 agent skill，找出问题，拿到只读优化建议与真实触发统计。免费、MIT 开源、离线读取。"
     />
     <meta property="og:url" content="https://skillcat.pages.dev/zh/" />
     <meta property="og:image" content="https://skillcat.pages.dev/og.jpg" />
@@ -32,7 +32,7 @@
     <meta name="twitter:title" content="SkillCat — 本地优先的 agent skill 管理器" />
     <meta
       name="twitter:description"
-      content="清点每一个 agent skill，找出问题，安全地管理它们。"
+      content="清点每一个 agent skill，找出问题，拿到只读优化建议与真实触发统计。"
     />
     <meta name="twitter:image" content="https://skillcat.pages.dev/og.jpg" />
 
@@ -59,7 +59,7 @@
         "operatingSystem": "macOS, Windows",
         "softwareVersion": "1.2.0",
         "inLanguage": "zh-CN",
-        "description": "本地优先的 agent skill 管理器。清点机器上的每一个 SKILL.md，说明每个 skill 的触发条件，指出具体问题，并把所有写入委托给官方 skills CLI。",
+        "description": "本地优先的 agent skill 管理器。清点机器上的每一个 SKILL.md，说明每个 skill 的触发条件，指出具体问题，生成只读的 AI 优化建议，记录真实的触发统计，并把所有写入委托给官方 skills CLI。",
         "url": "https://skillcat.pages.dev/zh/",
         "license": "https://opensource.org/license/mit",
         "isAccessibleForFree": true,
@@ -80,8 +80,10 @@
         </a>
 
         <nav class="nav__links" aria-label="页面章节">
-          <a class="nav__link" href="#tour">界面导览</a>
-          <a class="nav__link" href="#features">能力</a>
+          <a class="nav__link" href="#manage">管理</a>
+          <a class="nav__link" href="#optimizer">优化建议</a>
+          <a class="nav__link" href="#triggers">触发统计</a>
+          <a class="nav__link" href="#search">搜索</a>
           <a class="nav__link" href="#install">安装</a>
         </nav>
 
@@ -105,7 +107,8 @@
             <h1 class="hero__h1">你机器上的每一个 agent skill，都在一个地方。</h1>
             <p class="hero__lede">
               清点你机器上的每一个 agent skill，找出问题，安全地管理它们。SkillCat 说明每个
-              skill 的触发条件，并在两个 skill 抢同一个请求之前把问题指出来。
+              skill 的触发条件，把证据摆在每个结论旁边，并把你自己的模型变成只读优化建议——
+              你能判断的改法，而不是它擅自做的修改。
             </p>
             <div class="hero__ctas">
               <a class="btn btn--primary btn--lg" href="https://github.com/Konata9/skillcat/releases">
@@ -124,6 +127,7 @@
               <li>v1.2.0</li>
               <li>离线读取</li>
               <li>90+ 个 agent</li>
+              <li>只读优化建议</li>
               <li>无需账号</li>
             </ul>
           </div>
@@ -177,182 +181,272 @@
         </div>
       </section>
 
-      <!-- ============ 01 · 界面导览 · 横向滑动截图轮播 ============ -->
-      <section class="section" id="tour">
+      <!-- ============ 01 · SKILL 管理 ============ -->
+      <section class="section" id="manage">
         <div class="container">
-          <div class="sec-head">
-            <div class="sec-head__body">
-              <h2 class="sec-head__title">看清你实际装了什么。</h2>
-              <p class="lede">
-                skill 会堆积在全局目录、项目目录和十几个 agent 专属位置里；它们互相遮蔽，也会与锁文件
-                记录的版本脱节。SkillCat 把这些全部读一遍，展示真实状态。
+          <div class="pillar">
+            <div class="pillar__body">
+              <p class="mono-label">01 · SKILL 管理</p>
+              <h2 class="pillar__title">每一个 skill，它的真实状态，和唯一安全的改动方式。</h2>
+              <p class="lede pillar__lede">
+                SkillCat 读取跨 90+ 个 agent 的全局、项目级与自定义目录，展示每个 skill 的来源、
+                锁元数据与真实链接状态——符号链接、悬空还是漂移。
               </p>
+              <ul class="pillar__points">
+                <li class="pillar__point">
+                  <span class="pillar__idx">01</span>
+                  <div>
+                    <h3>跨 90+ 个 agent 的清单</h3>
+                    <p>全局、项目级与自定义目录汇成一份列表，含来源、体积、更新时间和内容哈希。</p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">02</span>
+                  <div>
+                    <h3>真实的链接状态</h3>
+                    <p>符号链接、悬空链接、副本漂移还是本地修改——每个 skill 都有磁盘事实，而不是猜测。</p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">03</span>
+                  <div>
+                    <h3>带证据的问题</h3>
+                    <p>
+                      确定性规则指出悬空链接、缺失锁记录、副本漂移、跨作用域遮蔽与来源冲突，每条都附上
+                      触发它的证据。
+                    </p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">04</span>
+                  <div>
+                    <h3>自动发现的项目</h3>
+                    <p>根据 agent 标记在你的扫描根目录下发现项目。常来的可以收藏；注册表只保存路径。</p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">05</span>
+                  <div>
+                    <h3>唯一的安装路径</h3>
+                    <p>
+                      安装、更新或删除都经由官方 <span class="code-inline">skills</span> CLI，进度流式
+                      显示在抽屉里，带确认步骤，可随时取消。
+                    </p>
+                  </div>
+                </li>
+              </ul>
             </div>
-          </div>
-
-          <div class="carousel" data-carousel>
-            <div class="carousel__viewport">
-              <div class="carousel__track" data-carousel-track tabindex="0" aria-label="产品截图">
-                <figure class="carousel__slide">
-                  <figcaption class="carousel__cap">
-                    <span class="carousel__idx">01</span>
-                    <div>
-                      <h3 class="carousel__title">Skills</h3>
-                      <p class="carousel__desc">
-                        全局与项目级的 skill 清单，以及每个 skill 真实的链接状态：符号链接、悬空，或副本漂移。
-                        详情面板同时展示触发画像、文件清单与内容哈希。
-                      </p>
-                    </div>
-                  </figcaption>
-                  <div class="carousel__frame">
-                    <img
-                      src="../assets/img/zh/skills.png"
-                      alt="SkillCat 的 Skills 视图：左侧是已安装 skill 的列表，右侧详情面板展示描述、触发画像、链接状态与正文。"
-                      width="1440"
-                      height="900"
-                      loading="lazy"
-                    />
-                  </div>
-                </figure>
-
-                <figure class="carousel__slide">
-                  <figcaption class="carousel__cap">
-                    <span class="carousel__idx">02</span>
-                    <div>
-                      <h3 class="carousel__title">分析</h3>
-                      <p class="carousel__desc">
-                        确定性规则与启发式分析给出的问题，每一条都附带产生它的证据。两者分开标注，你始终
-                        清楚哪一条是磁盘事实，哪一条只是推测。
-                      </p>
-                    </div>
-                  </figcaption>
-                  <div class="carousel__frame">
-                    <img
-                      src="../assets/img/zh/analysis.png"
-                      alt="SkillCat 的分析视图：左侧是按严重程度着色的 findings 列表，右侧是评估总览与每个 skill 的评分。"
-                      width="1440"
-                      height="900"
-                      loading="lazy"
-                    />
-                  </div>
-                </figure>
-
-                <figure class="carousel__slide">
-                  <figcaption class="carousel__cap">
-                    <span class="carousel__idx">03</span>
-                    <div>
-                      <h3 class="carousel__title">搜索</h3>
-                      <p class="carousel__desc">
-                        浏览 skills.sh 榜单与公共索引，安装前先读一遍 SKILL.md，然后直接装进当前作用域。
-                      </p>
-                    </div>
-                  </figcaption>
-                  <div class="carousel__frame">
-                    <img
-                      src="../assets/img/zh/search.png"
-                      alt="SkillCat 的搜索视图：skills.sh 榜单，提供全部时间、趋势、热门三个标签页，以及搜索框和安装操作。"
-                      width="1440"
-                      height="900"
-                      loading="lazy"
-                    />
-                  </div>
-                </figure>
-
-                <figure class="carousel__slide">
-                  <figcaption class="carousel__cap">
-                    <span class="carousel__idx">04</span>
-                    <div>
-                      <h3 class="carousel__title">项目</h3>
-                      <p class="carousel__desc">
-                        根据扫描根下的 agent 标记自动发现项目，把常回访的钉住。注册表只存路径，删除条目
-                        不会删除任何文件。
-                      </p>
-                    </div>
-                  </figcaption>
-                  <div class="carousel__frame">
-                    <img
-                      src="../assets/img/zh/projects.png"
-                      alt="SkillCat 的项目视图：自动发现的本地项目列表，附带各自的 skill 数量与路径。"
-                      width="1440"
-                      height="900"
-                      loading="lazy"
-                    />
-                  </div>
-                </figure>
-
-                <figure class="carousel__slide">
-                  <figcaption class="carousel__cap">
-                    <span class="carousel__idx">05</span>
-                    <div>
-                      <h3 class="carousel__title">设置与更新</h3>
-                      <p class="carousel__desc">
-                        浅色 / 深色主题、中英文界面（跟随系统语言）、代理支持、可调的相似度阈值，以及
-                        诊断用的 <span class="code-inline">doctor</span>。
-                      </p>
-                    </div>
-                  </figcaption>
-                  <div class="carousel__frame">
-                    <img
-                      src="../assets/img/zh/settings-updates.png"
-                      alt="SkillCat 的设置视图：主题、语言、代理、阈值与更新相关控件。"
-                      width="1440"
-                      height="900"
-                      loading="lazy"
-                    />
-                  </div>
-                </figure>
-
-                <figure class="carousel__slide">
-                  <figcaption class="carousel__cap">
-                    <span class="carousel__idx">06</span>
-                    <div>
-                      <h3 class="carousel__title">优化建议</h3>
-                      <p class="carousel__desc">
-                        用你的模型审查单个 skill，得到只读、可执行的改进建议：总览、按严重度排序的建议，
-                        以及 before/after 片段。结果会保留，只有主动重新生成才覆盖。
-                      </p>
-                    </div>
-                  </figcaption>
-                  <div class="carousel__frame">
-                    <img
-                      src="../assets/img/zh/optimization.png"
-                      alt="SkillCat 的 skill 详情页「优化建议」标签页：针对单个 skill 的总览与按严重度排序的优化建议，每条附带现状与建议片段。"
-                      width="1440"
-                      height="900"
-                      loading="lazy"
-                    />
-                  </div>
-                </figure>
-              </div>
-            </div>
-            <div class="carousel__pager">
-              <div class="carousel__arrows">
-                <button class="carousel__btn" type="button" data-carousel-prev aria-label="上一张截图">
-                  <svg viewBox="0 0 16 16" width="18" height="18" fill="none" aria-hidden="true"><path d="M10.5 3.5 6 8l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                </button>
-                <button class="carousel__btn" type="button" data-carousel-next aria-label="下一张截图">
-                  <svg viewBox="0 0 16 16" width="18" height="18" fill="none" aria-hidden="true"><path d="M5.5 3.5 10 8l-4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                </button>
-              </div>
-              <div class="carousel__dots" role="group" aria-label="选择截图">
-                <button class="carousel__dot" type="button" data-carousel-goto="0" aria-current="true" aria-label="查看第 1 张：Skills"></button>
-                <button class="carousel__dot" type="button" data-carousel-goto="1" aria-label="查看第 2 张：分析"></button>
-                <button class="carousel__dot" type="button" data-carousel-goto="2" aria-label="查看第 3 张：搜索"></button>
-                <button class="carousel__dot" type="button" data-carousel-goto="3" aria-label="查看第 4 张：项目"></button>
-                <button class="carousel__dot" type="button" data-carousel-goto="4" aria-label="查看第 5 张：设置与更新"></button>
-                <button class="carousel__dot" type="button" data-carousel-goto="5" aria-label="查看第 6 张：优化建议"></button>
-              </div>
-              <p class="carousel__counter">
-                <span data-carousel-current>01</span>
-                <span aria-hidden="true">/</span>
-                <span>06</span>
+            <div class="pillar__media">
+              <figure class="pillar__frame">
+                <img
+                  src="../assets/img/zh/skills.png"
+                  alt="SkillCat 的 Skills 视图：左侧是已安装 skill 列表，右侧详情面板展示描述、触发画像、链接状态与正文。"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                />
+              </figure>
+              <figure class="pillar__frame">
+                <img
+                  src="../assets/img/zh/analysis.png"
+                  alt="SkillCat 的问题与评分视图：左侧是按严重程度着色的 findings，右侧是证据与建议的修复方式。"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                />
+              </figure>
+              <p class="pillar__caption mono-label">
+                清单 · 真实链接状态　·　问题与评分 · 每条结论附证据
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ============ 02 · 能力 ============ -->
+      <!-- ============ 02 · SKILL 优化建议（只读） ============ -->
+      <section class="section" id="optimizer">
+        <div class="container">
+          <div class="pillar pillar--flip">
+            <div class="pillar__body">
+              <p class="mono-label">02 · SKILL 优化建议</p>
+              <h2 class="pillar__title">让模型给建议，但绝不让它碰文件。</h2>
+              <p class="lede pillar__lede">
+                把你自己的模型变成单个 skill 的评审。它返回总览，加上按严重度排序、带 before/after
+                片段的建议，准则来自内置 rubric——不写回任何内容。
+              </p>
+              <ul class="pillar__points">
+                <li class="pillar__point">
+                  <span class="pillar__idx">01</span>
+                  <div>
+                    <h3>按严重度排序，附带证据</h3>
+                    <p>
+                      每条建议含标题、严重度（高/中/低）、理由，以及可选的
+                      <span class="code-inline">before</span>/<span class="code-inline">after</span>
+                      片段，让你判断这个改法，而不是盲信。
+                    </p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">02</span>
+                  <div>
+                    <h3>以内置 rubric 为准</h3>
+                    <p>
+                      评审准则来自内置的 <span class="code-inline">skill-optimizer</span>；同名用户 skill
+                      会被忽略，因此你 skill 里的提示词注入无法劫持评审。
+                    </p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">03</span>
+                  <div>
+                    <h3>保存，不重复计费</h3>
+                    <p>
+                      结果持久化到 <span class="code-inline">optimizer.json</span>，按 skill 及其内容哈希
+                      键控。再次打开不花钱，只有主动「重新生成」才再次消耗 token。
+                    </p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="pillar__media">
+              <figure class="pillar__frame">
+                <img
+                  src="../assets/img/zh/optimization.png"
+                  alt="SkillCat 的 skill 详情页「优化建议」标签页：针对单个 skill 的总览与按严重度排序的优化建议，每条附带现状与建议片段。"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                />
+              </figure>
+              <p class="pillar__caption mono-label">优化建议 Tab · 一次审查一个 skill</p>
+            </div>
+          </div>
+
+          <div class="note">
+            <span class="note__label">只读保证</span>
+            绝不改写任何 skill 文件。优化器只产出建议——真正的改动仍要经过官方
+            <span class="code-inline">skills</span> CLI，并带确认步骤。
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 03 · SKILL 触发统计 ============ -->
+      <section class="section" id="triggers">
+        <div class="container">
+          <div class="pillar">
+            <div class="pillar__body">
+              <p class="mono-label">03 · SKILL 触发统计</p>
+              <h2 class="pillar__title">看清真正触发了什么，而不只是可能触发什么。</h2>
+              <p class="lede pillar__lede">
+                SkillCat 提取每个 skill 的触发画像，还可以记录你的 agent 里真实触发了哪些
+                skill——含触发词语、任务与时间。统计只留在本机。
+              </p>
+              <ul class="pillar__points">
+                <li class="pillar__point">
+                  <span class="pillar__idx">01</span>
+                  <div>
+                    <h3>触发画像，正向与负向</h3>
+                    <p>
+                      从 <span class="code-inline">when_to_use</span>、<span class="code-inline">dispatch_intent</span>、
+                      description 与正文「When to Use」提取触发词。可在 sidecar 里手工标注；绝不改写 skill 文件。
+                    </p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">02</span>
+                  <div>
+                    <h3>可选的真实运行记录</h3>
+                    <p>
+                      安装 OpenCode bridge 来记录真实触发：哪个 skill、哪个词语、哪个任务、哪个会话。
+                      默认关闭，一键卸载。
+                    </p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">03</span>
+                  <div>
+                    <h3>按天与按 skill 的统计</h3>
+                    <p>图表展示每日触发次数和触发最多的 skill；同一句话触发多个 skill 会被聚合为冲突信号。</p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">04</span>
+                  <div>
+                    <h3>默认私有</h3>
+                    <p>
+                      触发词语属于提示词片段，只保存在本机配置目录，从不上传；保留天数由你控制，可一键清空。
+                    </p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="pillar__media">
+              <figure class="pillar__frame">
+                <img
+                  src="../assets/img/zh/usage-records.png"
+                  alt="SkillCat 的使用记录视图：触发次数、触发过的 skill、每日触发次数曲线，以及包含 skill、触发词语、任务与 agent 的最近触发列表。"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                />
+              </figure>
+              <p class="pillar__caption mono-label">使用记录 · 触发情况与统计</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 04 · 发现（skills.sh） ============ -->
+      <section class="section" id="search">
+        <div class="container">
+          <div class="pillar pillar--flip">
+            <div class="pillar__body">
+              <p class="mono-label">04 · 发现</p>
+              <h2 class="pillar__title">在 skills.sh 上找到 skill，装进当前作用域。</h2>
+              <p class="lede pillar__lede">
+                浏览公开榜单或搜索索引，安装前先读 SKILL.md，然后直接装进当前作用域。
+              </p>
+              <ul class="pillar__points">
+                <li class="pillar__point">
+                  <span class="pillar__idx">01</span>
+                  <div>
+                    <h3>skills.sh 榜单</h3>
+                    <p>全部时间、趋势与热门三类排名，各带周安装量迷你折线。</p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">02</span>
+                  <div>
+                    <h3>搜索公开索引</h3>
+                    <p>关键词搜索，失败时回退到文本搜索，总有结果。</p>
+                  </div>
+                </li>
+                <li class="pillar__point">
+                  <span class="pillar__idx">03</span>
+                  <div>
+                    <h3>先读再装</h3>
+                    <p>在应用内先查看 SKILL.md 与文件列表。</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="pillar__media">
+              <figure class="pillar__frame">
+                <img
+                  src="../assets/img/zh/search.png"
+                  alt="SkillCat 的搜索视图：skills.sh 榜单带全部时间、趋势、热门三个标签，搜索框与安装操作。"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                />
+              </figure>
+              <p class="pillar__caption mono-label">Skills 市场 · 搜索并安装</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 05 · 能力 ============ -->
       <section class="section" id="features">
         <div class="container">
           <div class="sec-head">
@@ -380,11 +474,10 @@
             </article>
 
             <article class="spec__row">
-              <h3 class="spec__name">触发画像<span class="spec__sub">正向与负向</span></h3>
+              <h3 class="spec__name">项目<span class="spec__sub">自动发现</span></h3>
               <p class="spec__desc">
-                从 <span class="code-inline">when_to_use</span>、<span class="code-inline">dispatch_intent</span>、description 和
-                「When to Use」小节中提取每个 skill 的触发条件。你可以在 sidecar 里手工标注触发词，
-                skill 文件永远不会被改写。
+                根据扫描根下的 agent 标记发现项目，把常回访的钉住。注册表只存路径，删除条目不会
+                删除任何文件。
               </p>
               <span class="spec__mode">core</span>
             </article>
@@ -399,12 +492,12 @@
             </article>
 
             <article class="spec__row">
-              <h3 class="spec__name">AI 评估<span class="spec__sub">可选，自带密钥</span></h3>
+              <h3 class="spec__name">安全操作<span class="spec__sub">唯一安装路径</span></h3>
               <p class="spec__desc">
-                用你自己的模型为每个 skill 评分，并判定预筛选出的重复与冲突候选对。结果带签名保存，
-                界面据此提示评估是否已经过期。
+                每次变更都把进度流式展示在抽屉里，有确认步骤，也可以取消。写入一律委托官方
+                <span class="code-inline">skills</span> CLI，因此只有一条安装路径，而不是两条。
               </p>
-              <span class="spec__mode">ai</span>
+              <span class="spec__mode">cli</span>
             </article>
 
             <article class="spec__row">
@@ -418,12 +511,22 @@
             </article>
 
             <article class="spec__row">
-              <h3 class="spec__name">项目<span class="spec__sub">自动发现</span></h3>
+              <h3 class="spec__name">触发画像<span class="spec__sub">正向与负向</span></h3>
               <p class="spec__desc">
-                根据扫描根下的 agent 标记发现项目，把常回访的钉住。注册表只存路径，删除条目不会
-                删除任何文件。
+                从 <span class="code-inline">when_to_use</span>、<span class="code-inline">dispatch_intent</span>、description 和
+                「When to Use」小节中提取每个 skill 的触发条件。你可以在 sidecar 里手工标注触发词，
+                skill 文件永远不会被改写。
               </p>
               <span class="spec__mode">core</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">运行记录<span class="spec__sub">可选，仅本机</span></h3>
+              <p class="spec__desc">
+                安装 OpenCode bridge 记录真实触发了哪些 skill，含触发词语、任务，以及按天与按 skill 的
+                统计图表。一键即可卸载，数据只保存在本机配置目录。
+              </p>
+              <span class="spec__mode">optional</span>
             </article>
 
             <article class="spec__row">
@@ -436,18 +539,18 @@
             </article>
 
             <article class="spec__row">
-              <h3 class="spec__name">安全操作<span class="spec__sub">唯一安装路径</span></h3>
+              <h3 class="spec__name">AI 评估<span class="spec__sub">可选，自带密钥</span></h3>
               <p class="spec__desc">
-                每次变更都把进度流式展示在抽屉里，有确认步骤，也可以取消。写入一律委托官方
-                <span class="code-inline">skills</span> CLI，因此只有一条安装路径，而不是两条。
+                用你自己的模型为每个 skill 评分，并判定预筛选出的重复与冲突候选对。结果带签名保存，
+                界面据此提示评估是否已经过期。
               </p>
-              <span class="spec__mode">cli</span>
+              <span class="spec__mode">ai</span>
             </article>
           </div>
         </div>
       </section>
 
-      <!-- ============ 03 · 工作原理 · 石墨色区段 ============ -->
+      <!-- ============ 06 · 工作原理 · 石墨色区段 ============ -->
       <section class="section band" id="how">
         <div class="container">
           <div class="sec-head">
@@ -506,7 +609,7 @@
         </div>
       </section>
 
-      <!-- ============ 04 · 原则 ============ -->
+      <!-- ============ 07 · 原则 ============ -->
       <section class="section" id="principles">
         <div class="container">
           <div class="sec-head">
@@ -542,15 +645,15 @@
               <p class="principle__idx">P4</p>
               <h3 class="principle__title">可选且显式的 AI 评估</h3>
               <p class="principle__desc">
-                评分与重复判定只在你要它跑的时候运行，用你自己的密钥与端点。默认情况下没有任何
-                数据离开你的机器。
+                评分、重复判定与优化建议只在你要它跑的时候运行，用你自己的密钥与端点。优化器是只读的
+                ——绝不改写 skill。默认情况下没有任何数据离开你的机器。
               </p>
             </article>
           </div>
         </div>
       </section>
 
-      <!-- ============ 05 · 安装 ============ -->
+      <!-- ============ 08 · 安装 ============ -->
       <section class="section" id="install">
         <div class="container">
           <div class="sec-head">
@@ -597,7 +700,7 @@
         </div>
       </section>
 
-      <!-- ============ 06 · 常见问题 ============ -->
+      <!-- ============ 09 · 常见问题 ============ -->
       <section class="section" id="faq">
         <div class="container">
           <div class="sec-head">
@@ -624,7 +727,8 @@
                 需要 API 密钥吗？
               </summary>
               <p class="faq__a">
-                不需要。清单、触发画像与规则引擎都不依赖模型。只有开启可选的 AI 评估时才需要密钥。
+                不需要。清单、触发画像与规则引擎都不依赖模型。只有开启可选的 AI 评估与只读优化建议时才
+                需要密钥。
               </p>
             </details>
 
@@ -645,8 +749,9 @@
                 它会改动我的 skill 吗？
               </summary>
               <p class="faq__a">
-                不会悄悄改。扫描是只读的，标注保存在配置目录的 sidecar 文件里。对 skill 目录的
-                任何改动都要经过官方 <span class="code-inline">skills</span> CLI，并带确认步骤。
+                不会悄悄改。扫描是只读的，标注保存在配置目录的 sidecar 文件里。优化建议同样是只读的：
+                只返回 before/after 片段，绝不写入 skill。对 skill 目录的任何改动都要经过官方
+                <span class="code-inline">skills</span> CLI，并带确认步骤。
               </p>
             </details>
 
@@ -656,13 +761,26 @@
                 能离线使用吗？
               </summary>
               <p class="faq__a">
-                可以。扫描与分析只用文件系统与锁文件。联网只用于可选的远程搜索、榜单与 AI 评估。
+                可以。扫描、分析与使用记录只用文件系统与锁文件，记录只留在本机。联网只用于可选的
+                远程搜索、榜单与 AI 评估。
               </p>
             </details>
 
             <details class="faq__item">
               <summary class="faq__q">
                 <span class="faq__idx">Q6</span>
+                它会记录我输入的内容吗？
+              </summary>
+              <p class="faq__a">
+                只有开启运行记录时才会。安装可选的 OpenCode bridge 后，SkillCat 记录哪个 skill 被触发、
+                触发词语、任务与时间——只保存在本机配置目录，从不上传；保留天数由你设置，可一键清空。
+                卸载 bridge 后就不再记录。
+              </p>
+            </details>
+
+            <details class="faq__item">
+              <summary class="faq__q">
+                <span class="faq__idx">Q7</span>
                 它是免费的吗？
               </summary>
               <p class="faq__a">
@@ -672,7 +790,7 @@
 
             <details class="faq__item">
               <summary class="faq__q">
-                <span class="faq__idx">Q7</span>
+                <span class="faq__idx">Q8</span>
                 运行它需要什么环境？
               </summary>
               <p class="faq__a">
@@ -689,7 +807,7 @@
         <div class="container cta">
           <div>
             <h2 class="cta__title">把它指向你的工作区，看看你到底装了什么。</h2>
-            <p class="cta__lede">免费、开源，在你开口之前一直保持只读。</p>
+            <p class="cta__lede">免费、开源，在你开口之前一直保持只读——优化建议也不例外。</p>
           </div>
           <div class="cta__actions">
             <a class="btn btn--primary btn--lg" href="https://github.com/Konata9/skillcat/releases">

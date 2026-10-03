@@ -116,10 +116,6 @@ button {
   border-top: 1px solid var(--color-rule);
 }
 
-.section--flush {
-  border-top: 0;
-}
-
 /* ---------- Type helpers ---------- */
 
 .mono-label {
@@ -136,19 +132,6 @@ button {
   line-height: 1.6;
   color: var(--color-ink-2);
   max-width: var(--measure);
-}
-
-.text-link {
-  color: var(--color-ink);
-  text-decoration: underline;
-  text-decoration-color: var(--color-rule-3);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  transition: text-decoration-color var(--dur-fast) var(--ease);
-}
-
-.text-link:hover {
-  text-decoration-color: var(--color-accent);
 }
 
 /* Inline code token (CLI names, file names, flags). A span rather than <code>
@@ -517,185 +500,6 @@ button {
   white-space: nowrap;
 }
 
-/* ---------- Tour — scroll-snap screenshot carousel ----------
-   A native horizontal track: swipe on touch, arrow keys when focused, or the
-   prev/next buttons and the segmented pager. Every slide stays in the document
-   (nothing is display:none), so all five captures remain indexable. Looping is
-   done with two runtime clones of the end slides (JS-only, so the served HTML
-   keeps exactly five slides). No auto-rotation — WCAG 2.2.2 is satisfied by
-   never moving on its own. */
-
-.carousel {
-  /* Gutter reserved either side of the screenshot so the arrows can sit
-     outside the image instead of covering it. */
-  --carousel-gutter: var(--space-8);
-  --carousel-btn: 2.75rem;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.carousel__viewport {
-  position: relative;
-}
-
-/* On phones the arrows sit in the pager row, next to the counter — overlaying
-   them on a 343 px-wide screenshot would cover a quarter of the image. */
-.carousel__arrows {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.carousel__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 1px solid var(--color-rule-2);
-  border-radius: var(--radius);
-  background: var(--color-paper);
-  color: var(--color-ink);
-  box-shadow: var(--shadow-card);
-  cursor: pointer;
-  transition:
-    background-color var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
-}
-
-.carousel__btn:hover {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-accent-ink);
-}
-
-.carousel__btn:active {
-  transform: translateY(1px);
-}
-
-.carousel__pager {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.carousel__counter {
-  display: flex;
-  gap: var(--space-2);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  color: var(--color-ink-4);
-  white-space: nowrap;
-}
-
-.carousel__counter [data-carousel-current] {
-  color: var(--color-accent-2);
-}
-
-.carousel__track {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 100%;
-  gap: var(--space-5);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-}
-
-.carousel__track::-webkit-scrollbar {
-  display: none;
-}
-
-/* Caption first, screenshot under it. The 1fr caption row equalises across
-   slides, so the images stay vertically aligned while swiping even though the
-   five descriptions differ in length. */
-.carousel__slide {
-  display: grid;
-  grid-template-rows: 1fr auto;
-  gap: var(--space-4);
-  margin: 0;
-  scroll-snap-align: start;
-}
-
-.carousel__frame {
-  border: 1px solid var(--color-rule-2);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  background: var(--color-paper-2);
-  box-shadow: var(--shadow-card);
-}
-
-.carousel__frame img {
-  width: 100%;
-}
-
-.carousel__cap {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  gap: var(--space-2) var(--space-5);
-}
-
-.carousel__idx {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  color: var(--color-accent-2);
-}
-
-.carousel__title {
-  font-size: var(--text-lg);
-  margin-bottom: var(--space-2);
-}
-
-.carousel__desc {
-  color: var(--color-ink-2);
-  max-width: var(--measure);
-}
-
-/* Hidden on phones (the counter already reports position); shown from tablet
-   up, where the arrows have moved out of the pager row onto the screenshot. */
-.carousel__dots {
-  display: none;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.carousel__dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.carousel__dot::before {
-  content: '';
-  width: 1.5rem;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--color-rule-3);
-  transition: background-color var(--dur-fast) var(--ease);
-}
-
-.carousel__dot:hover::before {
-  background: var(--color-ink-4);
-}
-
-.carousel__dot[aria-current='true']::before {
-  background: var(--color-accent);
-}
-
 /* ---------- Features — F3 tabular spec sheet ---------- */
 
 .spec {
@@ -749,6 +553,84 @@ button {
   border: 1px solid var(--color-rule-2);
   border-radius: var(--radius-sm);
   white-space: nowrap;
+}
+
+/* ---------- Pillars — the four selling points ---------- */
+
+.pillar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+.pillar__title {
+  margin-top: var(--space-3);
+  font-size: var(--text-2xl);
+  letter-spacing: -0.03em;
+  max-width: 22ch;
+}
+
+.pillar__lede {
+  margin-top: var(--space-4);
+}
+
+.pillar__points {
+  margin-top: var(--space-6);
+  border-top: 1px solid var(--color-rule-2);
+}
+
+.pillar__point {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.pillar__idx {
+  padding-top: 0.15em;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--color-accent-2);
+}
+
+.pillar__point h3 {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-md);
+  letter-spacing: -0.015em;
+}
+
+.pillar__point p {
+  max-width: var(--measure);
+  color: var(--color-ink-2);
+}
+
+.pillar__media {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.pillar__frame {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-panel);
+}
+
+.pillar__frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pillar__caption {
+  margin-top: var(--space-1);
+  color: var(--color-ink-4);
 }
 
 /* ---------- Graphite band — the page's one dark beat ---------- */
@@ -1117,6 +999,10 @@ button {
   transform: translate(-50%, 0);
 }
 
+.sticky-cta[hidden] {
+  display: none;
+}
+
 .sticky-cta__text {
   min-width: 0;
   font-family: var(--font-mono);
@@ -1150,10 +1036,6 @@ button {
    The page is composed: no scroll reveals (modern-minimal; also avoids the
    universal fade-up tell). One orchestrated entrance — the hero line types
    once. The caret shows only while typing, then script hides it. */
-
-.type-target {
-  display: inline;
-}
 
 .type-caret {
   display: inline-block;
@@ -1253,43 +1135,6 @@ button {
 /* Tablet — 768 px and up. Nav gets its links back and the paired blocks go
    two-up; the hero, steps and footer stay single-column until 60 rem. */
 @media (min-width: 48rem) {
-  /* Inset the whole scroller by the gutter (margin, not padding) so the
-     screenshot is narrower than the carousel and the neighbouring slides are
-     clipped at the image edge rather than peeking into the gutter. */
-  .carousel__track {
-    margin-inline: var(--carousel-gutter);
-  }
-
-  /* Arrows are anchored to the image, not to the whole slide: the overlay is
-     exactly as wide and tall as the frame (same inset, same aspect ratio) and
-     sits on the frame's bottom edge, so centring it centres on the image.
-     Negative margins then pull each button out into the gutter. */
-  .carousel__arrows {
-    position: absolute;
-    left: var(--carousel-gutter);
-    right: var(--carousel-gutter);
-    bottom: calc(var(--carousel-btn) + var(--space-4));
-    aspect-ratio: 1440 / 900;
-    justify-content: space-between;
-    pointer-events: none;
-  }
-
-  .carousel__arrows .carousel__btn:first-child {
-    margin-inline-start: calc((var(--carousel-gutter) + var(--carousel-btn)) / -2);
-  }
-
-  .carousel__arrows .carousel__btn:last-child {
-    margin-inline-end: calc((var(--carousel-gutter) + var(--carousel-btn)) / -2);
-  }
-
-  .carousel__btn {
-    pointer-events: auto;
-  }
-
-  .carousel__dots {
-    display: flex;
-  }
-
   .nav__links {
     display: flex;
   }
@@ -1353,10 +1198,6 @@ button {
     max-width: 56ch;
   }
 
-  .carousel__cap {
-    grid-template-columns: 3.5rem minmax(0, 1fr);
-  }
-
   .spec__row {
     grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) 8rem;
   }
@@ -1400,6 +1241,20 @@ button {
   .split {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-7);
+  }
+
+  .pillar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: clamp(2.5rem, 5vw, var(--space-8));
+    align-items: start;
+  }
+
+  .pillar--flip .pillar__body {
+    order: 2;
+  }
+
+  .pillar--flip .pillar__media {
+    order: 1;
   }
 
   .cta {
