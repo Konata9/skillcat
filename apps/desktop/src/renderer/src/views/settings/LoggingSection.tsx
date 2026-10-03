@@ -8,15 +8,7 @@ import { Field } from '../../components/ui/field';
 import { Input } from '../../components/ui/input';
 import { Select } from '../../components/ui/select';
 import { Switch } from '../../components/ui/switch';
-
-export interface LoggingForm {
-  enabled: boolean;
-  level: LogLevel;
-  maxTotalMb: string;
-  setEnabled: (value: boolean) => void;
-  setLevel: (value: LogLevel) => void;
-  setMaxTotalMb: (value: string) => void;
-}
+import type { LoggingForm } from './types';
 
 /** Diagnostic log preferences: enable, level, size budget, reveal and clear. */
 export function LoggingSection({

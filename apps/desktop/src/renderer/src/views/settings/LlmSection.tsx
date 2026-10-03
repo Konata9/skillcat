@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import type { LlmProvider, LlmTestResult } from '@skillcat/core';
+import type { LlmProvider } from '@skillcat/core';
 import { getLlmPreset, LLM_PROVIDERS } from '@skillcat/core/llm';
 import { useI18n, type MessageKey } from '@renderer/lib/i18n';
 import { Badge } from '../../components/ui/badge';
@@ -9,6 +9,7 @@ import { Field } from '../../components/ui/field';
 import { Input } from '../../components/ui/input';
 import { Select } from '../../components/ui/select';
 import { Switch } from '../../components/ui/switch';
+import type { LlmForm } from './types';
 
 const LLM_PROVIDER_LABEL: Record<LlmProvider, MessageKey> = {
   anthropic: 'settings.llmProvider.anthropic',
@@ -23,22 +24,6 @@ const LLM_PROVIDER_LABEL: Record<LlmProvider, MessageKey> = {
   ollama: 'settings.llmProvider.ollama',
   custom: 'settings.llmProvider.custom',
 };
-
-export interface LlmForm {
-  enabled: boolean;
-  provider: LlmProvider;
-  apiKey: string;
-  baseUrl: string;
-  model: string;
-  showApiKey: boolean;
-  result: LlmTestResult | null;
-  setEnabled: (value: boolean) => void;
-  setApiKey: (value: string) => void;
-  setBaseUrl: (value: string) => void;
-  setModel: (value: string) => void;
-  setShowApiKey: (value: boolean) => void;
-  changeProvider: (provider: LlmProvider) => void;
-}
 
 /** LLM provider, credentials and connectivity test. */
 export function LlmSection({

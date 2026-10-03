@@ -5,14 +5,7 @@
  */
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import type {
-  ProjectInfo,
-  RemoteSkill,
-  SkillRecord,
-  LlmSettings,
-  ActivitySettings,
-  LoggingSettings,
-} from '@skillcat/core';
+import type { ProjectInfo, RemoteSkill, SkillRecord } from '@skillcat/core';
 import { isLlmConfigured } from '@skillcat/core/llm';
 import type { OpStart } from '@shared/contract';
 import { useApi, useSnapshot, useStatus } from './api';
@@ -38,6 +31,7 @@ import { ActivityView } from './views/ActivityView';
 import { AnalysisView } from './views/AnalysisView';
 import { SearchView } from './views/SearchView';
 import { SettingsView, type SettingsCategory } from './views/SettingsView';
+import type { SettingsSavePatch } from './views/settings/types';
 import { SkillsView } from './views/SkillsView';
 
 export function App(): React.ReactElement {
@@ -160,17 +154,7 @@ export function App(): React.ReactElement {
       name: record.name,
     });
 
-  const saveSettings = async (patch: {
-    roots: string[];
-    proxy: { url: string; bypass: string };
-    thresholds: { overlap: number; duplicate: number };
-    skillsCommand: string[] | null;
-    showInternal: boolean;
-    customSkillDirs: string[];
-    llm: LlmSettings;
-    activity: ActivitySettings;
-    logging: LoggingSettings;
-  }): Promise<boolean> => {
+  const saveSettings = async (patch: SettingsSavePatch): Promise<boolean> => {
     try {
       await api.setSettings({
         skillsCommand: patch.skillsCommand,

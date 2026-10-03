@@ -1,10 +1,20 @@
 import { join } from 'node:path';
-import type {
-  AsyncOp,
-  LoggingSettings,
-  ProxySettings,
-  SkillManager,
-  UpdateCheckResult,
+import {
+  ACTIVITY_PHRASE_MAX,
+  ACTIVITY_PHRASE_MIN,
+  ACTIVITY_RETENTION_MAX,
+  ACTIVITY_RETENTION_MIN,
+  LLM_PROVIDERS,
+  LOG_LEVELS,
+  LOG_SIZE_MAX_MB,
+  LOG_SIZE_MIN_MB,
+  type AsyncOp,
+  type LlmProvider,
+  type LogLevel,
+  type LoggingSettings,
+  type ProxySettings,
+  type SkillManager,
+  type UpdateCheckResult,
 } from '@skillcat/core';
 import { z } from 'zod';
 import {
@@ -49,21 +59,11 @@ export interface IpcDeps {
 }
 
 const ScopeSchema = z.enum(['global', 'project']);
+// Provider ids, activity/logging bounds and log levels are derived from core
+// constants so adding a provider or widening a range needs no edit here.
 const LlmSchema = z.object({
   enabled: z.boolean(),
-  provider: z.enum([
-    'anthropic',
-    'openai',
-    'gemini',
-    'deepseek',
-    'qwen',
-    'glm',
-    'kimi',
-    'minimax',
-    'mimo',
-    'ollama',
-    'custom',
-  ]),
+  provider: z.enum(LLM_PROVIDERS.map((preset) => preset.id) as [LlmProvider, ...LlmProvider[]]),
   apiKey: z.string(),
   baseUrl: z.string(),
   model: z.string(),
@@ -124,15 +124,15 @@ const SettingsSchema = z.object({
     .object({
       enabled: z.boolean(),
       storePhrase: z.boolean(),
-      retentionDays: z.number().int().min(30).max(360),
-      maxPhraseChars: z.number().int().min(40).max(4000),
+      retentionDays: z.number().int().min(ACTIVITY_RETENTION_MIN).max(ACTIVITY_RETENTION_MAX),
+      maxPhraseChars: z.number().int().min(ACTIVITY_PHRASE_MIN).max(ACTIVITY_PHRASE_MAX),
     })
     .optional(),
   logging: z
     .object({
       enabled: z.boolean(),
-      level: z.enum(['debug', 'info', 'warn', 'error']),
-      maxTotalMb: z.number().int().min(1).max(30),
+      level: z.enum([...LOG_LEVELS] as [LogLevel, ...LogLevel[]]),
+      maxTotalMb: z.number().int().min(LOG_SIZE_MIN_MB).max(LOG_SIZE_MAX_MB),
     })
     .optional(),
 });

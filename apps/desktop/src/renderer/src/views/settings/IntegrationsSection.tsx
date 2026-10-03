@@ -12,17 +12,7 @@ import { Button } from '../../components/ui/button';
 import { Field } from '../../components/ui/field';
 import { Input } from '../../components/ui/input';
 import { Switch } from '../../components/ui/switch';
-
-export interface ActivityForm {
-  enabled: boolean;
-  storePhrase: boolean;
-  retention: string;
-  phraseChars: string;
-  setEnabled: (value: boolean) => void;
-  setStorePhrase: (value: boolean) => void;
-  setRetention: (value: string) => void;
-  setPhraseChars: (value: string) => void;
-}
+import type { ActivityForm } from './types';
 
 /** Agent bridge installs plus runtime-observation preferences. */
 export function IntegrationsSection({
