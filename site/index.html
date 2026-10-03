@@ -49,6 +49,8 @@
     <link rel="stylesheet" href="assets/css/tokens.css" />
     <link rel="stylesheet" href="assets/css/site.css" />
 
+    <script src="assets/js/locale.js"></script>
+
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -56,7 +58,7 @@
         "name": "SkillCat",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "macOS, Windows",
-        "softwareVersion": "1.1.0",
+        "softwareVersion": "1.2.0",
         "description": "Local-first agent skill manager. Inventories every SKILL.md bundle on your machine, explains what triggers each skill, flags concrete problems, and delegates every write to the official skills CLI.",
         "url": "https://skillcat.pages.dev/",
         "license": "https://opensource.org/license/mit",
@@ -120,7 +122,7 @@
             <ul class="hero__facts">
               <li>Free · MIT licensed</li>
               <li>macOS + Windows</li>
-              <li>v1.1.0</li>
+              <li>v1.2.0</li>
               <li>Reads offline</li>
               <li>90+ agents</li>
               <li>No account needed</li>
@@ -307,6 +309,29 @@ merged pull requests into user-facing notes.</code></pre>
                     />
                   </div>
                 </figure>
+
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">06</span>
+                    <div>
+                      <h3 class="carousel__title">Optimization suggestions</h3>
+                      <p class="carousel__desc">
+                        Ask your model to review a single skill and get read-only, actionable fixes:
+                        a summary, severity-ranked suggestions, and before/after excerpts. Results
+                        are saved and kept until you regenerate them.
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="assets/img/en/optimization.png"
+                      alt="SkillCat skill detail page, Suggestions tab: a summary and severity-ranked optimization suggestions for one skill, each with current and suggested excerpts."
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
               </div>
             </div>
             <div class="carousel__pager">
@@ -324,11 +349,12 @@ merged pull requests into user-facing notes.</code></pre>
                 <button class="carousel__dot" type="button" data-carousel-goto="2" aria-label="Show screenshot 3: Search"></button>
                 <button class="carousel__dot" type="button" data-carousel-goto="3" aria-label="Show screenshot 4: Projects"></button>
                 <button class="carousel__dot" type="button" data-carousel-goto="4" aria-label="Show screenshot 5: Settings &amp; updates"></button>
+                <button class="carousel__dot" type="button" data-carousel-goto="5" aria-label="Show screenshot 6: Optimization suggestions"></button>
               </div>
               <p class="carousel__counter">
                 <span data-carousel-current>01</span>
                 <span aria-hidden="true">/</span>
-                <span>05</span>
+                <span>06</span>
               </p>
             </div>
           </div>
@@ -390,6 +416,17 @@ merged pull requests into user-facing notes.</code></pre>
                 Score every skill with your own model, then judge the pre-filtered duplicate and
                 conflict candidates. Results are saved with a signature, so the UI can tell you
                 when an evaluation has gone stale.
+              </p>
+              <span class="spec__mode">ai</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">Optimization suggestions<span class="spec__sub">Optional, read-only</span></h3>
+              <p class="spec__desc">
+                Ask your model to review a single skill and return read-only rewrite suggestions with
+                <span class="code-inline">before</span>/<span class="code-inline">after</span> excerpts,
+                grounded in a bundled reviewer skill. Nothing is written back; results are saved and
+                kept until you regenerate them.
               </p>
               <span class="spec__mode">ai</span>
             </article>
@@ -557,7 +594,7 @@ merged pull requests into user-facing notes.</code></pre>
                 <li>The <span class="code-inline">skills</span> CLI is bundled — no Node.js install required.</li>
                 <li>Drag SkillCat into /Applications.</li>
               </ul>
-              <span class="os__cmd">SkillCat-1.1.0-arm64.dmg</span>
+              <span class="os__cmd">SkillCat-1.2.0-arm64.dmg</span>
             </div>
 
             <div class="os">
@@ -568,7 +605,7 @@ merged pull requests into user-facing notes.</code></pre>
                 <li>Install / update uses your system Node.js, version 22 or newer.</li>
                 <li>The bundled CLI is macOS-only for now.</li>
               </ul>
-              <span class="os__cmd">SkillCat-1.1.0-setup.exe</span>
+              <span class="os__cmd">SkillCat-1.2.0-setup.exe</span>
             </div>
           </div>
 
@@ -719,7 +756,7 @@ merged pull requests into user-facing notes.</code></pre>
         </div>
         <div class="footer__bottom">
           <span>MIT © 2026 konata9</span>
-          <span>v1.1.0</span>
+          <span>v1.2.0</span>
           <span>Not affiliated with any agent vendor.</span>
         </div>
       </div>
@@ -727,7 +764,7 @@ merged pull requests into user-facing notes.</code></pre>
 
     <!-- ============ Sticky CTA · C4 ============ -->
     <aside class="sticky-cta" data-visible="false" aria-label="Download SkillCat">
-      <span class="sticky-cta__text">SkillCat v1.1.0 · free &amp; open source</span>
+      <span class="sticky-cta__text">SkillCat v1.2.0 · free &amp; open source</span>
       <a class="btn btn--primary" href="https://github.com/Konata9/skillcat/releases">Download</a>
       <button class="sticky-cta__close" type="button" aria-label="Dismiss">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">

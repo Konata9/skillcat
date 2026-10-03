@@ -48,6 +48,8 @@
     <link rel="stylesheet" href="../assets/css/tokens.css" />
     <link rel="stylesheet" href="../assets/css/site.css" />
 
+    <script src="../assets/js/locale.js"></script>
+
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -55,7 +57,7 @@
         "name": "SkillCat",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "macOS, Windows",
-        "softwareVersion": "1.1.0",
+        "softwareVersion": "1.2.0",
         "inLanguage": "zh-CN",
         "description": "本地优先的 agent skill 管理器。清点机器上的每一个 SKILL.md，说明每个 skill 的触发条件，指出具体问题，并把所有写入委托给官方 skills CLI。",
         "url": "https://skillcat.pages.dev/zh/",
@@ -119,7 +121,7 @@
             <ul class="hero__facts">
               <li>免费 · MIT 许可</li>
               <li>macOS + Windows</li>
-              <li>v1.1.0</li>
+              <li>v1.2.0</li>
               <li>离线读取</li>
               <li>90+ 个 agent</li>
               <li>无需账号</li>
@@ -299,6 +301,28 @@
                     />
                   </div>
                 </figure>
+
+                <figure class="carousel__slide">
+                  <figcaption class="carousel__cap">
+                    <span class="carousel__idx">06</span>
+                    <div>
+                      <h3 class="carousel__title">优化建议</h3>
+                      <p class="carousel__desc">
+                        用你的模型审查单个 skill，得到只读、可执行的改进建议：总览、按严重度排序的建议，
+                        以及 before/after 片段。结果会保留，只有主动重新生成才覆盖。
+                      </p>
+                    </div>
+                  </figcaption>
+                  <div class="carousel__frame">
+                    <img
+                      src="../assets/img/zh/optimization.png"
+                      alt="SkillCat 的 skill 详情页「优化建议」标签页：针对单个 skill 的总览与按严重度排序的优化建议，每条附带现状与建议片段。"
+                      width="1440"
+                      height="900"
+                      loading="lazy"
+                    />
+                  </div>
+                </figure>
               </div>
             </div>
             <div class="carousel__pager">
@@ -316,11 +340,12 @@
                 <button class="carousel__dot" type="button" data-carousel-goto="2" aria-label="查看第 3 张：搜索"></button>
                 <button class="carousel__dot" type="button" data-carousel-goto="3" aria-label="查看第 4 张：项目"></button>
                 <button class="carousel__dot" type="button" data-carousel-goto="4" aria-label="查看第 5 张：设置与更新"></button>
+                <button class="carousel__dot" type="button" data-carousel-goto="5" aria-label="查看第 6 张：优化建议"></button>
               </div>
               <p class="carousel__counter">
                 <span data-carousel-current>01</span>
                 <span aria-hidden="true">/</span>
-                <span>05</span>
+                <span>06</span>
               </p>
             </div>
           </div>
@@ -378,6 +403,16 @@
               <p class="spec__desc">
                 用你自己的模型为每个 skill 评分，并判定预筛选出的重复与冲突候选对。结果带签名保存，
                 界面据此提示评估是否已经过期。
+              </p>
+              <span class="spec__mode">ai</span>
+            </article>
+
+            <article class="spec__row">
+              <h3 class="spec__name">优化建议<span class="spec__sub">可选，只读</span></h3>
+              <p class="spec__desc">
+                用你的模型审查单个 skill，返回只读的改写建议，附带
+                <span class="code-inline">before</span>/<span class="code-inline">after</span> 片段，
+                评审准则来自内置的评审 skill。不会写回任何文件；结果会保存，只有主动重新生成才覆盖。
               </p>
               <span class="spec__mode">ai</span>
             </article>
@@ -536,7 +571,7 @@
                 <li>内置 <span class="code-inline">skills</span> CLI，无需安装 Node.js。</li>
                 <li>把 SkillCat 拖进 /Applications 即可。</li>
               </ul>
-              <span class="os__cmd">SkillCat-1.1.0-arm64.dmg</span>
+              <span class="os__cmd">SkillCat-1.2.0-arm64.dmg</span>
             </div>
 
             <div class="os">
@@ -547,7 +582,7 @@
                 <li>安装 / 更新使用系统 Node.js，版本 22 或更高。</li>
                 <li>内置 CLI 目前仅支持 macOS。</li>
               </ul>
-              <span class="os__cmd">SkillCat-1.1.0-setup.exe</span>
+              <span class="os__cmd">SkillCat-1.2.0-setup.exe</span>
             </div>
           </div>
 
@@ -689,7 +724,7 @@
         </div>
         <div class="footer__bottom">
           <span>MIT © 2026 konata9</span>
-          <span>v1.1.0</span>
+          <span>v1.2.0</span>
           <span>与任何 agent 厂商均无关联。</span>
         </div>
       </div>
@@ -697,7 +732,7 @@
 
     <!-- ============ 吸底行动条 · C4 ============ -->
     <aside class="sticky-cta" data-visible="false" aria-label="下载 SkillCat">
-      <span class="sticky-cta__text">SkillCat v1.1.0 · 免费开源</span>
+      <span class="sticky-cta__text">SkillCat v1.2.0 · 免费开源</span>
       <a class="btn btn--primary" href="https://github.com/Konata9/skillcat/releases">下载</a>
       <button class="sticky-cta__close" type="button" aria-label="关闭">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">

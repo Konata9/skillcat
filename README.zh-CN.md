@@ -36,15 +36,15 @@ agent 各自的原生目录里；彼此遮蔽；与锁文件记录的版本发�
 
 **Skills** —— 全局与项目级 skill 盘点，含真实链接状态、触发画像与文件详情。
 
-![Skills 界面](docs/images/skills.png)
+![Skills 界面](docs/images/zh/skills.png)
 
 | 分析 | 远程搜索 |
 | --- | --- |
-| ![分析界面](docs/images/analysis.png) | ![远程搜索](docs/images/search.png) |
+| ![分析界面](docs/images/zh/analysis.png) | ![远程搜索](docs/images/zh/search.png) |
 
 | 项目 | 设置与更新 |
 | --- | --- |
-| ![项目界面](docs/images/projects.png) | ![更新设置](docs/images/settings-updates.png) |
+| ![项目界面](docs/images/zh/projects.png) | ![更新设置](docs/images/zh/settings-updates.png) |
 
 ## 功能
 

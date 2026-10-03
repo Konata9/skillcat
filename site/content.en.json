@@ -15,6 +15,7 @@
       "assets/img/en/search.png",
       "assets/img/en/projects.png",
       "assets/img/en/settings-updates.png",
+      "assets/img/en/optimization.png",
       "assets/img/logo.png"
     ],
     "acceptance_checks": [
@@ -34,7 +35,7 @@
     "facts": [
       "Free · MIT licensed",
       "macOS + Windows",
-      "v1.1.0",
+      "v1.2.0",
       "Reads offline",
       "90+ agents",
       "No account needed"
@@ -63,6 +64,10 @@
       {
         "image": "assets/img/en/settings-updates.png",
         "caption": "Light and dark themes, English or Chinese, proxy support, and a diagnostic doctor."
+      },
+      {
+        "image": "assets/img/en/optimization.png",
+        "caption": "Read-only optimization suggestions for one skill: a summary, severity-ranked fixes and before/after excerpts."
       }
     ],
     "features": [
@@ -85,6 +90,11 @@
         "name": "AI evaluation",
         "subtitle": "Optional, your own key",
         "description": "Score every skill with your own model, then judge the pre-filtered duplicate and conflict candidates. Results are saved with a signature, so the UI can tell you when an evaluation has gone stale."
+      },
+      {
+        "name": "Optimization suggestions",
+        "subtitle": "Optional, read-only",
+        "description": "Ask your model to review a single skill and return read-only rewrite suggestions with before/after excerpts, grounded in a bundled reviewer skill. Nothing is written back; results are saved and kept until you regenerate them."
       },
       {
         "name": "Projects",

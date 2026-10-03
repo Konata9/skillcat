@@ -6,7 +6,7 @@ Canonical page: https://skillcat.pages.dev/
 Chinese page: https://skillcat.pages.dev/zh/
 Source: https://github.com/Konata9/skillcat
 License: MIT
-Current version: 1.1.0
+Current version: 1.2.0
 
 ## Overview
 
@@ -43,6 +43,10 @@ Deterministic rules read disk facts: dangling links, missing lock records, copy 
 ### AI evaluation (optional)
 
 Scoring and duplicate/conflict judgement only run when you ask, using your own API key and endpoint. Built-in provider presets include Claude, ChatGPT, Gemini, DeepSeek, Qwen, GLM, Kimi, MiniMax, Mimo and a local Ollama option. Results are saved with a signature, so the app can tell you when an evaluation has gone stale. Inventory, trigger profiling and the rule engine all work without a model.
+
+### Optimization suggestions (optional)
+
+Reviews a single skill with your own model and returns read-only improvement suggestions: a summary plus severity-ranked items, each with optional `before`/`after` excerpts. The review criteria come from a bundled reviewer skill; no skill file is ever rewritten. Results are saved to `optimizer.json` and kept until you explicitly regenerate them, so a viewing pass never re-spends tokens.
 
 ### Projects
 

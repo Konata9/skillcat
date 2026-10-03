@@ -39,15 +39,15 @@ ever taking over your files behind your back.
 
 **Skills** — global and per-project inventory, with real link state, trigger profiles and file details.
 
-![Skills view](docs/images/skills.png)
+![Skills view](docs/images/en/skills.png)
 
 | Analysis | Remote search |
 | --- | --- |
-| ![Analysis view](docs/images/analysis.png) | ![Remote search](docs/images/search.png) |
+| ![Analysis view](docs/images/en/analysis.png) | ![Remote search](docs/images/en/search.png) |
 
 | Projects | Settings & updates |
 | --- | --- |
-| ![Projects view](docs/images/projects.png) | ![Update settings](docs/images/settings-updates.png) |
+| ![Projects view](docs/images/en/projects.png) | ![Update settings](docs/images/en/settings-updates.png) |
 
 ## Features
 

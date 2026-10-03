@@ -28,6 +28,7 @@ Free. Open source under the MIT license. No account, no subscription, no telemet
 - Deterministic analysis: dangling links, missing lock records, copy drift, local edits, cross-scope shadowing, source conflicts
 - Heuristic analysis: trigger overlap, negative contradictions, body duplication — each with a confidence score and the shared terms
 - Optional AI evaluation: score skills and judge duplicate/conflict candidates with your own model key
+- Optional read-only optimization: ask your model to review one skill and return before/after improvement suggestions
 - Project discovery from agent markers under your scan roots
 - Remote search and the skills.sh leaderboard (all-time / trending / hot)
 - Safe operations: every change is confirmed, streamed and cancellable, and delegated to the official skills CLI

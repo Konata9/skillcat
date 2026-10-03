@@ -15,6 +15,7 @@
       "assets/img/zh/search.png",
       "assets/img/zh/projects.png",
       "assets/img/zh/settings-updates.png",
+      "assets/img/zh/optimization.png",
       "assets/img/logo.png"
     ],
     "acceptance_checks": [
@@ -34,7 +35,7 @@
     "facts": [
       "免费 · MIT 许可",
       "macOS + Windows",
-      "v1.1.0",
+      "v1.2.0",
       "离线读取",
       "90+ 个 agent",
       "无需账号"
@@ -63,6 +64,10 @@
       {
         "image": "assets/img/zh/settings-updates.png",
         "caption": "浅色 / 深色主题、中英文界面（跟随系统语言）、代理支持、可调的相似度阈值，以及诊断用的 doctor。"
+      },
+      {
+        "image": "assets/img/zh/optimization.png",
+        "caption": "针对单个 skill 的只读优化建议：总览、按严重度排序的改进项，以及 before/after 片段。"
       }
     ],
     "features": [
@@ -85,6 +90,11 @@
         "name": "AI 评估",
         "subtitle": "可选，自带密钥",
         "description": "用你自己的模型为每个 skill 评分，并判定预筛选出的重复与冲突候选对。结果带签名保存，界面据此提示评估是否已经过期。"
+      },
+      {
+        "name": "优化建议",
+        "subtitle": "可选，只读",
+        "description": "用你的模型审查单个 skill，返回只读的改写建议，附带 before/after 片段；评审准则来自内置的评审 skill。不会写回任何文件；结果会保存，只有主动重新生成才覆盖。"
       },
       {
         "name": "项目",
