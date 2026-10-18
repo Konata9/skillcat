@@ -247,12 +247,23 @@ export class BridgeService {
     for (const adapter of listBridgeAdapters()) {
       const detection = await adapter.detect(ctx);
       const record = this.manifest[adapter.id];
+      let outdated = record ? record.version !== adapter.version : false;
+      if (record && !outdated) {
+        for (const file of record.files) {
+          const current = await readFileSafe(file.path);
+          if (current === null || sha256(current) !== file.hash) {
+            outdated = true;
+            break;
+          }
+        }
+      }
       result.push({
         id: adapter.id,
         agentId: adapter.agentId,
         display: adapter.display,
         available: detection.available,
         installed: Boolean(record),
+        outdated,
         targets: record ? record.files.map((file) => file.path) : detection.targets,
         installedAt: record?.installedAt ?? null,
         version: record?.version ?? null,

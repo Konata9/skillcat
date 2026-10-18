@@ -35,11 +35,13 @@ SkillCat BridgeService ── 适配器归一化 ── 匹配扫描目录 ─�
 ## OpenCode（当前唯一适配器）
 
 - 安装位置：`~/.config/opencode/plugins/skillcat-bridge.ts`（全局）。
-- 生成文件自包含、无 SkillCat 依赖，导出 `SkillCatBridge`，在 `tool.execute.after` 中检测
-  `tool === "skill"`。
-- 通过 OpenCode SDK 读取：最后一条 user 消息文本（触发词语），以及任务标签
-  （当前进行中的 todo → 会话标题 → 提示词片段）。
-- 安装后需**重启 OpenCode** 生效。
+- 生成文件自包含、无 SkillCat 依赖，默认导出一个同时兼容两代 API 的定义对象：
+  - OpenCode V2：`id` + `setup(ctx)`，通过 `ctx.tool.hook("execute.after")` 检测 `skill` 工具；
+  - OpenCode V1（1.18.29+）：`server()` 返回 `tool.execute.after` hook。
+- V2 通过 `ctx.skill.list()` 把 `skill` 工具的 `id` 解析为展示名，通过
+  `ctx.session.context()` 读取最后一条 user 消息作为触发词语，通过 `ctx.session.get()`
+  读取会话标题作为任务标签；V1 继续使用 `client.session.messages()` / `todo` / `get`。
+- 安装后需**重启 OpenCode** 生效；SkillCat 升级插件版本后，设置页会显示「更新」按钮。
 
 ### 一键安装 / 卸载
 

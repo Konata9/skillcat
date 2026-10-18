@@ -9,6 +9,11 @@ GitHub Release 的说明（见 `.github/workflows/release.yml`）。
 
 ## [Unreleased]
 
+### Fixed
+
+- 修复 OpenCode V2 下运行监听插件加载失败导致使用统计停止更新的问题：生成插件改为 V2 要求的
+  default export + `setup()` 结构，并保留 V1（1.18.29+）`server()` 兼容；设置页会提示旧插件更新。
+
 ## [1.2.0] - 2026-10-03
 
 ### Added

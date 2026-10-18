@@ -3,6 +3,11 @@
  * directory. It is self-contained (no SkillCat imports) and only ever appends
  * small JSON lines to the spool file, so a failure can never break the agent.
  *
+ * OpenCode V2 requires a default-exported definition with an `id` and a
+ * `setup` function; V1 (1.18.29+) calls `server()` on that same object. Both
+ * paths write the same spool envelope so ingest never needs to know which
+ * OpenCode version produced it.
+ *
  * The spool path is baked in at install time; phrase length is capped
  * generously here and truncated further on ingest per user settings, so
  * changing the retention options never requires reinstalling.
@@ -18,7 +23,108 @@ import { appendFile } from "node:fs/promises"
 const SPOOL = ${spool}
 const HARD_CAP = 4000
 
-function textOf(entry) {
+async function appendRecord(fields) {
+  try {
+    await appendFile(
+      SPOOL,
+      JSON.stringify({
+        v: 1,
+        adapterId: "opencode",
+        kind: "tool",
+        source: "model",
+        name: null,
+        phrase: null,
+        task: null,
+        taskId: null,
+        sessionId: null,
+        cwd: null,
+        ...fields,
+        ts: Date.now(),
+      }) + "\\n",
+    )
+  } catch {
+    // A bridge failure must never break the agent.
+  }
+}
+
+function trimText(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : null
+}
+
+// --- OpenCode V2 ---------------------------------------------------------
+
+function v2SkillKey(input) {
+  if (!input || typeof input !== "object") return ""
+  if (typeof input.id === "string") return input.id.trim()
+  if (typeof input.name === "string") return input.name.trim()
+  return ""
+}
+
+async function v2SkillName(ctx, input) {
+  const key = v2SkillKey(input)
+  if (!key) return null
+  try {
+    const skills = await ctx.skill.list()
+    if (Array.isArray(skills)) {
+      const match =
+        skills.find((skill) => skill && skill.id === key) ||
+        skills.find((skill) => skill && skill.name === key)
+      if (match) return trimText(match.name) || key
+    }
+  } catch {}
+  return key
+}
+
+async function v2LastUserText(ctx, sessionID) {
+  try {
+    const messages = await ctx.session.context({ sessionID })
+    if (!Array.isArray(messages)) return null
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const entry = messages[i]
+      if (!entry || entry.type !== "user") continue
+      const text = trimText(entry.text)
+      if (text) return text
+    }
+  } catch {}
+  return null
+}
+
+async function v2Task(ctx, sessionID) {
+  try {
+    const info = await ctx.session.get({ sessionID })
+    return trimText(info && info.title)
+  } catch {}
+  return null
+}
+
+async function recordV2(ctx, event) {
+  if (!event || event.tool !== "skill" || event.status !== "completed") return
+  const name = await v2SkillName(ctx, event.input)
+  if (!name) return
+  const sessionId = event.sessionID || null
+
+  let phrase = null
+  let task = null
+  if (sessionId) {
+    phrase = await v2LastUserText(ctx, sessionId)
+    task = await v2Task(ctx, sessionId)
+    if (!task && phrase) task = phrase.slice(0, 80)
+  }
+  if (phrase && phrase.length > HARD_CAP) phrase = phrase.slice(0, HARD_CAP)
+
+  const directory = ctx.location && ctx.location.directory
+  await appendRecord({
+    name,
+    phrase,
+    task,
+    sessionId,
+    cwd: directory || null,
+  })
+}
+
+// --- OpenCode V1 (1.18.29+) ----------------------------------------------
+
+function v1TextOf(entry) {
   const parts = Array.isArray(entry && entry.parts) ? entry.parts : []
   const chunks = []
   for (const part of parts) {
@@ -29,19 +135,19 @@ function textOf(entry) {
   return chunks.join("\\n").trim()
 }
 
-function unwrap(res) {
+function v1Unwrap(res) {
   return res && typeof res === "object" && "data" in res ? res.data : res
 }
 
-async function lastUserText(client, sessionId) {
+async function v1LastUserText(client, sessionID) {
   try {
     if (!client || !client.session || !client.session.messages) return null
-    const data = unwrap(await client.session.messages({ path: { id: sessionId } }))
+    const data = v1Unwrap(await client.session.messages({ path: { id: sessionID } }))
     if (!Array.isArray(data)) return null
     for (let i = data.length - 1; i >= 0; i -= 1) {
       const entry = data[i]
       if (entry && entry.info && entry.info.role === "user") {
-        const text = textOf(entry)
+        const text = v1TextOf(entry)
         if (text) return text
       }
     }
@@ -49,10 +155,10 @@ async function lastUserText(client, sessionId) {
   return null
 }
 
-async function resolveTask(client, sessionId) {
+async function v1ResolveTask(client, sessionID) {
   try {
     if (client && client.session && client.session.todo) {
-      const todos = unwrap(await client.session.todo({ path: { id: sessionId } }))
+      const todos = v1Unwrap(await client.session.todo({ path: { id: sessionID } }))
       if (Array.isArray(todos)) {
         const active = todos.find((item) => item && item.status === "in_progress")
         if (active) {
@@ -66,7 +172,7 @@ async function resolveTask(client, sessionId) {
   } catch {}
   try {
     if (client && client.session && client.session.get) {
-      const info = unwrap(await client.session.get({ path: { id: sessionId } }))
+      const info = v1Unwrap(await client.session.get({ path: { id: sessionID } }))
       if (info && typeof info.title === "string" && info.title) {
         return { task: info.title, taskId: null }
       }
@@ -75,49 +181,61 @@ async function resolveTask(client, sessionId) {
   return { task: null, taskId: null }
 }
 
-export const SkillCatBridge = async ({ client, directory }) => {
-  return {
-    "tool.execute.after": async (input, output) => {
-      try {
-        if (!input || input.tool !== "skill") return
-        const args = (output && output.args) || input.args || {}
-        const name = args.name
-        if (typeof name !== "string" || !name) return
-        const sessionId = input.sessionID || input.sessionId || null
+async function recordV1(client, directory, input, output) {
+  if (!input || input.tool !== "skill") return
+  const args = (output && output.args) || input.args || {}
+  const name = trimText(args.name)
+  if (!name) return
+  const sessionId = input.sessionID || input.sessionId || null
 
-        let phrase = null
-        let task = null
-        let taskId = null
-        if (sessionId) {
-          phrase = await lastUserText(client, sessionId)
-          const resolved = await resolveTask(client, sessionId)
-          task = resolved.task
-          taskId = resolved.taskId
-          if (!task && phrase) task = phrase.slice(0, 80)
-        }
-        if (phrase && phrase.length > HARD_CAP) phrase = phrase.slice(0, HARD_CAP)
-
-        await appendFile(
-          SPOOL,
-          JSON.stringify({
-            v: 1,
-            adapterId: "opencode",
-            kind: "tool",
-            name,
-            source: "model",
-            phrase,
-            task,
-            taskId,
-            sessionId,
-            cwd: directory || null,
-            ts: Date.now(),
-          }) + "\\n",
-        )
-      } catch {
-        // A bridge failure must never break the agent.
-      }
-    },
+  let phrase = null
+  let task = null
+  let taskId = null
+  if (sessionId) {
+    phrase = await v1LastUserText(client, sessionId)
+    const resolved = await v1ResolveTask(client, sessionId)
+    task = resolved.task
+    taskId = resolved.taskId
+    if (!task && phrase) task = phrase.slice(0, 80)
   }
+  if (phrase && phrase.length > HARD_CAP) phrase = phrase.slice(0, HARD_CAP)
+
+  await appendRecord({
+    name,
+    phrase,
+    task,
+    taskId,
+    sessionId,
+    cwd: directory || null,
+  })
+}
+
+export default {
+  id: "skillcat-bridge",
+
+  async setup(ctx) {
+    try {
+      await ctx.tool.hook("execute.after", async (event) => {
+        try {
+          await recordV2(ctx, event)
+        } catch {}
+      })
+    } catch {
+      // A bridge failure must never break the agent.
+    }
+  },
+
+  async server(input) {
+    const client = input && input.client
+    const directory = input && input.directory
+    return {
+      "tool.execute.after": async (toolInput, toolOutput) => {
+        try {
+          await recordV1(client, directory, toolInput, toolOutput)
+        } catch {}
+      },
+    }
+  },
 }
 `;
 }

@@ -1,10 +1,10 @@
 /**
  * OpenCode bridge adapter.
  *
- * OpenCode loads plugins from `~/.config/opencode/plugins/` and exposes a
- * `tool.execute.after` hook that fires for the native `skill` tool, plus an SDK
- * client that can read the session's last user message and its todo list. That
- * is enough to record: which skill loaded, the prompt that triggered it and the
+ * OpenCode loads plugins from `~/.config/opencode/plugins/`. V2 registers a
+ * `tool.execute.after` hook on the plugin context; V1 uses the same hook name
+ * from `server()`. Both can read the session's last user message and title, so
+ * the bridge records which skill loaded, the prompt that triggered it and the
  * task it belonged to.
  */
 import { join } from 'node:path';
@@ -32,7 +32,7 @@ export const opencodeBridge: BridgeAdapter = {
   id: 'opencode',
   agentId: 'opencode',
   display: 'OpenCode',
-  version: '1',
+  version: '2',
 
   async detect(ctx: BridgeContext): Promise<BridgeDetection> {
     const configDir = configDirPath(ctx);

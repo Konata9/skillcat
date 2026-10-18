@@ -55,18 +55,34 @@ export function IntegrationsSection({
                     ? t('settings.integration.installed')
                     : t('settings.integration.notInstalled')}
                 </Badge>
+                {bridge.outdated ? (
+                  <Badge tone="warn">{t('settings.integration.outdated')}</Badge>
+                ) : null}
               </div>
               {bridge.installed ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={bridgeBusy === bridge.id}
-                  onClick={() => onUninstall(bridge)}
-                >
-                  {bridgeBusy === bridge.id
-                    ? t('settings.integration.uninstalling')
-                    : t('settings.integration.uninstall')}
-                </Button>
+                <div className="flex items-center gap-2">
+                  {bridge.outdated ? (
+                    <Button
+                      size="sm"
+                      disabled={bridgeBusy === bridge.id}
+                      onClick={() => onInstall(bridge)}
+                    >
+                      {bridgeBusy === bridge.id
+                        ? t('settings.integration.updating')
+                        : t('settings.integration.update')}
+                    </Button>
+                  ) : null}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={bridgeBusy === bridge.id}
+                    onClick={() => onUninstall(bridge)}
+                  >
+                    {bridgeBusy === bridge.id
+                      ? t('settings.integration.uninstalling')
+                      : t('settings.integration.uninstall')}
+                  </Button>
+                </div>
               ) : (
                 <Button
                   size="sm"
